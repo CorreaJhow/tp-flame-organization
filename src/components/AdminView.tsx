@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { 
   Lock, 
-  KeyRound, 
   LogOut, 
   ShieldCheck, 
   Server, 
-  Settings, 
   HardDrive, 
   Trash2, 
   RotateCcw, 
@@ -13,9 +11,11 @@ import {
   CheckCircle2, 
   Eye, 
   EyeOff, 
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { storage } from '../services/storage';
+import { ViewTab } from '../types';
 
 interface AdminViewProps {
   onOpenGasModal: () => void;
@@ -24,6 +24,7 @@ interface AdminViewProps {
   totalVersoes: number;
   totalCultos: number;
   totalIntegrantes: number;
+  onNavigate?: (tab: ViewTab) => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -32,7 +33,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   totalMusicas,
   totalVersoes,
   totalCultos,
-  totalIntegrantes
+  totalIntegrantes,
+  onNavigate
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => storage.isAdminLoggedIn());
   const [passwordInput, setPasswordInput] = useState('');
@@ -110,20 +112,31 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // If not logged in, render Admin Login Card
   if (!isLoggedIn) {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 space-y-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
+      <div className="max-w-md mx-auto py-8 px-4 space-y-4">
+        {/* Top Mobile Back Navigation */}
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('mais')}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF4D00] hover:underline bg-[#121212] border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar para Mais</span>
+          </button>
+        )}
+
+        <div className="bg-[#121212] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-[#FF4D00]" />
           
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center mx-auto shadow-inner">
             <Lock className="w-8 h-8" />
           </div>
 
           <div>
             <h2 className="text-xl font-bold text-white mb-1">
-              Área Restrita
+              Área Restrita (GAS)
             </h2>
             <p className="text-xs text-slate-400">
-              Digite a senha de administrador para acessar as configurações do sistema
+              Digite a senha de administrador para acessar o painel
             </p>
           </div>
 
@@ -138,7 +151,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder="Digite sua senha..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors pr-10"
+                  className="w-full bg-[#080808] border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00] transition-colors pr-10"
                   autoFocus
                 />
                 <button
@@ -159,7 +172,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 transition-all active:scale-98"
+              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <span>Entrar na Administração</span>
               <ChevronRight className="w-4 h-4" />
@@ -167,7 +180,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </form>
 
           <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-800/80">
-            Senha padrão de acesso: <span className="font-mono text-slate-400 font-bold">admin</span>
+            Senha padrão: <span className="font-mono text-[#FF4D00] font-bold">admin</span>
           </p>
         </div>
       </div>
@@ -177,26 +190,36 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // Admin Dashboard (Authenticated)
   return (
     <div className="space-y-6 pb-28">
+      {/* Top Mobile Back Navigation */}
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate('mais')}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF4D00] hover:underline bg-[#121212] border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Voltar para Mais</span>
+        </button>
+      )}
+
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+      <div className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white leading-tight">
-              Painel de Administração
+            <h2 className="text-lg font-extrabold text-white leading-tight">
+              Painel do Administrador
             </h2>
             <p className="text-xs text-slate-400">
-              Conexão GAS e manutenção de dados
+              Modo de Gerenciamento & Integração Google Sheets (SSOT)
             </p>
           </div>
         </div>
 
         <button
           onClick={handleLogout}
-          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
-          title="Sair da Administração"
+          className="py-2 px-3.5 rounded-xl bg-[#1a1a1a] hover:bg-red-950/60 text-slate-300 hover:text-red-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>Sair</span>
@@ -204,216 +227,158 @@ export const AdminView: React.FC<AdminViewProps> = ({
       </div>
 
       {actionSuccessMsg && (
-        <div className="p-3 rounded-xl bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center animate-in fade-in">
+        <div className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 p-3 rounded-2xl text-xs font-bold text-center">
           {actionSuccessMsg}
         </div>
       )}
 
-      {/* GAS Integration Section */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      {/* Connection & Setup Google Apps Script */}
+      <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Server className="w-4 h-4 text-amber-400" />
+            <Server className="w-4 h-4 text-[#FF4D00]" />
             <h3 className="text-sm font-bold text-white">
               Integração Google Apps Script (GAS)
             </h3>
           </div>
-
-          <div className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 border ${
-            isConnected
-              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30'
-              : 'bg-slate-800 text-slate-400 border-slate-700'
-          }`}>
-            <CheckCircle2 className="w-3 h-3" />
-            <span>{isConnected ? 'Conectado' : 'Sem Conexão'}</span>
-          </div>
+          <span
+            className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
+              isConnected
+                ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40'
+                : 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/30'
+            }`}
+          >
+            {isConnected ? '• CONECTADO' : '• MODO LOCAL'}
+          </span>
         </div>
 
-        <form onSubmit={handleSaveConnection} className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <form onSubmit={handleSaveConnection} className="space-y-3">
           <div>
             <label className="text-xs font-semibold text-slate-300 block mb-1">
-              ID da Planilha Google Sheets
+              URL da Web App Executável (Google Apps Script)
+            </label>
+            <input
+              type="text"
+              value={endpointInput}
+              onChange={(e) => setEndpointInput(e.target.value)}
+              placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-300 block mb-1">
+              ID da Planilha Google (Spreadsheet ID)
             </label>
             <input
               type="text"
               value={spreadsheetIdInput}
               onChange={(e) => setSpreadsheetIdInput(e.target.value)}
-              placeholder="ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
+              placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00]"
             />
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">
-              URL do Endpoint Web App (GAS)
-            </label>
-            <input
-              type="url"
-              value={endpointInput}
-              onChange={(e) => setEndpointInput(e.target.value)}
-              placeholder="https://script.google.com/macros/s/.../exec"
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          {saveSuccess && (
-            <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center">
-              ✓ Conexão salva com sucesso!
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-1">
             <button
               type="button"
               onClick={onOpenGasModal}
-              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-400 font-semibold text-xs flex items-center gap-1.5 transition-all"
+              className="text-xs font-bold text-[#FF4D00] hover:underline flex items-center gap-1"
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span>Ver Scripts GAS</span>
+              <span>Instruções & Código do Script GAS</span>
             </button>
 
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95"
+              className="py-2.5 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md"
             >
               Salvar Conexão
             </button>
           </div>
-        </form>
-      </section>
 
-      {/* Database Operations & Zero Data */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-          <HardDrive className="w-4 h-4 text-red-400" />
-          <h3 className="text-sm font-bold text-white">
-            Limpeza & Manutenção do Banco
-          </h3>
-        </div>
-
-        {/* Action 1: Zerar Tudo */}
-        <div className="bg-red-950/20 border border-red-500/20 rounded-xl p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0 mt-0.5">
-              <Trash2 className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-red-300 mb-0.5">
-                Zerar Todos os Dados
-              </h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Apaga todas as músicas, cultos e participantes locais para deixar a aplicação limpa e pronta para sincronizar com sua planilha.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-1">
-            <button
-              id="clear-all-data-button"
-              onClick={handleClearAllData}
-              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all active:scale-95"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Zerar Dados</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Action 2: Restaurar Exemplos */}
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-              <RotateCcw className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white mb-0.5">
-                Restaurar Dados de Exemplo
-              </h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Recarrega os registros de demonstração originais do TP Flame.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-1">
-            <button
-              id="reset-default-data-button"
-              onClick={handleResetToDefaults}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-              <span>Restaurar Exemplos</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Security & Admin Password Section */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-          <KeyRound className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold text-white">
-            Segurança da Administração
-          </h3>
-        </div>
-
-        <form onSubmit={handleChangePassword} className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">
-              Nova Senha do Administrador
-            </label>
-            <input
-              type="text"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Digite a nova senha..."
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          {changePassSuccess && (
-            <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center">
-              ✓ Senha alterada com sucesso!
-            </div>
+          {saveSuccess && (
+            <p className="text-xs text-emerald-400 font-bold flex items-center gap-1 pt-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Conexão salva com sucesso!
+            </p>
           )}
-
-          <div className="flex justify-end pt-1">
-            <button
-              type="submit"
-              disabled={!newPassword.trim()}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95"
-            >
-              Alterar Senha
-            </button>
-          </div>
         </form>
       </section>
 
-      {/* Database Overview Card */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
-          Resumo do Sistema
+      {/* Change Admin Password */}
+      <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-3">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <Lock className="w-4 h-4 text-[#FF4D00]" />
+          Alterar Senha de Administrador
         </h3>
-        <div className="grid grid-cols-4 gap-2 text-center text-xs">
-          <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-            <span className="text-amber-400 font-extrabold text-base block">{totalMusicas}</span>
-            <span className="text-[10px] text-slate-400">Músicas</span>
+
+        <form onSubmit={handleChangePassword} className="flex gap-2">
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Nova senha do admin..."
+            className="flex-1 bg-[#080808] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+          />
+          <button
+            type="submit"
+            className="py-2 px-4 rounded-xl bg-[#181818] border border-slate-700 hover:border-[#FF4D00] text-white font-bold text-xs"
+          >
+            Atualizar
+          </button>
+        </form>
+
+        {changePassSuccess && (
+          <p className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Senha atualizada!
+          </p>
+        )}
+      </section>
+
+      {/* Database Actions */}
+      <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <HardDrive className="w-4 h-4 text-[#FF4D00]" />
+          Manutenção do Banco de Dados
+        </h3>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+          <div className="bg-[#080808] border border-slate-800 p-2.5 rounded-xl">
+            <span className="text-slate-400 text-[10px] block">Músicas</span>
+            <span className="text-base font-extrabold text-white">{totalMusicas}</span>
           </div>
-          <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-            <span className="text-emerald-400 font-extrabold text-base block">{totalVersoes}</span>
-            <span className="text-[10px] text-slate-400">Versões</span>
+          <div className="bg-[#080808] border border-slate-800 p-2.5 rounded-xl">
+            <span className="text-slate-400 text-[10px] block">Versões</span>
+            <span className="text-base font-extrabold text-white">{totalVersoes}</span>
           </div>
-          <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-            <span className="text-blue-400 font-extrabold text-base block">{totalCultos}</span>
-            <span className="text-[10px] text-slate-400">Cultos</span>
+          <div className="bg-[#080808] border border-slate-800 p-2.5 rounded-xl">
+            <span className="text-slate-400 text-[10px] block">Cultos</span>
+            <span className="text-base font-extrabold text-white">{totalCultos}</span>
           </div>
-          <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-            <span className="text-purple-400 font-extrabold text-base block">{totalIntegrantes}</span>
-            <span className="text-[10px] text-slate-400">Equipe</span>
+          <div className="bg-[#080808] border border-slate-800 p-2.5 rounded-xl">
+            <span className="text-slate-400 text-[10px] block">Integrantes</span>
+            <span className="text-base font-extrabold text-white">{totalIntegrantes}</span>
           </div>
+        </div>
+
+        <div className="pt-2 flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={handleResetToDefaults}
+            className="flex-1 py-3 px-4 rounded-xl bg-[#181818] hover:bg-[#202020] border border-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+          >
+            <RotateCcw className="w-4 h-4 text-[#FF4D00]" />
+            <span>Restaurar Dados de Exemplo</span>
+          </button>
+
+          <button
+            onClick={handleClearAllData}
+            className="flex-1 py-3 px-4 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+          >
+            <Trash2 className="w-4 h-4 text-red-400" />
+            <span>Zerar Banco de Dados</span>
+          </button>
         </div>
       </section>
     </div>
   );
 };
-
