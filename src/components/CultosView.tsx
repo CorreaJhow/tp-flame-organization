@@ -383,7 +383,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                           ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
                           : currentCulto.Status === 'Concluído'
                           ? 'bg-slate-900 text-slate-400 border-slate-700'
-                          : 'bg-amber-950 text-amber-400 border-amber-500/30'
+                          : 'bg-orange-950/60 text-orange-400 border-orange-500/30'
                       }`}
                     >
                       {currentCulto.Status || 'Confirmado'}
@@ -505,7 +505,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                         )}
 
                         {rep.Observacao_Culto && (
-                          <span className="text-[10px] text-amber-300 italic block mt-0.5">
+                          <span className="text-[10px] text-[#FF4D00] italic block mt-0.5">
                             Obs: {rep.Observacao_Culto}
                           </span>
                         )}
@@ -598,7 +598,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                               ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
                               : culto.Status === 'Concluído'
                               ? 'bg-slate-900 text-slate-400 border-slate-700'
-                              : 'bg-amber-950 text-amber-400 border-amber-500/30'
+                              : 'bg-orange-950/60 text-orange-400 border-orange-500/30'
                           }`}
                         >
                           {culto.Status || 'Confirmado'}

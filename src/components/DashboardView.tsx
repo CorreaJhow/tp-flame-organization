@@ -51,7 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
           {upcomingCulto && (
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900/90 text-amber-300 border border-slate-700/80">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900/90 text-[#FF4D00] border border-[#FF4D00]/30">
               {upcomingCulto.Status}
             </span>
           )}
@@ -128,7 +128,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="w-full py-4 px-5 rounded-2xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-base flex items-center justify-center gap-2.5 shadow-xl shadow-[#FF4D00]/20 active:scale-[0.98] transition-all"
             >
               <Play className="w-5 h-5 fill-slate-950" />
-              <span>ABRIR CIFRAS E MODO PALCO</span>
+              <span>MODO PALCO</span>
             </button>
           </div>
         ) : (
