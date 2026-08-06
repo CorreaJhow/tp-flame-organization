@@ -70,7 +70,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
             onClick={() => setActiveTab('m1')}
             className={`pb-2.5 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${
               activeTab === 'm1'
-                ? 'border-amber-400 text-amber-400'
+                ? 'border-[#FF4D00] text-[#FF4D00]'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -82,7 +82,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
             onClick={() => setActiveTab('m2_3')}
             className={`pb-2.5 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${
               activeTab === 'm2_3'
-                ? 'border-amber-400 text-amber-400'
+                ? 'border-[#FF4D00] text-[#FF4D00]'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -94,7 +94,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
             onClick={() => setActiveTab('connect')}
             className={`pb-2.5 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${
               activeTab === 'connect'
-                ? 'border-amber-400 text-amber-400'
+                ? 'border-[#FF4D00] text-[#FF4D00]'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -108,16 +108,16 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
           {activeTab !== 'connect' ? (
             <>
               {/* Instructions Banner */}
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
+              <div className="bg-[#080808] border border-slate-800 rounded-2xl p-3 text-xs space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                  <span className="font-bold text-[#FF4D00] flex items-center gap-1.5">
                     <FileSpreadsheet className="w-4 h-4" />
                     {activeTab === 'm1' ? 'Como executar o Milestone 1:' : 'Como publicar a API Web App:'}
                   </span>
 
                   <button
                     onClick={handleCopyCode}
-                    className="py-1 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                    className="py-1 px-3 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Copiado!' : 'Copiar Código'}</span>
@@ -127,15 +127,15 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
                 <ol className="list-decimal list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
                   {activeTab === 'm1' ? (
                     <>
-                      <li>Acesse <a href="https://script.google.com" target="_blank" rel="noreferrer" className="text-amber-400 underline">script.google.com</a> e crie um "Novo projeto".</li>
-                      <li>Cole o código abaixo no arquivo <code className="text-amber-300">Código.gs</code>.</li>
-                      <li>Selecione a função <code className="text-amber-300">setupDatabase</code> na barra superior e clique em <strong>Executar</strong>.</li>
+                      <li>Acesse <a href="https://script.google.com" target="_blank" rel="noreferrer" className="text-[#FF4D00] underline">script.google.com</a> e crie um "Novo projeto".</li>
+                      <li>Cole o código abaixo no arquivo <code className="text-[#FF4D00]">Código.gs</code>.</li>
+                      <li>Selecione a função <code className="text-[#FF4D00]">setupDatabase</code> na barra superior e clique em <strong>Executar</strong>.</li>
                       <li>Conceda as permissões solicitadas para criar o arquivo no Google Drive.</li>
                       <li>O script criará a planilha <strong>"TP Flame - Banco de Dados V1"</strong> com as 10 abas formatadas e IDs UUID!</li>
                     </>
                   ) : (
                     <>
-                      <li>Substitua a variável <code className="text-amber-300">SPREADSHEET_ID</code> pelo ID da planilha gerada no Milestone 1.</li>
+                      <li>Substitua a variável <code className="text-[#FF4D00]">SPREADSHEET_ID</code> pelo ID da planilha gerada no Milestone 1.</li>
                       <li>Clique em <strong>Implantar &gt; Nova Implantação</strong>.</li>
                       <li>Selecione o tipo "App da Web" e configure: <em>Executar como: Eu</em>, <em>Quem tem acesso: Qualquer pessoa (Anyone)</em>.</li>
                       <li>Copie a URL da Web App gerada e insira na aba "Conectar Endpoint" nesta plataforma.</li>
@@ -177,7 +177,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
                     value={spreadsheetIdInput}
                     onChange={(e) => setSpreadsheetIdInput(e.target.value)}
                     placeholder="ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
+                    className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-[#FF4D00]"
                   />
                   <p className="text-[10px] text-slate-500 mt-1">
                     O ID fica na URL da planilha: docs.google.com/spreadsheets/d/<strong>[SPREADSHEET_ID]</strong>/edit
@@ -193,7 +193,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
                     value={endpointInput}
                     onChange={(e) => setEndpointInput(e.target.value)}
                     placeholder="https://script.google.com/macros/s/.../exec"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
+                    className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-[#FF4D00]"
                   />
                   <p className="text-[10px] text-slate-500 mt-1">
                     Gerado ao publicar a Web App no script.google.com
@@ -209,7 +209,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md"
+                    className="px-4 py-2 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all"
                   >
                     Salvar Configurações
                   </button>

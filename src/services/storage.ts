@@ -269,6 +269,40 @@ class StorageService {
     this.addLog('DELETE_MUSICA', `Música ID ${id} e suas versões foram excluídas`);
   }
 
+  public updateMusica(id: string, data: Partial<Musica>) {
+    const musicas = this.getMusicas();
+    const index = musicas.findIndex(m => m.ID === id);
+    if (index !== -1) {
+      musicas[index] = { ...musicas[index], ...data };
+      this.set(KEYS.MUSICAS, musicas);
+      this.addLog('UPDATE_MUSICA', `Música "${musicas[index].Nome}" atualizada`);
+    }
+  }
+
+  public updateVersao(id: string, data: Partial<Versao>) {
+    const versoes = this.getVersoes();
+    const index = versoes.findIndex(v => v.ID === id);
+    if (index !== -1) {
+      versoes[index] = { ...versoes[index], ...data };
+      this.set(KEYS.VERSOES, versoes);
+      this.addLog('UPDATE_VERSAO', `Versão "${versoes[index].Nome_Versao}" atualizada`);
+    }
+  }
+
+  public deleteNota(id: string) {
+    let notas = this.getNotas();
+    notas = notas.filter(n => n.ID !== id);
+    this.set(KEYS.NOTAS, notas);
+    this.addLog('DELETE_NOTA', `Nota removida`);
+  }
+
+  public deleteArquivo(id: string) {
+    let arquivos = this.getArquivos();
+    arquivos = arquivos.filter(a => a.ID !== id);
+    this.set(KEYS.ARQUIVOS, arquivos);
+    this.addLog('DELETE_ARQUIVO', `Anexo removido`);
+  }
+
   // Cultos & Repertorio
   public getCultos(): Culto[] { return this.get<Culto>(KEYS.CULTOS); }
   public getRepertorio(): RepertorioItem[] { return this.get<RepertorioItem>(KEYS.REPERTORIO); }

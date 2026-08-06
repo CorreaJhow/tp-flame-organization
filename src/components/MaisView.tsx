@@ -75,11 +75,11 @@ export const MaisView: React.FC<MaisViewProps> = ({
           className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
+              <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors">
                 Painel de Administração (GAS)
               </h3>
               <p className="text-xs text-slate-400">
