@@ -60,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenGasModal, onNavigateTab })
             ) : (
               <>
                 <Database className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="hidden sm:inline">Modo Local SSOT</span>
+                <span className="hidden sm:inline">Modo Local</span>
                 <span className="sm:hidden">Modo Local</span>
               </>
             )}
