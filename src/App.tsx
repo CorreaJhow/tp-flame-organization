@@ -10,6 +10,7 @@ import { StageModeModal } from './components/StageModeModal';
 import { IntegrantesView } from './components/IntegrantesView';
 import { HistoricoLogsView } from './components/HistoricoLogsView';
 import { GasSetupModal } from './components/GasSetupModal';
+import { AdminView } from './components/AdminView';
 
 import { storage } from './services/storage';
 import { 
@@ -108,7 +109,7 @@ export default function App() {
       {/* Top Header */}
       <Header
         onOpenGasModal={() => setShowGasModal(true)}
-        onDataChanged={refreshData}
+        onNavigateTab={(tab) => setCurrentTab(tab)}
       />
 
       {/* Main Container */}
@@ -169,6 +170,17 @@ export default function App() {
             versoes={versoes}
             musicas={musicas}
             cultos={cultos}
+          />
+        )}
+
+        {currentTab === 'admin' && (
+          <AdminView
+            onOpenGasModal={() => setShowGasModal(true)}
+            onDataChanged={refreshData}
+            totalMusicas={musicas.length}
+            totalVersoes={versoes.length}
+            totalCultos={cultos.length}
+            totalIntegrantes={integrantes.length}
           />
         )}
       </main>

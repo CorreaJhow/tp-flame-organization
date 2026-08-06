@@ -77,4 +77,4 @@ export interface LogItem {
   Registro_Afetado: string;
 }
 
-export type ViewTab = 'inicio' | 'biblioteca' | 'cultos' | 'integrantes' | 'historico';
+export type ViewTab = 'inicio' | 'biblioteca' | 'cultos' | 'integrantes' | 'historico' | 'admin';

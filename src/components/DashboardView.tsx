@@ -212,15 +212,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <button
             id="quick-gas-setup-button"
-            onClick={onOpenGasModal}
+            onClick={() => onNavigate('admin')}
             className="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center gap-3 text-left transition-all active:scale-95 group"
           >
             <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-slate-950 transition-colors shrink-0">
               <Code2 className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-white block">Script GAS (M1)</span>
-              <span className="text-[10px] text-slate-400">Código de Setup Google</span>
+              <span className="text-xs font-bold text-white block">Painel Admin</span>
+              <span className="text-[10px] text-slate-400">GAS & Manutenção</span>
             </div>
           </button>
         </div>

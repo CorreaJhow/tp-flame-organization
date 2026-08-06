@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Music2, Calendar, Users, History } from 'lucide-react';
+import { Home, Music2, Calendar, Users, History, Shield } from 'lucide-react';
 import { ViewTab } from '../types';
 
 interface NavigationProps {
@@ -18,12 +18,13 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'biblioteca', label: 'Biblioteca', icon: Music2 },
     { id: 'cultos', label: 'Cultos', icon: Calendar, badge: nextCultoSongCount },
     { id: 'integrantes', label: 'Equipe', icon: Users },
-    { id: 'historico', label: 'Histórico', icon: History }
+    { id: 'historico', label: 'Histórico', icon: History },
+    { id: 'admin', label: 'Admin', icon: Shield }
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur border-t border-slate-800 py-1 px-2 shadow-lg">
-      <div className="max-w-md mx-auto flex items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur border-t border-slate-800 py-1 px-1.5 shadow-lg">
+      <div className="max-w-lg mx-auto flex items-center justify-between">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
@@ -33,7 +34,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               key={tab.id}
               id={`nav-tab-${tab.id}`}
               onClick={() => onSelectTab(tab.id)}
-              className={`relative min-h-[48px] min-w-[56px] flex flex-col items-center justify-center rounded-xl transition-all ${
+              className={`relative min-h-[48px] px-1 flex flex-col items-center justify-center rounded-xl transition-all flex-1 ${
                 isActive
                   ? 'text-amber-400 font-semibold'
                   : 'text-slate-400 hover:text-slate-200 active:scale-95'
@@ -47,11 +48,11 @@ export const Navigation: React.FC<NavigationProps> = ({
                   </span>
                 ) : null}
               </div>
-              <span className="text-[11px] mt-1 leading-tight tracking-tight">
+              <span className="text-[10px] sm:text-[11px] mt-1 leading-tight tracking-tight whitespace-nowrap">
                 {tab.label}
               </span>
               {isActive && (
-                <div className="absolute top-0 w-8 h-0.5 bg-amber-400 rounded-full" />
+                <div className="absolute top-0 w-6 h-0.5 bg-amber-400 rounded-full" />
               )}
             </button>
           );
