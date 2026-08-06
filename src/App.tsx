@@ -122,6 +122,7 @@ export default function App() {
             onNavigate={(tab) => setCurrentTab(tab)}
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
+            onSelectSong={(musica) => setSelectedSongForDetail(musica)}
           />
         )}
 
@@ -145,6 +146,8 @@ export default function App() {
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
             onDataChanged={refreshData}
+            onSelectSong={(musica) => setSelectedSongForDetail(musica)}
+            onNavigate={(tab) => setCurrentTab(tab)}
           />
         )}
 

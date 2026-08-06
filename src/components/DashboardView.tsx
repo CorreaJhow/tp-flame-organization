@@ -6,7 +6,8 @@ import {
   ChevronRight, 
   Clock, 
   Plus, 
-  Sparkles 
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import { Culto, Musica, Versao, RepertorioItem, ViewTab } from '../types';
 
@@ -16,6 +17,7 @@ interface DashboardViewProps {
   onNavigate: (tab: ViewTab) => void;
   onOpenStageMode: (culto: Culto) => void;
   onOpenNewCultoModal: () => void;
+  onSelectSong?: (musica: Musica) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -23,7 +25,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   upcomingRepertorio,
   onNavigate,
   onOpenStageMode,
-  onOpenNewCultoModal
+  onOpenNewCultoModal,
+  onSelectSong
 }) => {
   const formatDate = (isoStr?: string) => {
     if (!isoStr) return '';
@@ -93,13 +96,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {upcomingRepertorio.slice(0, 4).map(({ item, versao, musica }, idx) => (
                     <div
                       key={item.ID}
-                      className="flex items-center justify-between text-xs bg-[#121212] px-3 py-2 rounded-xl border border-slate-800/80"
+                      onClick={() => musica && onSelectSong?.(musica)}
+                      className={`flex items-center justify-between text-xs bg-[#121212] px-3 py-2 rounded-xl border border-slate-800/80 transition-all ${
+                        musica ? 'cursor-pointer hover:border-slate-700 hover:bg-[#181818] group' : ''
+                      }`}
+                      title={musica ? 'Clique para abrir detalhes e cifra' : ''}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <span className="w-5 h-5 rounded-full bg-[#FF4D00]/20 text-[#FF4D00] font-black text-[10px] flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <span className="font-bold text-white truncate">
+                        <span className="font-bold text-white truncate group-hover:text-[#FF4D00] transition-colors">
                           {musica?.Nome || 'Música'}
                         </span>
                       </div>
@@ -108,6 +115,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#1f1f1f] text-[#FF4D00] border border-[#FF4D00]/30">
                             Tom {versao.Tom}
                           </span>
+                        )}
+                        {musica && (
+                          <FileText className="w-3.5 h-3.5 text-slate-500 group-hover:text-[#FF4D00] transition-colors" />
                         )}
                       </div>
                     </div>
