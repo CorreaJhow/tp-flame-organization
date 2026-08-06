@@ -258,19 +258,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* Architecture Single Source of Truth Banner */}
-      <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-        <div>
-          <h4 className="text-xs font-bold text-white mb-0.5">
-            Arquitetura SSOT & Mobile-First
-          </h4>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Todas as alterações são estruturadas no esquema do <strong>Google Sheets</strong> (10 tabelas). Nenhuma informação é duplicada.
-          </p>
-        </div>
-      </section>
-
       {/* Recent Activity Log */}
       <section>
         <div className="flex items-center justify-between mb-3">

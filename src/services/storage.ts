@@ -99,6 +99,31 @@ class StorageService {
     localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, id.trim());
   }
 
+  // Admin Auth
+  public getAdminPassword(): string {
+    return localStorage.getItem('tp_flame_admin_pass_v1') || 'admin';
+  }
+
+  public setAdminPassword(pass: string) {
+    localStorage.setItem('tp_flame_admin_pass_v1', pass.trim());
+  }
+
+  public isAdminLoggedIn(): boolean {
+    return sessionStorage.getItem('tp_flame_admin_auth_v1') === 'true';
+  }
+
+  public loginAdmin(passwordAttempt: string): boolean {
+    if (passwordAttempt.trim() === this.getAdminPassword()) {
+      sessionStorage.setItem('tp_flame_admin_auth_v1', 'true');
+      return true;
+    }
+    return false;
+  }
+
+  public logoutAdmin() {
+    sessionStorage.removeItem('tp_flame_admin_auth_v1');
+  }
+
   // Generic getter / setter
   private get<T>(key: string): T[] {
     const data = localStorage.getItem(key);
