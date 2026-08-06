@@ -13,7 +13,9 @@ import {
   Search,
   List,
   LayoutGrid,
-  X
+  X,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica } from '../types';
 import { storage } from '../services/storage';
@@ -26,6 +28,8 @@ interface CultosViewProps {
   onOpenStageMode: (culto: Culto) => void;
   onOpenNewCultoModal: () => void;
   onDataChanged: () => void;
+  onSelectSong?: (musica: Musica) => void;
+  onNavigate?: (tab: string) => void;
 }
 
 export const CultosView: React.FC<CultosViewProps> = ({
@@ -35,7 +39,9 @@ export const CultosView: React.FC<CultosViewProps> = ({
   musicas,
   onOpenStageMode,
   onOpenNewCultoModal,
-  onDataChanged
+  onDataChanged,
+  onSelectSong,
+  onNavigate
 }) => {
   const [selectedCultoId, setSelectedCultoId] = useState<string>(
     cultos.length > 0 ? cultos[0].ID : ''
@@ -440,14 +446,27 @@ export const CultosView: React.FC<CultosViewProps> = ({
               Repertório ({currentSetlist.length} Músicas)
             </h3>
 
-            <button
-              id="add-song-to-setlist-button"
-              onClick={() => setShowAddSongModal(true)}
-              className="py-1.5 px-3 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] hover:bg-[#FF4D00]/20 text-xs font-bold flex items-center gap-1 border border-[#FF4D00]/30 transition-all active:scale-95"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Adicionar Música</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('biblioteca')}
+                  className="py-1.5 px-3 rounded-xl bg-[#080808] hover:bg-[#181818] text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1 border border-slate-800 transition-all"
+                  title="Ir para Biblioteca de Músicas"
+                >
+                  <Music2 className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Biblioteca</span>
+                </button>
+              )}
+
+              <button
+                id="add-song-to-setlist-button"
+                onClick={() => setShowAddSongModal(true)}
+                className="py-1.5 px-3 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] hover:bg-[#FF4D00]/20 text-xs font-bold flex items-center gap-1 border border-[#FF4D00]/30 transition-all active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Adicionar Música</span>
+              </button>
+            </div>
           </div>
 
           {/* Setlist Items */}
@@ -474,17 +493,24 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 return (
                   <div
                     key={rep.ID}
-                    className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm"
+                    className="bg-[#121212] border border-slate-800/80 hover:border-slate-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm transition-all"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-[#FF4D00]/10 text-[#FF4D00] font-black text-xs flex items-center justify-center shrink-0 border border-[#FF4D00]/20">
+                    <div
+                      onClick={() => musica && onSelectSong?.(musica)}
+                      className={`flex items-center gap-3 min-w-0 flex-1 ${musica ? 'cursor-pointer group' : ''}`}
+                      title={musica ? 'Clique para abrir detalhes, cifra e observações' : ''}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-[#FF4D00]/10 text-[#FF4D00] font-black text-xs flex items-center justify-center shrink-0 border border-[#FF4D00]/20 group-hover:scale-105 transition-transform">
                         {index + 1}
                       </div>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="text-xs font-bold text-white truncate">
-                            {musica?.Nome || 'Música'}
+                          <h4 className="text-xs font-bold text-white truncate group-hover:text-[#FF4D00] transition-colors flex items-center gap-1">
+                            <span>{musica?.Nome || 'Música'}</span>
+                            {musica && (
+                              <ExternalLink className="w-3 h-3 text-[#FF4D00] opacity-0 group-hover:opacity-100 transition-opacity" />
+                            )}
                           </h4>
                           {versao && (
                             <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-[#080808] text-[#FF4D00] border border-slate-800">
@@ -512,8 +538,18 @@ export const CultosView: React.FC<CultosViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Reorder and Delete Controls */}
+                    {/* Reorder, Details and Delete Controls */}
                     <div className="flex items-center gap-1 shrink-0">
+                      {musica && (
+                        <button
+                          onClick={() => onSelectSong?.(musica)}
+                          className="p-1.5 rounded-lg bg-[#080808] hover:bg-[#FF4D00]/20 text-slate-300 hover:text-[#FF4D00] border border-slate-800 transition-colors flex items-center gap-1"
+                          title="Ver Cifra e Detalhes da Música"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-[#FF4D00]" />
+                          <span className="hidden sm:inline text-[10px] font-bold">Cifra</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleMove(index, 'up')}
                         disabled={index === 0}
