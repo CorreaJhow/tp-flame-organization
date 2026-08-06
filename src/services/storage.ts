@@ -68,6 +68,20 @@ class StorageService {
     this.initDefaultData();
   }
 
+  public clearAllData() {
+    localStorage.setItem(KEYS.CONFIG, JSON.stringify([]));
+    localStorage.setItem(KEYS.MUSICAS, JSON.stringify([]));
+    localStorage.setItem(KEYS.VERSOES, JSON.stringify([]));
+    localStorage.setItem(KEYS.ARQUIVOS, JSON.stringify([]));
+    localStorage.setItem(KEYS.NOTAS, JSON.stringify([]));
+    localStorage.setItem(KEYS.CULTOS, JSON.stringify([]));
+    localStorage.setItem(KEYS.REPERTORIO, JSON.stringify([]));
+    localStorage.setItem(KEYS.INTEGRANTES, JSON.stringify([]));
+    localStorage.setItem(KEYS.HISTORICO, JSON.stringify([]));
+    localStorage.setItem(KEYS.LOGS, JSON.stringify([]));
+    this.addLog('SYSTEM_CLEAR', 'Todos os dados locais foram zerados');
+  }
+
   // GAS Settings
   public getGasEndpoint(): string {
     return localStorage.getItem(KEYS.GAS_ENDPOINT) || '';
