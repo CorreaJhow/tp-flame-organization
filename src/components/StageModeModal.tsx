@@ -5,12 +5,10 @@ import {
   Pause, 
   ArrowUp, 
   ArrowDown, 
-  RotateCcw, 
   ChevronLeft, 
   ChevronRight, 
-  MessageSquare, 
-  Music2,
-  Tag
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
 import { transposeTextChords, getNextKey } from '../utils/chordTransposer';
@@ -65,6 +63,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
       setCurrentIndex(currentIndex + 1);
       setSemitones(0);
       setIsAutoScrolling(false);
+      window.scrollTo({ top: 0 });
     }
   };
 
@@ -73,15 +72,16 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
       setCurrentIndex(currentIndex - 1);
       setSemitones(0);
       setIsAutoScrolling(false);
+      window.scrollTo({ top: 0 });
     }
   };
 
   if (!currentRep || !currentVersao || !currentMusica) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-[#080808] flex items-center justify-center p-4 text-white">
         <div className="text-center space-y-3">
           <p className="text-sm text-slate-400">Nenhuma música no repertório para o Modo Palco.</p>
-          <button onClick={onClose} className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl bg-[#FF4D00] text-slate-950 font-bold text-xs">
             Fechar
           </button>
         </div>
@@ -90,93 +90,96 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col font-sans overflow-hidden">
-      {/* Top Controls Bar */}
-      <div className="bg-slate-900 border-b border-slate-800 p-3 flex items-center justify-between sticky top-0 z-20 shadow-md">
-        <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-50 bg-[#080808] text-white flex flex-col font-sans overflow-hidden">
+      {/* Top Fixed Controls Bar */}
+      <div className="bg-[#121212] border-b border-slate-800/80 px-3 py-2.5 flex items-center justify-between sticky top-0 z-30 shadow-2xl">
+        {/* Setlist Stepper */}
+        <div className="flex items-center gap-1.5">
           <button
             onClick={handlePrevSong}
             disabled={currentIndex === 0}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30"
+            className="p-2 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-amber-400" />
+            <ChevronLeft className="w-5 h-5 text-[#FF4D00]" />
           </button>
+
           <div>
-            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
-              Música {currentIndex + 1} de {setlist.length}
+            <span className="text-[10px] font-black text-[#FF4D00] uppercase tracking-wider block">
+              {currentIndex + 1} DE {setlist.length}
             </span>
-            <h2 className="text-sm font-extrabold text-white leading-none truncate max-w-[160px] sm:max-w-xs">
+            <h2 className="text-sm font-extrabold text-white leading-tight truncate max-w-[130px] sm:max-w-xs">
               {currentMusica.Nome}
             </h2>
           </div>
+
           <button
             onClick={handleNextSong}
             disabled={currentIndex === setlist.length - 1}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30"
+            className="p-2 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors"
           >
-            <ChevronRight className="w-5 h-5 text-amber-400" />
+            <ChevronRight className="w-5 h-5 text-[#FF4D00]" />
           </button>
         </div>
 
-        {/* Key Transposer & Controls */}
-        <div className="flex items-center gap-2">
-          {/* Key Display */}
-          <div className="bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-center">
-            <span className="text-[9px] text-slate-500 uppercase block font-bold">Tom</span>
-            <span className="text-xs font-black text-amber-400">{currentKeyDisplay}</span>
+        {/* Transposer & Tools */}
+        <div className="flex items-center gap-1.5">
+          {/* Key Box */}
+          <div className="bg-[#080808] border border-slate-800 px-2 py-0.5 rounded-lg text-center">
+            <span className="text-[9px] text-slate-500 uppercase font-bold block">Tom</span>
+            <span className="text-xs font-black text-[#FF4D00]">{currentKeyDisplay}</span>
           </div>
 
           <button
             onClick={() => setSemitones(s => s - 1)}
-            className="p-1.5 rounded-lg bg-slate-800 text-amber-400 font-bold text-xs"
-            title="-1 Tom"
+            className="p-2 rounded-xl bg-[#1a1a1a] text-[#FF4D00] hover:bg-[#252525] transition-colors"
+            title="Baixar 1 Tom"
           >
             <ArrowDown className="w-4 h-4" />
           </button>
 
           <button
             onClick={() => setSemitones(s => s + 1)}
-            className="p-1.5 rounded-lg bg-slate-800 text-amber-400 font-bold text-xs"
-            title="+1 Tom"
+            className="p-2 rounded-xl bg-[#1a1a1a] text-[#FF4D00] hover:bg-[#252525] transition-colors"
+            title="Subir 1 Tom"
           >
             <ArrowUp className="w-4 h-4" />
           </button>
 
           <button
             onClick={() => setShowNotes(!showNotes)}
-            className={`p-1.5 rounded-lg border transition-colors ${
+            className={`p-2 rounded-xl border transition-colors ${
               showNotes
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
-                : 'bg-slate-800 text-slate-300 border-slate-700'
+                ? 'bg-[#FF4D00] text-slate-950 border-[#FF4D00] font-bold'
+                : 'bg-[#1a1a1a] text-slate-300 border-slate-800'
             }`}
-            title="Notas Instrumentos"
+            title="Ver Observações"
           >
             <MessageSquare className="w-4 h-4" />
           </button>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400"
+            className="p-2 rounded-xl bg-[#1a1a1a] hover:bg-red-950/60 text-slate-400 hover:text-red-400 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* Main Reader */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Song Header Info */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+      {/* Main Full-Width Reader */}
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 space-y-3">
+        {/* Header Info Banner */}
+        <div className="bg-[#121212] border border-slate-800/80 rounded-xl p-3 flex items-center justify-between text-xs">
           <div>
-            <span className="text-xs text-slate-400">{currentMusica.Artista}</span>
+            <span className="text-slate-400 block font-medium">{currentMusica.Artista}</span>
             {currentRep.Dirigente && (
-              <p className="text-xs text-amber-300 font-semibold">
+              <span className="text-[#FF4D00] font-bold block">
                 Ministro: {currentRep.Dirigente}
-              </p>
+              </span>
             )}
           </div>
           {currentVersao.Estrutura && (
-            <div className="text-[10px] text-slate-400 font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800">
+            <div className="text-[10px] text-slate-300 font-mono bg-[#080808] px-2.5 py-1 rounded-lg border border-slate-800">
               {currentVersao.Estrutura}
             </div>
           )}
@@ -184,54 +187,55 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
         {/* Instrument Notes Box */}
         {showNotes && (
-          <div className="bg-slate-900 border border-amber-500/40 rounded-xl p-3 space-y-2">
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-              Notas para Instrumentos
+          <div className="bg-[#121212] border border-[#FF4D00]/40 rounded-xl p-3 space-y-1.5 animate-in fade-in">
+            <span className="text-xs font-black text-[#FF4D00] uppercase tracking-wider block">
+              Observações do Arranjo
             </span>
             {currentNotas.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">Nenhuma nota cadastrada.</p>
+              <p className="text-xs text-slate-500 italic">Nenhuma observação cadastrada.</p>
             ) : (
               currentNotas.map((n) => (
                 <div key={n.ID} className="text-xs text-slate-200">
-                  <strong className="text-amber-300">[{n.Instrumento}]</strong>: {n.Observacao}
+                  <strong className="text-[#FF4D00]">[{n.Instrumento}]</strong>: {n.Observacao}
                 </div>
               ))
             )}
           </div>
         )}
 
-        {/* Chords & Lyrics Reader */}
-        <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 font-mono text-sm sm:text-base text-slate-100 leading-loose whitespace-pre-wrap select-text shadow-inner">
+        {/* 100% Width Cifra & Letra Display */}
+        <div className="w-full bg-[#080808] border border-slate-800/60 rounded-2xl p-4 sm:p-5 font-mono text-sm sm:text-base text-slate-100 leading-relaxed whitespace-pre-wrap select-text shadow-inner">
           {transposeTextChords(currentVersao.Letra, semitones)}
         </div>
       </div>
 
-      {/* Bottom Floating Bar */}
-      <div className="bg-slate-900 border-t border-slate-800 p-3 flex items-center justify-between sticky bottom-0 z-20">
+      {/* Bottom Floating Bar: Auto-Scroll */}
+      <div className="bg-[#121212] border-t border-slate-800/80 p-3 flex items-center justify-between sticky bottom-0 z-30">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-            className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+            className={`py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${
               isAutoScrolling
-                ? 'bg-amber-500 text-slate-950 shadow'
-                : 'bg-slate-800 text-slate-300 border border-slate-700'
+                ? 'bg-[#FF4D00] text-slate-950 shadow-lg shadow-[#FF4D00]/20'
+                : 'bg-[#1a1a1a] text-slate-300 border border-slate-700'
             }`}
           >
-            {isAutoScrolling ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            <span>{isAutoScrolling ? 'Pausar Scroll' : 'Auto Scroll'}</span>
+            {isAutoScrolling ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+            <span>{isAutoScrolling ? 'Pausar Rolagem' : 'Auto-Scroll'}</span>
           </button>
 
           {isAutoScrolling && (
-            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-bold">
-              <button onClick={() => setScrollSpeed(1)} className={`px-2 py-0.5 rounded ${scrollSpeed === 1 ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>1x</button>
-              <button onClick={() => setScrollSpeed(2)} className={`px-2 py-0.5 rounded ${scrollSpeed === 2 ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>2x</button>
-              <button onClick={() => setScrollSpeed(3)} className={`px-2 py-0.5 rounded ${scrollSpeed === 3 ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>3x</button>
+            <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800 text-xs font-black">
+              <button onClick={() => setScrollSpeed(1)} className={`px-2 py-0.5 rounded-lg ${scrollSpeed === 1 ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400'}`}>1x</button>
+              <button onClick={() => setScrollSpeed(2)} className={`px-2 py-0.5 rounded-lg ${scrollSpeed === 2 ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400'}`}>2x</button>
+              <button onClick={() => setScrollSpeed(3)} className={`px-2 py-0.5 rounded-lg ${scrollSpeed === 3 ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400'}`}>3x</button>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1 text-xs text-slate-400">
-          <span>Setlist ({currentIndex + 1}/{setlist.length})</span>
+        <div className="text-xs font-bold text-slate-400 flex items-center gap-1">
+          <Zap className="w-3.5 h-3.5 text-[#FF4D00]" />
+          <span>{currentIndex + 1} / {setlist.length}</span>
         </div>
       </div>
     </div>

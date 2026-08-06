@@ -243,9 +243,47 @@ class StorageService {
     return newArquivo;
   }
 
+  public deleteMusica(id: string) {
+    let musicas = this.getMusicas();
+    musicas = musicas.filter(m => m.ID !== id);
+    this.set(KEYS.MUSICAS, musicas);
+
+    // Also remove associated versions, notes, and files
+    let versoes = this.getVersoes();
+    const removedVersaoIds = versoes.filter(v => v.ID_Musica === id).map(v => v.ID);
+    versoes = versoes.filter(v => v.ID_Musica !== id);
+    this.set(KEYS.VERSOES, versoes);
+
+    let notas = this.getNotas();
+    notas = notas.filter(n => !removedVersaoIds.includes(n.ID_Versao));
+    this.set(KEYS.NOTAS, notas);
+
+    let arquivos = this.getArquivos();
+    arquivos = arquivos.filter(a => !removedVersaoIds.includes(a.ID_Versao));
+    this.set(KEYS.ARQUIVOS, arquivos);
+
+    let repertorio = this.getRepertorio();
+    repertorio = repertorio.filter(r => !removedVersaoIds.includes(r.ID_Versao));
+    this.set(KEYS.REPERTORIO, repertorio);
+
+    this.addLog('DELETE_MUSICA', `Música ID ${id} e suas versões foram excluídas`);
+  }
+
   // Cultos & Repertorio
   public getCultos(): Culto[] { return this.get<Culto>(KEYS.CULTOS); }
   public getRepertorio(): RepertorioItem[] { return this.get<RepertorioItem>(KEYS.REPERTORIO); }
+
+  public deleteCulto(id: string) {
+    let cultos = this.getCultos();
+    cultos = cultos.filter(c => c.ID !== id);
+    this.set(KEYS.CULTOS, cultos);
+
+    let repertorio = this.getRepertorio();
+    repertorio = repertorio.filter(r => r.ID_Culto !== id);
+    this.set(KEYS.REPERTORIO, repertorio);
+
+    this.addLog('DELETE_CULTO', `Culto ID ${id} excluído`);
+  }
 
   public addCulto(cultoData: Omit<Culto, 'ID'>): Culto {
     const cultos = this.getCultos();
@@ -257,6 +295,16 @@ class StorageService {
     this.set(KEYS.CULTOS, cultos);
     this.addLog('INSERT_CULTO', `Culto "${newCulto.Nome_Evento}" agendado`);
     return newCulto;
+  }
+
+  public updateCulto(id: string, data: Partial<Culto>) {
+    const cultos = this.getCultos();
+    const index = cultos.findIndex(c => c.ID === id);
+    if (index !== -1) {
+      cultos[index] = { ...cultos[index], ...data };
+      this.set(KEYS.CULTOS, cultos);
+      this.addLog('UPDATE_CULTO', `Culto "${cultos[index].Nome_Evento}" atualizado`);
+    }
   }
 
   public addSongToRepertorio(cultoId: string, versaoId: string, dirigente?: string, observacao?: string): RepertorioItem {
@@ -310,6 +358,23 @@ class StorageService {
     this.set(KEYS.INTEGRANTES, integrantes);
     this.addLog('INSERT_INTEGRANTE', `Integrante ${newMember.Nome} cadastrado`);
     return newMember;
+  }
+
+  public deleteIntegrante(id: string) {
+    let integrantes = this.getIntegrantes();
+    integrantes = integrantes.filter(i => i.ID !== id);
+    this.set(KEYS.INTEGRANTES, integrantes);
+    this.addLog('DELETE_INTEGRANTE', `Integrante ID ${id} removido`);
+  }
+
+  public updateIntegrante(id: string, data: Partial<Integrante>) {
+    const integrantes = this.getIntegrantes();
+    const index = integrantes.findIndex(i => i.ID === id);
+    if (index !== -1) {
+      integrantes[index] = { ...integrantes[index], ...data };
+      this.set(KEYS.INTEGRANTES, integrantes);
+      this.addLog('UPDATE_INTEGRANTE', `Integrante ${integrantes[index].Nome} atualizado`);
+    }
   }
 
   // Historico & Logs

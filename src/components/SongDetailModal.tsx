@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
   X, 
+  Trash2,
   Music2, 
   Layers, 
   FileText, 
@@ -120,13 +121,29 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
             </p>
           </div>
 
-          <button
-            id="close-song-detail-modal"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (window.confirm(`Deseja mesmo excluir a música "${musica.Nome}" e todas as suas versões?`)) {
+                  storage.deleteMusica(musica.ID);
+                  onDataChanged();
+                  onClose();
+                }
+              }}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 border border-slate-800 transition-colors"
+              title="Excluir Música"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+
+            <button
+              id="close-song-detail-modal"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}

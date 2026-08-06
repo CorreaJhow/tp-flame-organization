@@ -11,6 +11,7 @@ import { IntegrantesView } from './components/IntegrantesView';
 import { HistoricoLogsView } from './components/HistoricoLogsView';
 import { GasSetupModal } from './components/GasSetupModal';
 import { AdminView } from './components/AdminView';
+import { MaisView } from './components/MaisView';
 
 import { storage } from './services/storage';
 import { 
@@ -105,7 +106,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-[#080808] text-slate-100 font-sans selection:bg-[#FF4D00] selection:text-slate-950">
       {/* Top Header */}
       <Header
         onOpenGasModal={() => setShowGasModal(true)}
@@ -118,17 +119,9 @@ export default function App() {
           <DashboardView
             upcomingCulto={upcomingCulto}
             upcomingRepertorio={upcomingRepertorio}
-            totalMusicas={musicas.length}
-            totalVersoes={versoes.length}
-            totalCultos={cultos.length}
-            totalIntegrantes={integrantes.length}
-            logs={logs}
             onNavigate={(tab) => setCurrentTab(tab)}
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
-            onOpenNewSongModal={() => setShowNewSongModal(true)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
-            onOpenNewMemberModal={() => setShowNewMemberModal(true)}
-            onOpenGasModal={() => setShowGasModal(true)}
           />
         )}
 
@@ -155,11 +148,22 @@ export default function App() {
           />
         )}
 
+        {currentTab === 'mais' && (
+          <MaisView
+            onNavigate={(tab) => setCurrentTab(tab)}
+            totalMusicas={musicas.length}
+            totalVersoes={versoes.length}
+            totalCultos={cultos.length}
+            totalIntegrantes={integrantes.length}
+          />
+        )}
+
         {currentTab === 'integrantes' && (
           <IntegrantesView
             integrantes={integrantes}
             onOpenNewMemberModal={() => setShowNewMemberModal(true)}
             onDataChanged={refreshData}
+            onNavigate={(tab) => setCurrentTab(tab)}
           />
         )}
 
@@ -170,6 +174,7 @@ export default function App() {
             versoes={versoes}
             musicas={musicas}
             cultos={cultos}
+            onNavigate={(tab) => setCurrentTab(tab)}
           />
         )}
 
@@ -181,6 +186,7 @@ export default function App() {
             totalVersoes={versoes.length}
             totalCultos={cultos.length}
             totalIntegrantes={integrantes.length}
+            onNavigate={(tab) => setCurrentTab(tab)}
           />
         )}
       </main>
