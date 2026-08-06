@@ -1,0 +1,281 @@
+import { ConfigItem, Musica, Versao, Arquivo, Nota, Culto, RepertorioItem, Integrante, HistoricoItem, LogItem } from '../types';
+import { 
+  INITIAL_CONFIG, 
+  INITIAL_MUSICAS, 
+  INITIAL_VERSOES, 
+  INITIAL_ARQUIVOS, 
+  INITIAL_NOTAS, 
+  INITIAL_CULTOS, 
+  INITIAL_REPERTORIO, 
+  INITIAL_INTEGRANTES, 
+  INITIAL_HISTORICO, 
+  INITIAL_LOGS 
+} from '../data/initialData';
+
+const KEYS = {
+  CONFIG: 'tp_flame_config_v1',
+  MUSICAS: 'tp_flame_musicas_v1',
+  VERSOES: 'tp_flame_versoes_v1',
+  ARQUIVOS: 'tp_flame_arquivos_v1',
+  NOTAS: 'tp_flame_notas_v1',
+  CULTOS: 'tp_flame_cultos_v1',
+  REPERTORIO: 'tp_flame_repertorio_v1',
+  INTEGRANTES: 'tp_flame_integrantes_v1',
+  HISTORICO: 'tp_flame_historico_v1',
+  LOGS: 'tp_flame_logs_v1',
+  GAS_ENDPOINT: 'tp_flame_gas_endpoint_v1',
+  GAS_SPREADSHEET_ID: 'tp_flame_gas_spreadsheet_id_v1'
+};
+
+export function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+class StorageService {
+  constructor() {
+    this.initDefaultData();
+  }
+
+  private initDefaultData() {
+    if (!localStorage.getItem(KEYS.MUSICAS)) {
+      localStorage.setItem(KEYS.CONFIG, JSON.stringify(INITIAL_CONFIG));
+      localStorage.setItem(KEYS.MUSICAS, JSON.stringify(INITIAL_MUSICAS));
+      localStorage.setItem(KEYS.VERSOES, JSON.stringify(INITIAL_VERSOES));
+      localStorage.setItem(KEYS.ARQUIVOS, JSON.stringify(INITIAL_ARQUIVOS));
+      localStorage.setItem(KEYS.NOTAS, JSON.stringify(INITIAL_NOTAS));
+      localStorage.setItem(KEYS.CULTOS, JSON.stringify(INITIAL_CULTOS));
+      localStorage.setItem(KEYS.REPERTORIO, JSON.stringify(INITIAL_REPERTORIO));
+      localStorage.setItem(KEYS.INTEGRANTES, JSON.stringify(INITIAL_INTEGRANTES));
+      localStorage.setItem(KEYS.HISTORICO, JSON.stringify(INITIAL_HISTORICO));
+      localStorage.setItem(KEYS.LOGS, JSON.stringify(INITIAL_LOGS));
+    }
+  }
+
+  public resetToDefaults() {
+    localStorage.removeItem(KEYS.CONFIG);
+    localStorage.removeItem(KEYS.MUSICAS);
+    localStorage.removeItem(KEYS.VERSOES);
+    localStorage.removeItem(KEYS.ARQUIVOS);
+    localStorage.removeItem(KEYS.NOTAS);
+    localStorage.removeItem(KEYS.CULTOS);
+    localStorage.removeItem(KEYS.REPERTORIO);
+    localStorage.removeItem(KEYS.INTEGRANTES);
+    localStorage.removeItem(KEYS.HISTORICO);
+    localStorage.removeItem(KEYS.LOGS);
+    this.initDefaultData();
+  }
+
+  // GAS Settings
+  public getGasEndpoint(): string {
+    return localStorage.getItem(KEYS.GAS_ENDPOINT) || '';
+  }
+
+  public setGasEndpoint(url: string) {
+    localStorage.setItem(KEYS.GAS_ENDPOINT, url.trim());
+  }
+
+  public getGasSpreadsheetId(): string {
+    return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || '';
+  }
+
+  public setGasSpreadsheetId(id: string) {
+    localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, id.trim());
+  }
+
+  // Generic getter / setter
+  private get<T>(key: string): T[] {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
+  }
+
+  private set<T>(key: string, data: T[]) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  public addLog(action: string, detail: string, user = 'Usuário Portal') {
+    const logs = this.get<LogItem>(KEYS.LOGS);
+    const newLog: LogItem = {
+      ID: generateUUID(),
+      Data: new Date().toISOString(),
+      Usuario: user,
+      Acao: action,
+      Registro_Afetado: detail
+    };
+    logs.unshift(newLog);
+    this.set(KEYS.LOGS, logs.slice(0, 50)); // Keep last 50
+  }
+
+  // Musicas & Versoes
+  public getMusicas(): Musica[] { return this.get<Musica>(KEYS.MUSICAS); }
+  public getVersoes(): Versao[] { return this.get<Versao>(KEYS.VERSOES); }
+  public getArquivos(): Arquivo[] { return this.get<Arquivo>(KEYS.ARQUIVOS); }
+  public getNotas(): Nota[] { return this.get<Nota>(KEYS.NOTAS); }
+
+  public addMusicaWithVersao(
+    musicaData: Omit<Musica, 'ID'>,
+    versaoData: Omit<Versao, 'ID' | 'ID_Musica'>,
+    notasData?: Omit<Nota, 'ID' | 'ID_Versao'>[],
+    arquivosData?: Omit<Arquivo, 'ID' | 'ID_Versao'>[]
+  ): { musica: Musica; versao: Versao } {
+    const musicas = this.getMusicas();
+    const versoes = this.getVersoes();
+    const notas = this.getNotas();
+    const arquivos = this.getArquivos();
+
+    const newMusica: Musica = {
+      ...musicaData,
+      ID: generateUUID()
+    };
+
+    const newVersao: Versao = {
+      ...versaoData,
+      ID: generateUUID(),
+      ID_Musica: newMusica.ID
+    };
+
+    musicas.unshift(newMusica);
+    versoes.unshift(newVersao);
+
+    if (notasData && notasData.length > 0) {
+      notasData.forEach(n => {
+        notas.push({
+          ...n,
+          ID: generateUUID(),
+          ID_Versao: newVersao.ID
+        });
+      });
+      this.set(KEYS.NOTAS, notas);
+    }
+
+    if (arquivosData && arquivosData.length > 0) {
+      arquivosData.forEach(a => {
+        arquivos.push({
+          ...a,
+          ID: generateUUID(),
+          ID_Versao: newVersao.ID
+        });
+      });
+      this.set(KEYS.ARQUIVOS, arquivos);
+    }
+
+    this.set(KEYS.MUSICAS, musicas);
+    this.set(KEYS.VERSOES, versoes);
+
+    this.addLog('INSERT_MUSICA', `Música "${newMusica.Nome}" e Versão "${newVersao.Nome_Versao}" criadas`);
+    return { musica: newMusica, versao: newVersao };
+  }
+
+  public addVersao(versaoData: Omit<Versao, 'ID'>): Versao {
+    const versoes = this.getVersoes();
+    const newVersao: Versao = {
+      ...versaoData,
+      ID: generateUUID()
+    };
+    versoes.push(newVersao);
+    this.set(KEYS.VERSOES, versoes);
+    this.addLog('INSERT_VERSAO', `Nova versão "${newVersao.Nome_Versao}" adicionada`);
+    return newVersao;
+  }
+
+  public addNota(notaData: Omit<Nota, 'ID'>): Nota {
+    const notas = this.getNotas();
+    const newNota: Nota = {
+      ...notaData,
+      ID: generateUUID()
+    };
+    notas.push(newNota);
+    this.set(KEYS.NOTAS, notas);
+    this.addLog('INSERT_NOTA', `Nota para ${newNota.Instrumento} inserida`);
+    return newNota;
+  }
+
+  public addArquivo(arquivoData: Omit<Arquivo, 'ID'>): Arquivo {
+    const arquivos = this.getArquivos();
+    const newArquivo: Arquivo = {
+      ...arquivoData,
+      ID: generateUUID()
+    };
+    arquivos.push(newArquivo);
+    this.set(KEYS.ARQUIVOS, arquivos);
+    this.addLog('INSERT_ARQUIVO', `Anexo ${newArquivo.Tipo} adicionado`);
+    return newArquivo;
+  }
+
+  // Cultos & Repertorio
+  public getCultos(): Culto[] { return this.get<Culto>(KEYS.CULTOS); }
+  public getRepertorio(): RepertorioItem[] { return this.get<RepertorioItem>(KEYS.REPERTORIO); }
+
+  public addCulto(cultoData: Omit<Culto, 'ID'>): Culto {
+    const cultos = this.getCultos();
+    const newCulto: Culto = {
+      ...cultoData,
+      ID: generateUUID()
+    };
+    cultos.unshift(newCulto);
+    this.set(KEYS.CULTOS, cultos);
+    this.addLog('INSERT_CULTO', `Culto "${newCulto.Nome_Evento}" agendado`);
+    return newCulto;
+  }
+
+  public addSongToRepertorio(cultoId: string, versaoId: string, dirigente?: string, observacao?: string): RepertorioItem {
+    const repertorio = this.getRepertorio();
+    const currentItems = repertorio.filter(r => r.ID_Culto === cultoId);
+    const maxOrdem = currentItems.reduce((max, item) => Math.max(max, item.Ordem), 0);
+
+    const newItem: RepertorioItem = {
+      ID: generateUUID(),
+      ID_Culto: cultoId,
+      ID_Versao: versaoId,
+      Ordem: maxOrdem + 1,
+      Dirigente: dirigente || '',
+      Observacao_Culto: observacao || ''
+    };
+
+    repertorio.push(newItem);
+    this.set(KEYS.REPERTORIO, repertorio);
+    this.addLog('INSERT_REPERTORIO', `Música adicionada ao culto ID ${cultoId}`);
+    return newItem;
+  }
+
+  public removeSongFromRepertorio(repertorioId: string) {
+    let repertorio = this.getRepertorio();
+    repertorio = repertorio.filter(r => r.ID !== repertorioId);
+    this.set(KEYS.REPERTORIO, repertorio);
+    this.addLog('DELETE_REPERTORIO', `Música removida do repertório`);
+  }
+
+  public reorderRepertorio(cultoId: string, newOrderIds: string[]) {
+    const repertorio = this.getRepertorio();
+    newOrderIds.forEach((id, index) => {
+      const item = repertorio.find(r => r.ID === id && r.ID_Culto === cultoId);
+      if (item) {
+        item.Ordem = index + 1;
+      }
+    });
+    this.set(KEYS.REPERTORIO, repertorio);
+  }
+
+  // Integrantes
+  public getIntegrantes(): Integrante[] { return this.get<Integrante>(KEYS.INTEGRANTES); }
+  public addIntegrante(data: Omit<Integrante, 'ID'>): Integrante {
+    const integrantes = this.getIntegrantes();
+    const newMember: Integrante = {
+      ...data,
+      ID: generateUUID(),
+      Ativo: true
+    };
+    integrantes.push(newMember);
+    this.set(KEYS.INTEGRANTES, integrantes);
+    this.addLog('INSERT_INTEGRANTE', `Integrante ${newMember.Nome} cadastrado`);
+    return newMember;
+  }
+
+  // Historico & Logs
+  public getHistorico(): HistoricoItem[] { return this.get<HistoricoItem>(KEYS.HISTORICO); }
+  public getLogs(): LogItem[] { return this.get<LogItem>(KEYS.LOGS); }
+}
+
+export const storage = new StorageService();

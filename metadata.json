@@ -1,0 +1,6 @@
+{
+  "name": "TP Flame - Gestão de Louvor",
+  "description": "Plataforma mobile-first de gestão para ministérios de louvor integrada ao Google Sheets e Apps Script.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
