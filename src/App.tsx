@@ -12,6 +12,8 @@ import { HistoricoLogsView } from './components/HistoricoLogsView';
 import { GasSetupModal } from './components/GasSetupModal';
 import { AdminView } from './components/AdminView';
 import { MaisView } from './components/MaisView';
+import { FeedbackModal } from './components/FeedbackModal';
+import { PwaInstallModal } from './components/PwaInstallModal';
 
 import { storage } from './services/storage';
 import { 
@@ -44,6 +46,8 @@ export default function App() {
 
   // Modals & Active Selections
   const [showGasModal, setShowGasModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showPwaModal, setShowPwaModal] = useState(false);
   const [showNewSongModal, setShowNewSongModal] = useState(false);
   const [showNewCultoModal, setShowNewCultoModal] = useState(false);
   const [showNewMemberModal, setShowNewMemberModal] = useState(false);
@@ -136,6 +140,7 @@ export default function App() {
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
             onSelectSong={(musica) => setSelectedSongForDetail(musica)}
+            onOpenFeedback={() => setShowFeedbackModal(true)}
           />
         )}
 
@@ -167,6 +172,8 @@ export default function App() {
         {currentTab === 'mais' && (
           <MaisView
             onNavigate={(tab) => setCurrentTab(tab)}
+            onOpenFeedback={() => setShowFeedbackModal(true)}
+            onOpenPwaModal={() => setShowPwaModal(true)}
             totalMusicas={musicas.length}
             totalVersoes={versoes.length}
             totalCultos={cultos.length}
@@ -255,6 +262,18 @@ export default function App() {
           onDataChanged={refreshData}
         />
       )}
+
+      {/* Feedback & Bug Report Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+      />
+
+      {/* PWA Install Modal */}
+      <PwaInstallModal
+        isOpen={showPwaModal}
+        onClose={() => setShowPwaModal(false)}
+      />
 
       {/* New Culto Modal */}
       {showNewCultoModal && (

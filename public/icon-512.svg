@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#080808"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="#121212" stroke="#222222" stroke-width="8"/>
+  <circle cx="256" cy="256" r="180" fill="#FF4D00" fill-opacity="0.1" />
+  <g transform="translate(106, 86) scale(12.5)">
+    <!-- Flame Path -->
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="#FF4D00" stroke="#FF7733" stroke-width="0.5" stroke-linejoin="round"/>
+  </g>
+  <text x="256" y="420" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="42" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">TP FLAME</text>
+</svg>
