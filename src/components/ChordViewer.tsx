@@ -4,6 +4,8 @@ import { transposeChord } from '../utils/chordTransposer';
 interface ChordViewerProps {
   text: string;
   semitones?: number;
+  displayMode?: 'cifra' | 'letra';
+  fontSizeStep?: number; // e.g. -1, 0, 1, 2, 3
   className?: string;
 }
 
@@ -22,11 +24,34 @@ const SECTION_KEYWORDS = [
 export const ChordViewer: React.FC<ChordViewerProps> = ({
   text,
   semitones = 0,
+  displayMode = 'cifra',
+  fontSizeStep = 0,
   className = ''
 }) => {
   if (!text) {
     return <p className="text-slate-500 italic text-xs">Nenhuma letra ou cifra cadastrada.</p>;
   }
+
+  const isLetraMode = displayMode === 'letra';
+
+  // Base font sizing classes depending on mode and font step
+  const getFontSizeClass = () => {
+    if (isLetraMode) {
+      if (fontSizeStep <= -1) return 'text-base leading-snug';
+      if (fontSizeStep === 0) return 'text-lg sm:text-xl leading-relaxed';
+      if (fontSizeStep === 1) return 'text-xl sm:text-2xl leading-relaxed';
+      if (fontSizeStep === 2) return 'text-2xl sm:text-3xl leading-relaxed';
+      return 'text-3xl sm:text-4xl leading-loose';
+    } else {
+      if (fontSizeStep <= -1) return 'text-[11px] sm:text-xs';
+      if (fontSizeStep === 0) return 'text-xs sm:text-sm';
+      if (fontSizeStep === 1) return 'text-sm sm:text-base';
+      if (fontSizeStep === 2) return 'text-base sm:text-lg';
+      return 'text-lg sm:text-xl';
+    }
+  };
+
+  const fontClass = getFontSizeClass();
 
   const lines = text.split('\n');
 
@@ -35,7 +60,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     const trimmed = line.trim();
 
     if (!trimmed) {
-      return <div key={lineIndex} className="h-3" />;
+      return <div key={lineIndex} className={isLetraMode ? "h-2" : "h-3"} />;
     }
 
     // 1. Check for Section Headers like [Intro], [Refrão], [Verso 1], # Intro, ## Ponte
@@ -44,7 +69,6 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
 
     if (bracketHeaderMatch || markdownHeaderMatch) {
       const headerText = bracketHeaderMatch ? bracketHeaderMatch[1] : markdownHeaderMatch![1];
-      const upperHeader = headerText.toUpperCase();
 
       // Check if it's a section tag or just a single chord in brackets e.g. [C]
       const isSingleChord = CHORD_REGEX.test(headerText.replace(/\s+/g, ''));
@@ -52,7 +76,9 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
         return (
           <div
             key={lineIndex}
-            className="my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#FF4D00]/25 via-[#FF4D00]/10 to-transparent border-l-4 border-[#FF4D00] text-[#FF4D00] font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 shadow-sm select-none"
+            className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#FF4D00]/25 via-[#FF4D00]/10 to-transparent border-l-4 border-[#FF4D00] text-[#FF4D00] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
+              isLetraMode ? 'text-sm sm:text-base my-4' : 'text-xs sm:text-sm'
+            }`}
           >
             <span className="w-2 h-2 rounded-full bg-[#FF4D00] animate-pulse" />
             <span>{headerText}</span>
@@ -65,7 +91,9 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
       return (
         <div key={lineIndex} className="my-1.5">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40 font-bold italic text-xs sm:text-sm shadow-sm">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40 font-bold italic shadow-sm ${
+            isLetraMode ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
+          }`}>
             💡 {trimmed}
           </span>
         </div>
@@ -89,14 +117,18 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     const isChordLine = tokens.length > 0 && validChordCount / tokens.length >= 0.6;
 
     if (isChordLine) {
+      // In Modo Letra, hide pure chord lines completely!
+      if (isLetraMode) {
+        return null;
+      }
+
       // Split preserving spaces to maintain tab alignment above lyrics
       const elements: React.ReactNode[] = [];
-      let currentPos = 0;
+      let keyCounter = 0;
 
       // Regex matching words or spaces
       const wordSpaceRegex = /(\S+|\s+)/g;
       let match;
-      let keyCounter = 0;
 
       while ((match = wordSpaceRegex.exec(line)) !== null) {
         const token = match[0];
@@ -126,7 +158,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
       }
 
       return (
-        <div key={lineIndex} className="my-1 font-mono leading-relaxed">
+        <div key={lineIndex} className={`my-1 font-mono leading-relaxed ${fontClass}`}>
           {elements}
         </div>
       );
@@ -137,7 +169,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     const parts = line.split(/(\[[^\]]+\]|\([^)]+\))/g);
 
     return (
-      <div key={lineIndex} className="my-0.5 leading-relaxed font-mono text-xs sm:text-sm">
+      <div key={lineIndex} className={`my-0.5 leading-relaxed ${fontClass} ${isLetraMode ? 'font-sans text-slate-100 font-medium' : 'font-mono'}`}>
         {parts.map((part, pIdx) => {
           if (!part) return null;
 
@@ -158,6 +190,11 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
                   {inner}
                 </span>
               );
+            }
+
+            // In Modo Letra, hide bracketed chords [G/B] completely!
+            if (isLetraMode) {
+              return null;
             }
 
             // Otherwise, it's a bracketed Chord e.g. [G/B]
@@ -185,7 +222,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
           }
 
           // Normal lyrics text
-          return <span key={pIdx} className="text-slate-100">{part}</span>;
+          return <span key={pIdx} className={isLetraMode ? "text-slate-100 font-semibold" : "text-slate-100"}>{part}</span>;
         })}
       </div>
     );
