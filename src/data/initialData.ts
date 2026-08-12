@@ -24,6 +24,8 @@ export const INITIAL_VERSOES: Versao[] = [
     ID_Musica: 'mus-101',
     Nome_Versao: 'Versão Ao Vivo (Original FHOP)',
     Tom: 'E',
+    BPM: 130,
+    Compasso: '4/4',
     Letra: `[INTRO]
 [E] [B] [C#m] [A]
 
@@ -50,6 +52,8 @@ Que [C#m]Ele apareça e eu me [A]esconda
     ID_Musica: 'mus-102',
     Nome_Versao: 'Versão Acústica (Tom G)',
     Tom: 'G',
+    BPM: 72,
+    Compasso: '4/4',
     Letra: `[INTRO]
 [G] [D/F#] [Em7] [C9]
 
@@ -72,6 +76,8 @@ Que [C#m]Ele apareça e eu me [A]esconda
     ID_Musica: 'mus-103',
     Nome_Versao: 'Versão Estúdio Gabriel Guedes',
     Tom: 'C',
+    BPM: 70,
+    Compasso: '6/8',
     Letra: `[INTRO]
 [C] [F2] [C] [Gsus4]
 
@@ -117,11 +123,10 @@ Desde o [F#m7]alvorecer até o [D2]deitar
 ];
 
 export const INITIAL_ARQUIVOS: Arquivo[] = [
-  { ID: 'arq-301', ID_Versao: 'ver-201', Tipo: 'Spotify', URL: 'https://open.spotify.com/track/rujaoleao', Nome: 'Link Spotify Oficial' },
-  { ID: 'arq-302', ID_Versao: 'ver-201', Tipo: 'Youtube', URL: 'https://youtube.com/watch?v=rujaoleao', Nome: 'Vídeo Ensaio Referência' },
-  { ID: 'arq-303', ID_Versao: 'ver-201', Tipo: 'Cifra', URL: 'https://cifraclub.com.br/ruja-o-leao', Nome: 'Cifra Club Completa' },
-  { ID: 'arq-304', ID_Versao: 'ver-202', Tipo: 'PDF', URL: 'https://drive.google.com/file/d/todavia-acustico.pdf', Nome: 'Partitura Teclado/Violão' },
-  { ID: 'arq-305', ID_Versao: 'ver-203', Tipo: 'Spotify', URL: 'https://open.spotify.com/track/abencao', Nome: 'Áudio de Referência' }
+  { ID: 'arq-301', ID_Versao: 'ver-201', Tipo: 'Youtube', URL: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', Nome: 'Vídeo Referência YouTube' },
+  { ID: 'arq-302', ID_Versao: 'ver-201', Tipo: 'Cifra', URL: 'https://cifraclub.com.br/ruja-o-leao', Nome: 'Cifra Club Completa' },
+  { ID: 'arq-303', ID_Versao: 'ver-202', Tipo: 'PDF', URL: 'https://drive.google.com/file/d/todavia-acustico.pdf', Nome: 'Partitura Teclado/Violão' },
+  { ID: 'arq-304', ID_Versao: 'ver-203', Tipo: 'Youtube', URL: 'https://www.youtube.com/watch?v=34Na4j8AVgA', Nome: 'Vídeo de Referência Oficial' }
 ];
 
 export const INITIAL_NOTAS: Nota[] = [

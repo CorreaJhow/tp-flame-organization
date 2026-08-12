@@ -134,76 +134,95 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
       </div>
 
       {/* Team Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {integrantes.map((member) => {
-          const roles = member.Funcao.split(',').map((r) => r.trim()).filter(Boolean);
+      {integrantes.length === 0 ? (
+        <div className="text-center py-12 bg-[#121212] rounded-2xl border border-slate-800/80 p-6 space-y-3">
+          <Users className="w-10 h-10 text-slate-600 mx-auto" />
+          <div>
+            <h3 className="text-sm font-bold text-white">Nenhum integrante cadastrado</h3>
+            <p className="text-xs text-slate-400">
+              Cadastre os vocalistas e instrumentistas da sua equipe para montar escalas de louvor.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenAdd}
+            className="py-2.5 px-4 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Cadastrar Primeiro Integrante</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {integrantes.map((member) => {
+            const roles = member.Funcao.split(',').map((r) => r.trim()).filter(Boolean);
 
-          return (
-            <div
-              key={member.ID}
-              className="bg-[#121212] border border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-md relative group hover:border-slate-700 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] font-black text-sm flex items-center justify-center border border-[#FF4D00]/20 shrink-0">
-                    {member.Nome.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white leading-tight">
-                      {member.Nome}
-                    </h3>
+            return (
+              <div
+                key={member.ID}
+                className="bg-[#121212] border border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-md relative group hover:border-slate-700 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] font-black text-sm flex items-center justify-center border border-[#FF4D00]/20 shrink-0">
+                      {member.Nome.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white leading-tight">
+                        {member.Nome}
+                      </h3>
 
-                    {/* Roles Badges / Multi-Instrument Tags */}
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {roles.map((r) => (
-                        <span
-                          key={r}
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 inline-block"
-                        >
-                          {r}
-                        </span>
-                      ))}
+                      {/* Roles Badges / Multi-Instrument Tags */}
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {roles.map((r) => (
+                          <span
+                            key={r}
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 inline-block"
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenEdit(member)}
+                      className="p-1.5 text-slate-400 hover:text-[#FF4D00] hover:bg-[#1f1f1f] rounded-lg transition-colors"
+                      title="Editar Integrante"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMember(member.ID, member.Nome)}
+                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors"
+                      title="Remover Integrante"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleOpenEdit(member)}
-                    className="p-1.5 text-slate-400 hover:text-[#FF4D00] hover:bg-[#1f1f1f] rounded-lg transition-colors"
-                    title="Editar Integrante"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteMember(member.ID, member.Nome)}
-                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors"
-                    title="Remover Integrante"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="text-xs space-y-1 pt-2 text-slate-400 border-t border-slate-800/60">
+                  {member.Email && (
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="truncate">{member.Email}</span>
+                    </div>
+                  )}
+                  {member.Telefone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>{member.Telefone}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="text-xs space-y-1 pt-2 text-slate-400 border-t border-slate-800/60">
-                {member.Email && (
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span className="truncate">{member.Email}</span>
-                  </div>
-                )}
-                {member.Telefone && (
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span>{member.Telefone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* New / Edit Member Modal */}
       {showModal && (

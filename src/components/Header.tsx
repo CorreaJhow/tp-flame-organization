@@ -45,9 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Actions - Clean Status Badge & Admin Link */}
+        {/* Right Actions - Sync Button & Admin Link */}
         <div className="flex items-center gap-2">
-          {/* Sync Button */}
+          {/* Sync / Refresh Button */}
           {onSync && (
             <button
               onClick={onSync}
@@ -55,37 +55,11 @@ export const Header: React.FC<HeaderProps> = ({
               className={`p-2 rounded-xl text-slate-300 hover:text-white bg-[#121212] hover:bg-[#181818] transition-all border border-slate-800 ${
                 isSyncing ? 'text-[#FF4D00]' : ''
               }`}
-              title="Sincronizar com a Planilha Google"
+              title="Sincronizar e Atualizar Dados com a Planilha"
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
             </button>
           )}
-
-          {/* Status Badge -> Opens Admin Tab */}
-          <button
-            id="header-admin-status-badge"
-            onClick={() => onNavigateTab('admin')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border shadow-sm ${
-              isConnected
-                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/80'
-                : 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/30 hover:bg-[#202020]'
-            }`}
-            title="Acessar Painel de Administração"
-          >
-            {isConnected ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="hidden sm:inline">GAS Conectado</span>
-                <span className="sm:hidden">Conectado</span>
-              </>
-            ) : (
-              <>
-                <Database className="w-3.5 h-3.5 text-[#FF4D00] shrink-0" />
-                <span className="hidden sm:inline">Modo Local</span>
-                <span className="sm:hidden">Modo Local</span>
-              </>
-            )}
-          </button>
 
           {/* Direct Admin Icon Button */}
           <button

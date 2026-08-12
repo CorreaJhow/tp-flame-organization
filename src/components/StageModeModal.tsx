@@ -15,7 +15,11 @@ import {
   Minus,
   Plus,
   FastForward,
-  RotateCcw
+  RotateCcw,
+  Activity,
+  Volume2,
+  VolumeX,
+  Clock
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
 import { getNextKey } from '../utils/chordTransposer';
@@ -52,7 +56,15 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const [scrollSpeed, setScrollSpeed] = useState(1); // 0.5, 1, 1.5, 2, 3, 4
   const [showNotes, setShowNotes] = useState(false);
 
+  // Metronome & Audio Click State
+  const [isMetronomeActive, setIsMetronomeActive] = useState(false);
+  const [isAudioClick, setIsAudioClick] = useState(false); // Audio click disabled by default
+  const [customBpm, setCustomBpm] = useState<number>(120);
+  const [currentBeat, setCurrentBeat] = useState<number>(1);
+  const [isVisualFlash, setIsVisualFlash] = useState(false);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const currentRep = setlist[currentIndex];
   const currentVersao = currentRep ? versoes.find((v) => v.ID === currentRep.ID_Versao) : undefined;
@@ -60,6 +72,90 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const currentNotas = currentVersao ? notas.filter((n) => n.ID_Versao === currentVersao.ID) : [];
 
   const currentKeyDisplay = currentVersao ? getNextKey(currentVersao.Tom, semitones) : 'C';
+
+  // Sync BPM when current version changes
+  useEffect(() => {
+    if (currentVersao?.BPM) {
+      setCustomBpm(currentVersao.BPM);
+    } else {
+      setCustomBpm(120);
+    }
+    setCurrentBeat(1);
+  }, [currentVersao?.ID]);
+
+  // Determine beats per measure (e.g. 3/4 -> 3 beats, 6/8 -> 6 beats, default 4)
+  const beatsPerMeasure = React.useMemo(() => {
+    if (!currentVersao?.Compasso) return 4;
+    const num = parseInt(currentVersao.Compasso.split('/')[0], 10);
+    return isNaN(num) || num <= 0 ? 4 : num;
+  }, [currentVersao?.Compasso]);
+
+  // Web Audio click generator
+  const playClick = (isBeatOne: boolean) => {
+    if (!isAudioClick) return;
+    try {
+      if (!audioCtxRef.current) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        // High pitch on beat 1 (1050Hz), lower on rest (800Hz)
+        osc.frequency.setValueAtTime(isBeatOne ? 1050 : 800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+      }
+    } catch (err) {
+      // AudioContext failed or blocked by browser policy
+    }
+  };
+
+  // Metronome Interval Loop
+  useEffect(() => {
+    let timerId: NodeJS.Timeout;
+
+    if (isMetronomeActive) {
+      const bpmToUse = customBpm > 0 ? customBpm : 120;
+      const intervalMs = (60 / bpmToUse) * 1000;
+
+      timerId = setInterval(() => {
+        setCurrentBeat((prev) => {
+          const nextBeat = prev >= beatsPerMeasure ? 1 : prev + 1;
+          const isBeatOne = nextBeat === 1;
+
+          // Flash visual effect
+          setIsVisualFlash(true);
+          setTimeout(() => setIsVisualFlash(false), 120);
+
+          // Audio click
+          playClick(isBeatOne);
+
+          return nextBeat;
+        });
+      }, intervalMs);
+    } else {
+      setCurrentBeat(1);
+    }
+
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [isMetronomeActive, customBpm, beatsPerMeasure, isAudioClick]);
+
+  // Sub-pixel accumulator for smooth fractional auto-scroll (e.g., 0.5x speed)
+  const subPixelRef = useRef(0);
 
   // Smooth Auto-scroll logic with requestAnimationFrame for absolute fluidity
   useEffect(() => {
@@ -70,8 +166,13 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
       if (isAutoScrolling && scrollContainerRef.current) {
         const delta = (time - lastTime) / 1000;
         // Base velocity: 30 pixels per second at 1x
-        const pixelsToScroll = scrollSpeed * 30 * delta;
-        scrollContainerRef.current.scrollTop += pixelsToScroll;
+        const rawPixels = scrollSpeed * 35 * delta + subPixelRef.current;
+        const intPixels = Math.floor(rawPixels);
+        subPixelRef.current = rawPixels - intPixels;
+
+        if (intPixels > 0) {
+          scrollContainerRef.current.scrollTop += intPixels;
+        }
       }
       lastTime = time;
       if (isAutoScrolling) {
@@ -80,6 +181,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     };
 
     if (isAutoScrolling) {
+      subPixelRef.current = 0;
       lastTime = performance.now();
       animationFrameId = requestAnimationFrame(scrollLoop);
     }
@@ -287,7 +389,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         className="flex-1 overflow-y-auto px-2 sm:px-6 py-4 space-y-4 scroll-smooth"
       >
         {/* Header Info Banner */}
-        <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between text-xs shadow-md">
+        <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
           <div>
             <span className="text-slate-400 block font-medium">{currentMusica.Artista}</span>
             {currentRep.Dirigente && (
@@ -303,11 +405,101 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               <span className="text-xs font-black text-[#FF4D00]">{currentKeyDisplay}</span>
             </div>
 
+            <div className="bg-[#080808] border border-slate-800 px-2.5 py-1 rounded-xl text-center">
+              <span className="text-[9px] text-slate-500 uppercase font-bold block">Tempo</span>
+              <span className="text-xs font-black text-slate-200">{customBpm} BPM</span>
+            </div>
+
             {currentVersao.Estrutura && (
               <div className="text-[10px] text-slate-300 font-mono bg-[#080808] px-2.5 py-1 rounded-xl border border-slate-800">
                 {currentVersao.Estrutura}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Visual Metronome Display Panel */}
+        <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMetronomeActive(!isMetronomeActive)}
+              className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all shadow-md ${
+                isMetronomeActive
+                  ? 'bg-[#FF4D00] text-slate-950 ring-2 ring-[#FF4D00]/50'
+                  : 'bg-[#080808] text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Metrônomo {isMetronomeActive ? 'ON' : 'OFF'}</span>
+            </button>
+
+            {/* Audio Click Sound Toggle */}
+            <button
+              onClick={() => setIsAudioClick(!isAudioClick)}
+              className={`p-1.5 rounded-xl border transition-colors ${
+                isAudioClick
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                  : 'bg-[#080808] text-slate-500 border-slate-800 hover:text-slate-300'
+              }`}
+              title={isAudioClick ? 'Clique Áudio Ativado' : 'Ativar Clique de Áudio (Beep)'}
+            >
+              {isAudioClick ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
+            {/* Pulsing Visual Beat Dots */}
+            <div className="flex items-center gap-1.5 bg-[#080808] px-3 py-1.5 rounded-xl border border-slate-800">
+              {Array.from({ length: beatsPerMeasure }).map((_, idx) => {
+                const beatNumber = idx + 1;
+                const isActiveBeat = isMetronomeActive && currentBeat === beatNumber;
+                return (
+                  <div
+                    key={idx}
+                    className={`w-3.5 h-3.5 rounded-full transition-all duration-75 flex items-center justify-center text-[9px] font-black ${
+                      isActiveBeat
+                        ? beatNumber === 1
+                          ? 'bg-[#FF4D00] text-slate-950 scale-125 shadow-lg shadow-[#FF4D00]/50'
+                          : 'bg-amber-400 text-slate-950 scale-110'
+                        : 'bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    {beatNumber}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* BPM Adjust Controls */}
+          <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setCustomBpm((b) => Math.max(30, b - 5))}
+              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
+              title="Restar 5 BPM"
+            >
+              -5
+            </button>
+            <button
+              onClick={() => setCustomBpm((b) => Math.max(30, b - 1))}
+              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
+              title="Restar 1 BPM"
+            >
+              -1
+            </button>
+            <span className="text-xs font-black text-[#FF4D00] px-2">{customBpm} BPM</span>
+            <button
+              onClick={() => setCustomBpm((b) => Math.min(300, b + 1))}
+              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
+              title="Somar 1 BPM"
+            >
+              +1
+            </button>
+            <button
+              onClick={() => setCustomBpm((b) => Math.min(300, b + 5))}
+              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
+              title="Somar 5 BPM"
+            >
+              +5
+            </button>
           </div>
         </div>
 

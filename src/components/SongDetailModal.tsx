@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   Trash2, 
@@ -11,13 +11,16 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
-  Edit3
+  Edit3,
+  Clock,
+  Activity
 } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
 import { getNextKey } from '../utils/chordTransposer';
 import { storage } from '../services/storage';
 import { ChordViewer } from './ChordViewer';
 import { SongFormModal } from './SongFormModal';
+import { getLastPlayedInfo } from '../utils/songHistory';
 
 interface SongDetailModalProps {
   musica: Musica;
@@ -68,6 +71,15 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const currentArquivos = currentVersao
     ? arquivos.filter(a => a.ID_Versao === currentVersao.ID)
     : [];
+
+  // Calculate Last Played info across all cultos and history
+  const lastPlayedInfo = useMemo(() => {
+    if (!currentVersao) return null;
+    const cultosList = storage.getCultos();
+    const repList = storage.getRepertorio();
+    const histList = storage.getHistorico();
+    return getLastPlayedInfo(currentVersao.ID, cultosList, repList, histList);
+  }, [currentVersao, versoes]);
 
   const handleAddNotaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,22 +210,39 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
           {currentVersao && (
             <>
-              {/* Key Transposer & Controls Bar */}
-              <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-3 flex items-center justify-between gap-2 shadow-sm">
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold block">
-                    Tom da Versão
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xl font-black text-[#FF4D00]">
-                      Tom {currentKeyDisplay}
+              {/* Key, BPM & Compasso Bar */}
+              <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                      Tom da Versão
                     </span>
-                    {semitones !== 0 && (
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        (Original: {currentVersao.Tom})
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-black text-[#FF4D00]">
+                        Tom {currentKeyDisplay}
                       </span>
-                    )}
+                      {semitones !== 0 && (
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          (Original: {currentVersao.Tom})
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {(currentVersao.BPM || currentVersao.Compasso) && (
+                    <div className="border-l border-slate-800 pl-4">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold block flex items-center gap-1">
+                        <Activity className="w-3 h-3 text-[#FF4D00]" />
+                        Andamento
+                      </span>
+                      <div className="text-xs font-black text-slate-200 mt-0.5">
+                        {currentVersao.BPM ? `${currentVersao.BPM} BPM` : 'BPM N/I'}
+                        <span className="text-slate-500 font-medium ml-1">
+                          ({currentVersao.Compasso || '4/4'})
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Transpose Buttons */}
@@ -247,6 +276,29 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Last Played Badge / Alert */}
+              {lastPlayedInfo && (
+                <div
+                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                    lastPlayedInfo.isRecent
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                      : 'bg-[#080808] border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock className={`w-4 h-4 shrink-0 ${lastPlayedInfo.isRecent ? 'text-amber-400 animate-pulse' : 'text-slate-500'}`} />
+                    <span>
+                      <strong>Última Execução:</strong> {lastPlayedInfo.formattedBadge}
+                    </span>
+                  </div>
+                  {lastPlayedInfo.lastCultoName && (
+                    <span className="text-[10px] text-slate-500 hidden sm:inline">
+                      {lastPlayedInfo.lastCultoName}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Structure Display */}
               {currentVersao.Estrutura && (

@@ -24,6 +24,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
   const [categoria, setCategoria] = useState('Adoração');
   const [nomeVersao, setNomeVersao] = useState('Versão Principal');
   const [tom, setTom] = useState('E');
+  const [bpm, setBpm] = useState<string>('120');
+  const [compasso, setCompasso] = useState<string>('4/4');
   const [estrutura, setEstrutura] = useState('INTRO - V1 - REFRÃO - V2 - REFRÃO - PONTE - OUTRO');
   const [letra, setLetra] = useState('');
   const [obs, setObs] = useState('');
@@ -35,6 +37,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
       setCategoria(musicaToEdit.Categoria);
       setNomeVersao(versaoToEdit.Nome_Versao);
       setTom(versaoToEdit.Tom);
+      setBpm(versaoToEdit.BPM ? versaoToEdit.BPM.toString() : '');
+      setCompasso(versaoToEdit.Compasso || '4/4');
       setEstrutura(versaoToEdit.Estrutura || '');
       setLetra(versaoToEdit.Letra || '');
       setObs(versaoToEdit.Obs || '');
@@ -44,6 +48,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !artista.trim()) return;
+
+    const numericBpm = bpm ? parseInt(bpm, 10) : undefined;
 
     if (isEditing && musicaToEdit && versaoToEdit) {
       // Update existing song
@@ -56,6 +62,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
       storage.updateVersao(versaoToEdit.ID, {
         Nome_Versao: nomeVersao.trim() || 'Versão Principal',
         Tom: tom,
+        BPM: numericBpm,
+        Compasso: compasso,
         Letra: letra,
         Estrutura: estrutura.trim(),
         Obs: obs.trim()
@@ -71,6 +79,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
         {
           Nome_Versao: nomeVersao.trim() || 'Versão Principal',
           Tom: tom,
+          BPM: numericBpm,
+          Compasso: compasso,
           Letra: letra.trim() || '[INTRO]\n[E] [B] [C#m] [A]',
           Estrutura: estrutura.trim(),
           Obs: obs.trim()
@@ -173,6 +183,41 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                     Tom {k}
                   </option>
                 ))}
+              </select>
+            </div>
+          </div>
+
+          {/* BPM and Compasso */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1">
+                BPM (Andamento)
+              </label>
+              <input
+                type="number"
+                value={bpm}
+                onChange={(e) => setBpm(e.target.value)}
+                placeholder="ex: 128"
+                min="30"
+                max="300"
+                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00] font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1">
+                Compasso (Fórmula de Tempo)
+              </label>
+              <select
+                value={compasso}
+                onChange={(e) => setCompasso(e.target.value)}
+                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#FF4D00] font-bold"
+              >
+                <option value="4/4">4/4 (Quaternário)</option>
+                <option value="3/4">3/4 (Ternário / Valsa)</option>
+                <option value="6/8">6/8 (Sextúpulo)</option>
+                <option value="2/4">2/4 (Binário)</option>
+                <option value="12/8">12/8 (Lento de Adoração)</option>
               </select>
             </div>
           </div>
