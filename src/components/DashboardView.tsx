@@ -7,7 +7,8 @@ import {
   Clock, 
   Plus, 
   Sparkles,
-  FileText
+  FileText,
+  MessageSquarePlus
 } from 'lucide-react';
 import { Culto, Musica, Versao, RepertorioItem, ViewTab } from '../types';
 
@@ -18,6 +19,7 @@ interface DashboardViewProps {
   onOpenStageMode: (culto: Culto) => void;
   onOpenNewCultoModal: () => void;
   onSelectSong?: (musica: Musica) => void;
+  onOpenFeedback?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -26,7 +28,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
   onOpenStageMode,
   onOpenNewCultoModal,
-  onSelectSong
+  onSelectSong,
+  onOpenFeedback
 }) => {
   const formatDate = (isoStr?: string) => {
     if (!isoStr) return '';
@@ -201,6 +204,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
         </button>
       </section>
+
+      {/* SUGGESTION / BUG REPORT BANNER */}
+      {onOpenFeedback && (
+        <button
+          onClick={onOpenFeedback}
+          className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 hover:border-[#FF4D00]/30 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <MessageSquarePlus className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-white group-hover:text-[#FF4D00] transition-colors block">
+                Sugestões ou Problemas no App?
+              </span>
+              <span className="text-[11px] text-slate-400">
+                Clique aqui para nos enviar uma ideia ou reportar um bug
+              </span>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" />
+        </button>
+      )}
     </div>
   );
 };
