@@ -31,6 +31,12 @@ export function getNextKey(currentKey: string, semitones: number): string {
 export function transposeChord(chord: string, semitones: number): string {
   if (!chord || semitones === 0) return chord;
 
+  // Handle slashed chords e.g. D/F#
+  if (chord.includes('/')) {
+    const parts = chord.split('/');
+    return parts.map(part => transposeChord(part.trim(), semitones)).join('/');
+  }
+
   // Regex to match root note + optional sharp/flat
   const regex = /^([A-G][#b]?)(.*)$/;
   const match = chord.match(regex);
