@@ -35,7 +35,7 @@ export function generateUUID(): string {
   });
 }
 
-const DEFAULT_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzM45f4onc3vNeM_Dx2oFFrdaC2Kf3q_vBRC9yPV_xYjLbcUlL2WKhmeZmy9J6iVHOhQA/exec';
+const DEFAULT_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyM3rjR09i9uFi-JaE1dac3CNbTWEejhmcUdh54A2C6iHzBGndlmR5LEqT2YJN495hI/exec';
 const DEFAULT_GAS_SPREADSHEET_ID = '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU';
 
 class StorageService {
@@ -101,7 +101,12 @@ class StorageService {
 
   // GAS Settings
   public getGasEndpoint(): string {
-    return localStorage.getItem(KEYS.GAS_ENDPOINT) || DEFAULT_GAS_ENDPOINT;
+    const saved = localStorage.getItem(KEYS.GAS_ENDPOINT);
+    if (!saved || saved.includes('AKfycbzM45f4onc3vNeM')) {
+      localStorage.setItem(KEYS.GAS_ENDPOINT, DEFAULT_GAS_ENDPOINT);
+      return DEFAULT_GAS_ENDPOINT;
+    }
+    return saved;
   }
 
   public setGasEndpoint(url: string) {
