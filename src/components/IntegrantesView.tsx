@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Users, Plus, Phone, Mail, X, Trash2, Edit2, Check, ArrowLeft } from 'lucide-react';
 import { Integrante, ViewTab } from '../types';
 import { storage } from '../services/storage';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 
 interface IntegrantesViewProps {
   integrantes: Integrante[];
@@ -27,8 +29,10 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
   onDataChanged,
   onNavigate
 }) => {
+  const { showToast } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Integrante | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
   
   const [nome, setNome] = useState('');
   const [selectedFuncoes, setSelectedFuncoes] = useState<string[]>(['Vocal Lead']);
@@ -77,6 +81,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
         Email: email.trim(),
         Telefone: telefone.trim()
       });
+      showToast('Integrante atualizado com sucesso!', 'success');
     } else {
       storage.addIntegrante({
         Nome: nome.trim(),
@@ -85,6 +90,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
         Telefone: telefone.trim(),
         Ativo: true
       });
+      showToast('Integrante cadastrado com sucesso!', 'success');
     }
 
     setShowModal(false);
@@ -92,10 +98,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
   };
 
   const handleDeleteMember = (id: string, name: string) => {
-    if (window.confirm(`Tem certeza que deseja remover ${name} da equipe?`)) {
-      storage.deleteIntegrante(id);
-      onDataChanged();
-    }
+    setMemberToDelete({ id, name });
   };
 
   return (
@@ -327,6 +330,22 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
           </div>
         </div>
       )}
+      {/* Confirm Delete Member Modal */}
+      <ConfirmModal
+        isOpen={!!memberToDelete}
+        title="Remover Integrante"
+        message={`Tem certeza que deseja remover ${memberToDelete?.name} da equipe de louvor?`}
+        confirmText="Sim, Remover"
+        onConfirm={() => {
+          if (memberToDelete) {
+            storage.deleteIntegrante(memberToDelete.id);
+            onDataChanged();
+            showToast('Integrante removido com sucesso!', 'success');
+            setMemberToDelete(null);
+          }
+        }}
+        onClose={() => setMemberToDelete(null)}
+      />
     </div>
   );
 };

@@ -21,6 +21,8 @@ import {
 import { Culto, RepertorioItem, Versao, Musica } from '../types';
 import { storage } from '../services/storage';
 import { getLastPlayedInfo } from '../utils/songHistory';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 
 interface CultosViewProps {
   cultos: Culto[];
@@ -45,6 +47,9 @@ export const CultosView: React.FC<CultosViewProps> = ({
   onSelectSong,
   onNavigate
 }) => {
+  const { showToast } = useToast();
+  const [cultoToDelete, setCultoToDelete] = useState<{ id: string; name: string } | null>(null);
+
   const [selectedCultoId, setSelectedCultoId] = useState<string>(
     cultos.length > 0 ? cultos[0].ID : ''
   );
@@ -174,6 +179,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
     });
 
     setShowEditCultoModal(false);
+    showToast('Culto atualizado com sucesso!', 'success');
     onDataChanged();
   };
 
@@ -192,11 +198,13 @@ export const CultosView: React.FC<CultosViewProps> = ({
     setDirigenteToAdd('');
     setObsToAdd('');
     setShowAddSongModal(false);
+    showToast('Música adicionada ao repertório!', 'success');
     onDataChanged();
   };
 
   const handleRemoveSong = (repId: string) => {
     storage.removeSongFromRepertorio(repId);
+    showToast('Música removida do repertório', 'info');
     onDataChanged();
   };
 
@@ -722,12 +730,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                         </button>
 
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Deseja mesmo excluir o culto "${culto.Nome_Evento}"?`)) {
-                              storage.deleteCulto(culto.ID);
-                              onDataChanged();
-                            }
-                          }}
+                          onClick={() => setCultoToDelete({ id: culto.ID, name: culto.Nome_Evento })}
                           className="p-1.5 rounded-xl bg-[#181818] text-slate-400 hover:text-red-400 border border-slate-700"
                           title="Excluir Culto"
                         >
@@ -961,6 +964,22 @@ export const CultosView: React.FC<CultosViewProps> = ({
           </div>
         </div>
       )}
+      {/* Confirm Delete Culto Modal */}
+      <ConfirmModal
+        isOpen={!!cultoToDelete}
+        title="Excluir Culto"
+        message={`Tem certeza que deseja excluir o culto "${cultoToDelete?.name}"? Esta ação removerá a escala do evento.`}
+        confirmText="Sim, Excluir"
+        onConfirm={() => {
+          if (cultoToDelete) {
+            storage.deleteCulto(cultoToDelete.id);
+            onDataChanged();
+            showToast('Culto excluído com sucesso!', 'success');
+            setCultoToDelete(null);
+          }
+        }}
+        onClose={() => setCultoToDelete(null)}
+      />
     </div>
   );
 };

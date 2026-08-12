@@ -24,7 +24,8 @@ const KEYS = {
   HISTORICO: 'tp_flame_historico_v1',
   LOGS: 'tp_flame_logs_v1',
   GAS_ENDPOINT: 'tp_flame_gas_endpoint_v1',
-  GAS_SPREADSHEET_ID: 'tp_flame_gas_spreadsheet_id_v1'
+  GAS_SPREADSHEET_ID: 'tp_flame_gas_spreadsheet_id_v1',
+  PENDING_SYNC: 'tp_flame_pending_sync_v1'
 };
 
 export function generateUUID(): string {
@@ -85,6 +86,19 @@ class StorageService {
     this.addLog('SYSTEM_CLEAR', 'Todos os dados locais foram zerados');
   }
 
+  // Sync Status Tracking
+  public hasPendingSync(): boolean {
+    return localStorage.getItem(KEYS.PENDING_SYNC) === 'true';
+  }
+
+  public markPendingSync() {
+    localStorage.setItem(KEYS.PENDING_SYNC, 'true');
+  }
+
+  public clearPendingSync() {
+    localStorage.setItem(KEYS.PENDING_SYNC, 'false');
+  }
+
   // GAS Settings
   public getGasEndpoint(): string {
     return localStorage.getItem(KEYS.GAS_ENDPOINT) || DEFAULT_GAS_ENDPOINT;
@@ -125,6 +139,7 @@ class StorageService {
         if (Array.isArray(d.logs)) this.set(KEYS.LOGS, d.logs);
 
         this.addLog('GAS_SYNC_FETCH', 'Dados sincronizados com sucesso do Google Sheets');
+        this.clearPendingSync();
         return { success: true };
       } else {
         return { success: false, message: json.message || 'Erro de formato retornado pelo GAS' };
@@ -185,6 +200,9 @@ class StorageService {
 
   private set<T>(key: string, data: T[]) {
     localStorage.setItem(key, JSON.stringify(data));
+    if (key !== KEYS.CONFIG && key !== KEYS.LOGS && key !== KEYS.PENDING_SYNC) {
+      this.markPendingSync();
+    }
   }
 
   public addLog(action: string, detail: string, user = 'Usuário Portal') {

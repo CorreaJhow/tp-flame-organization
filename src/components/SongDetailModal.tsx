@@ -13,7 +13,8 @@ import {
   RotateCcw,
   Edit3,
   Clock,
-  Activity
+  Activity,
+  Copy
 } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
 import { getNextKey } from '../utils/chordTransposer';
@@ -21,6 +22,8 @@ import { storage } from '../services/storage';
 import { ChordViewer } from './ChordViewer';
 import { SongFormModal } from './SongFormModal';
 import { getLastPlayedInfo } from '../utils/songHistory';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 
 interface SongDetailModalProps {
   musica: Musica;
@@ -39,6 +42,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   onClose,
   onDataChanged
 }) => {
+  const { showToast } = useToast();
+  const [showConfirmDeleteMusica, setShowConfirmDeleteMusica] = useState(false);
+
   const [selectedVersaoId, setSelectedVersaoId] = useState<string>(
     versoes.length > 0 ? versoes[0].ID : ''
   );
@@ -93,11 +99,13 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
     setNewNotaObs('');
     setShowAddNota(false);
+    showToast('Nota de instrumento adicionada!', 'success');
     onDataChanged();
   };
 
   const handleDeleteNota = (notaId: string) => {
     storage.deleteNota(notaId);
+    showToast('Nota removida', 'info');
     onDataChanged();
   };
 
@@ -115,11 +123,13 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
     setNewArqUrl('');
     setNewArqNome('');
     setShowAddArq(false);
+    showToast('Anexo adicionado com sucesso!', 'success');
     onDataChanged();
   };
 
   const handleDeleteArquivo = (arqId: string) => {
     storage.deleteArquivo(arqId);
+    showToast('Anexo removido', 'info');
     onDataChanged();
   };
 
@@ -153,13 +163,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
             </button>
 
             <button
-              onClick={() => {
-                if (window.confirm(`Deseja mesmo excluir a música "${musica.Nome}" e todas as suas versões?`)) {
-                  storage.deleteMusica(musica.ID);
-                  onDataChanged();
-                  onClose();
-                }
-              }}
+              onClick={() => setShowConfirmDeleteMusica(true)}
               className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-950/40 border border-slate-800 transition-colors"
               title="Excluir Música"
             >
@@ -361,7 +365,22 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
               {/* Tab Content */}
               {activeTab === 'letra' && (
-                <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-4 sm:p-5 font-mono text-xs text-slate-200 leading-relaxed shadow-inner">
+                <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-4 sm:p-5 font-mono text-xs text-slate-200 leading-relaxed shadow-inner relative group">
+                  <div className="flex justify-end mb-2">
+                    <button
+                      onClick={() => {
+                        if (currentVersao?.Letra) {
+                          navigator.clipboard.writeText(currentVersao.Letra);
+                          showToast('Cifra copiada para a área de transferência!', 'success');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white border border-slate-700 font-sans font-bold text-xs transition-all active:scale-95"
+                      title="Copiar Cifra"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-[#FF4D00]" />
+                      <span>Copiar Cifra</span>
+                    </button>
+                  </div>
                   <ChordViewer text={currentVersao.Letra} semitones={semitones} />
                 </div>
               )}
@@ -597,6 +616,21 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
           }}
         />
       )}
+
+      {/* Confirm Delete Song Modal */}
+      <ConfirmModal
+        isOpen={showConfirmDeleteMusica}
+        title="Excluir Música"
+        message={`Deseja mesmo excluir a música "${musica.Nome}" e todas as suas versões? Esta ação é irreversível.`}
+        confirmText="Sim, Excluir Música"
+        onConfirm={() => {
+          storage.deleteMusica(musica.ID);
+          onDataChanged();
+          showToast('Música excluída com sucesso', 'info');
+          onClose();
+        }}
+        onClose={() => setShowConfirmDeleteMusica(false)}
+      />
     </div>
   );
 };

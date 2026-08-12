@@ -101,21 +101,47 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         )}
       </div>
 
-      {/* Filter Tabs (Categories) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-        {categories.map((cat) => (
+      {/* Filter Tabs (Categories) & Active Reset */}
+      <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+          {categories.map((cat) => {
+            const count = cat === 'Todas' 
+              ? musicas.length 
+              : musicas.filter(m => m.Categoria === cat).length;
+
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  selectedCategory === cat
+                    ? 'bg-[#FF4D00] text-slate-950 shadow-sm font-black'
+                    : 'bg-[#121212] text-slate-400 border border-slate-800 hover:text-white'
+                }`}
+              >
+                <span>{cat}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  selectedCategory === cat ? 'bg-black/20 text-slate-950' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {(selectedCategory !== 'Todas' || selectedKey !== 'Todos' || searchQuery.trim()) && (
           <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              selectedCategory === cat
-                ? 'bg-[#FF4D00] text-slate-950 shadow-sm font-black'
-                : 'bg-[#121212] text-slate-400 border border-slate-800 hover:text-white'
-            }`}
+            onClick={() => {
+              setSelectedCategory('Todas');
+              setSelectedKey('Todos');
+              setSearchQuery('');
+            }}
+            className="text-[11px] font-bold text-[#FF4D00] hover:underline shrink-0 bg-[#FF4D00]/10 border border-[#FF4D00]/20 px-2.5 py-1 rounded-xl whitespace-nowrap"
           >
-            {cat}
+            Resetar Filtros
           </button>
-        ))}
+        )}
       </div>
 
       {/* Key Filter Bar */}
