@@ -1,5 +1,5 @@
-import React from 'react';
-import { Flame, Database, CheckCircle2, Shield, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Flame, Database, CheckCircle2, Shield, RefreshCw, WifiOff } from 'lucide-react';
 import { storage } from '../services/storage';
 import { ViewTab } from '../types';
 
@@ -16,6 +16,21 @@ export const Header: React.FC<HeaderProps> = ({
   onSync,
   isSyncing = false
 }) => {
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const gasEndpoint = storage.getGasEndpoint();
   const isConnected = Boolean(gasEndpoint);
 
@@ -47,18 +62,48 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions - Sync Button & Admin Link */}
         <div className="flex items-center gap-2">
-          {/* Sync / Refresh Button */}
-          {onSync && (
-            <button
-              onClick={onSync}
-              disabled={isSyncing}
-              className={`p-2 rounded-xl text-slate-300 hover:text-white bg-[#121212] hover:bg-[#181818] transition-all border border-slate-800 ${
-                isSyncing ? 'text-[#FF4D00]' : ''
-              }`}
-              title="Sincronizar e Atualizar Dados com a Planilha"
+          {/* Offline Mode Indicator */}
+          {!isOnline && (
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 text-[11px] font-bold shadow-sm"
+              title="Sem conexão de internet. Todas as cifras e dados locais continuam totalmente disponíveis!"
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            </button>
+              <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Offline</span>
+            </div>
+          )}
+
+          {/* Sync / Refresh Button with Pending Indicator */}
+          {onSync && (
+            <div className="flex items-center gap-1.5">
+              {storage.hasPendingSync() && !isSyncing && isOnline && (
+                <div 
+                  onClick={onSync}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-950/80 border border-amber-500/40 text-amber-300 text-[11px] font-bold cursor-pointer hover:bg-amber-900/80 transition-all shadow-sm"
+                  title="Você possui edições salvas apenas localmente. Clique para enviar para a planilha."
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                  <span className="hidden sm:inline">Pendente</span>
+                </div>
+              )}
+
+              <button
+                onClick={onSync}
+                disabled={isSyncing || !isOnline}
+                className={`p-2 rounded-xl transition-all border ${
+                  isSyncing
+                    ? 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/40'
+                    : !isOnline
+                    ? 'bg-[#121212] text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
+                    : storage.hasPendingSync()
+                    ? 'bg-amber-950/40 text-amber-300 border-amber-500/30 hover:bg-amber-900/40'
+                    : 'text-slate-300 hover:text-white bg-[#121212] hover:bg-[#181818] border-slate-800'
+                }`}
+                title={!isOnline ? "Indisponível sem internet" : storage.hasPendingSync() ? "Sincronizar alterações com a planilha Google" : "Sincronizar e Atualizar Dados com a Planilha"}
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           )}
 
           {/* Direct Admin Icon Button */}
@@ -75,3 +120,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

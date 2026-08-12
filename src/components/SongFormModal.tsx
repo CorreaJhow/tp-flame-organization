@@ -3,6 +3,7 @@ import { X, Music2, Edit3 } from 'lucide-react';
 import { ALL_KEYS } from '../utils/chordTransposer';
 import { Musica, Versao } from '../types';
 import { storage } from '../services/storage';
+import { useToast } from '../context/ToastContext';
 
 interface SongFormModalProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
   musicaToEdit,
   versaoToEdit
 }) => {
+  const { showToast } = useToast();
   const isEditing = !!(musicaToEdit && versaoToEdit);
 
   const [nome, setNome] = useState('');
@@ -68,6 +70,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
         Estrutura: estrutura.trim(),
         Obs: obs.trim()
       });
+      showToast('Música e cifra atualizadas com sucesso!', 'success');
     } else {
       // Create new song
       storage.addMusicaWithVersao(
@@ -86,6 +89,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
           Obs: obs.trim()
         }
       );
+      showToast('Nova música cadastrada com sucesso!', 'success');
     }
 
     onDataChanged();

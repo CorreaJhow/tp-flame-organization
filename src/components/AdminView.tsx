@@ -12,10 +12,13 @@ import {
   Eye, 
   EyeOff, 
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import { storage } from '../services/storage';
 import { ViewTab } from '../types';
+import { ConfirmModal } from './ConfirmModal';
+import { useToast } from '../context/ToastContext';
 
 interface AdminViewProps {
   onOpenGasModal: () => void;
@@ -36,6 +39,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   totalIntegrantes,
   onNavigate
 }) => {
+  const { showToast } = useToast();
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(() => storage.isAdminLoggedIn());
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -85,29 +90,34 @@ export const AdminView: React.FC<AdminViewProps> = ({
     storage.setGasEndpoint(endpointInput);
     storage.setGasSpreadsheetId(spreadsheetIdInput);
     setSaveSuccess(true);
+    showToast('Configurações salvas com sucesso!', 'success');
     setTimeout(() => setSaveSuccess(false), 3000);
     onDataChanged();
   };
 
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [clearConfirmInput, setClearConfirmInput] = useState('');
+
   const handleClearAllData = () => {
-    const confirmText = window.prompt(
-      'ATENÇÃO: Esta ação vai apagar TODAS as músicas, cultos, equipe e registros para deixar o sistema limpo!\n\nDigite ZERAR para confirmar:'
-    );
-    if (confirmText && confirmText.trim().toUpperCase() === 'ZERAR') {
+    setClearConfirmInput('');
+    setShowClearAllConfirm(true);
+  };
+
+  const handleExecuteClearAll = () => {
+    if (clearConfirmInput.trim().toUpperCase() === 'ZERAR') {
       storage.clearAllData();
       onDataChanged();
+      showToast('Banco de dados zerado com sucesso!', 'info');
       setActionSuccessMsg('✓ Banco de dados zerado com sucesso!');
       setTimeout(() => setActionSuccessMsg(''), 4000);
+      setShowClearAllConfirm(false);
+    } else {
+      showToast('Palavra de confirmação incorreta. Digite ZERAR.', 'warning');
     }
   };
 
   const handleResetToDefaults = () => {
-    if (window.confirm('Deseja restaurar os dados de exemplo do TP Flame?')) {
-      storage.resetToDefaults();
-      onDataChanged();
-      setActionSuccessMsg('✓ Dados de exemplo restaurados com sucesso.');
-      setTimeout(() => setActionSuccessMsg(''), 4000);
-    }
+    setShowResetConfirm(true);
   };
 
   // If not logged in, render Admin Login Card
@@ -396,6 +406,87 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </button>
         </div>
       </section>
+
+      {/* Confirm Reset Data Modal */}
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        title="Restaurar Dados de Exemplo"
+        message="Deseja restaurar as músicas, versões e cultos de exemplo originais do TP Flame?"
+        confirmText="Sim, Restaurar"
+        isDanger={false}
+        onConfirm={() => {
+          storage.resetToDefaults();
+          onDataChanged();
+          showToast('Dados de exemplo restaurados com sucesso!', 'success');
+          setActionSuccessMsg('✓ Dados de exemplo restaurados com sucesso.');
+          setTimeout(() => setActionSuccessMsg(''), 4000);
+          setShowResetConfirm(false);
+        }}
+        onClose={() => setShowResetConfirm(false)}
+      />
+
+      {/* Modal para Zerar Banco de Dados */}
+      {showClearAllConfirm && (
+        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#121212] border border-slate-800 w-full max-w-md rounded-3xl p-6 space-y-5 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-red-600" />
+
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-red-950/50 text-red-400 border border-red-500/30 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white leading-tight">
+                    Zerar Banco de Dados
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Atenção: Esta ação vai apagar <strong>todas</strong> as músicas, cultos, equipe e registros locais.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowClearAllConfirm(false)}
+                className="p-1.5 rounded-xl bg-[#181818] text-slate-400 hover:text-white border border-slate-800 shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 bg-[#080808] border border-slate-800 p-3.5 rounded-2xl">
+              <label className="text-[11px] font-bold text-slate-300 block">
+                Digite <span className="text-red-400 font-black">ZERAR</span> para confirmar:
+              </label>
+              <input
+                type="text"
+                value={clearConfirmInput}
+                onChange={(e) => setClearConfirmInput(e.target.value)}
+                placeholder="Digite ZERAR"
+                className="w-full bg-[#121212] border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-red-500"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800/80">
+              <button
+                onClick={() => setShowClearAllConfirm(false)}
+                className="px-4 py-2.5 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 transition-all active:scale-95"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={handleExecuteClearAll}
+                disabled={clearConfirmInput.trim().toUpperCase() !== 'ZERAR'}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed font-black text-xs text-white shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                Sim, Apagar Tudo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

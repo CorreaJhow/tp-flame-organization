@@ -14,6 +14,7 @@ import { AdminView } from './components/AdminView';
 import { MaisView } from './components/MaisView';
 import { FeedbackModal } from './components/FeedbackModal';
 import { PwaInstallModal } from './components/PwaInstallModal';
+import { ToastProvider, useToast } from './context/ToastContext';
 
 import { storage } from './services/storage';
 import { 
@@ -30,7 +31,8 @@ import {
 } from './types';
 import { Calendar, X } from 'lucide-react';
 
-export default function App() {
+function AppContent() {
+  const { showToast } = useToast();
   const [currentTab, setCurrentTab] = useState<ViewTab>('inicio');
 
   // Database State
@@ -74,16 +76,23 @@ export default function App() {
     setLogs(storage.getLogs());
   }, []);
 
-  const handleSync = useCallback(async () => {
+  const handleSync = useCallback(async (isManual = false) => {
     setIsSyncing(true);
-    await storage.fetchFromGas();
+    const res = await storage.fetchFromGas();
     refreshData();
     setIsSyncing(false);
-  }, [refreshData]);
+    if (isManual) {
+      if (res.success) {
+        showToast('Sincronizado com a planilha com sucesso!', 'success');
+      } else {
+        showToast(res.message || 'Erro ao comunicar com o Google Sheets', 'warning');
+      }
+    }
+  }, [refreshData, showToast]);
 
   useEffect(() => {
     refreshData();
-    handleSync();
+    handleSync(false);
   }, []);
 
   // Compute upcoming Culto
@@ -117,6 +126,7 @@ export default function App() {
     setNewCultoData('');
     setNewCultoObs('');
     setShowNewCultoModal(false);
+    showToast('Culto agendado com sucesso!', 'success');
     refreshData();
   };
 
@@ -126,7 +136,7 @@ export default function App() {
       <Header
         onOpenGasModal={() => setShowGasModal(true)}
         onNavigateTab={(tab) => setCurrentTab(tab)}
-        onSync={handleSync}
+        onSync={() => handleSync(true)}
         isSyncing={isSyncing}
       />
 
@@ -349,5 +359,13 @@ export default function App() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
