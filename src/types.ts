@@ -16,6 +16,8 @@ export interface Versao {
   ID_Musica: string;
   Nome_Versao: string; // ex: "Original (Morada)", "Acústico", "Ao Vivo"
   Tom: string; // C, Db, D, Eb, E, F, F#, G, Ab, A, Bb, B
+  BPM?: number; // e.g. 128
+  Compasso?: string; // e.g. "4/4", "3/4", "6/8"
   Letra: string; // Letra com cifras ou estrutura em tags
   Estrutura: string; // ex: "Intro - V1 - C - V2 - C - B - Outro"
   Obs: string;

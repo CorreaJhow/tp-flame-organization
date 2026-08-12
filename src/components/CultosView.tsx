@@ -15,10 +15,12 @@ import {
   LayoutGrid,
   X,
   FileText,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica } from '../types';
 import { storage } from '../services/storage';
+import { getLastPlayedInfo } from '../utils/songHistory';
 
 interface CultosViewProps {
   cultos: Culto[];
@@ -344,7 +346,24 @@ export const CultosView: React.FC<CultosViewProps> = ({
       )}
 
       {/* VIEW MODE 1: REPERTOIRE DETAIL VIEW FOR SELECTED CULTO */}
-      {viewMode === 'detail' && currentCulto && (
+      {viewMode === 'detail' && (!currentCulto ? (
+        <div className="text-center py-12 bg-[#121212] rounded-2xl border border-slate-800/80 p-6 space-y-3">
+          <Calendar className="w-10 h-10 text-slate-600 mx-auto" />
+          <div>
+            <h3 className="text-sm font-bold text-white">Nenhum culto agendado</h3>
+            <p className="text-xs text-slate-400">
+              Agende um novo culto ou evento para montar repertórios e acionar o Modo Palco.
+            </p>
+          </div>
+          <button
+            onClick={onOpenNewCultoModal}
+            className="py-2.5 px-4 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs inline-flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Agendar Primeiro Culto</span>
+          </button>
+        </div>
+      ) : (
         <div className="space-y-4">
           {/* Culto Banner with HIGH VISIBILITY DATE & TIME */}
           {(() => {
@@ -517,11 +536,28 @@ export const CultosView: React.FC<CultosViewProps> = ({
                               Tom {versao.Tom}
                             </span>
                           )}
+                          {versao?.BPM && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#080808] text-slate-300 border border-slate-800">
+                              {versao.BPM} BPM
+                            </span>
+                          )}
                         </div>
 
                         <p className="text-[11px] text-slate-400 truncate">
                           {musica?.Artista} • {versao?.Nome_Versao}
                         </p>
+
+                        {/* Last Played Badge on Card */}
+                        {versao && (() => {
+                          const lp = getLastPlayedInfo(versao.ID, cultos, repertorio, storage.getHistorico());
+                          if (lp.daysAgo === undefined) return null;
+                          return (
+                            <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3 text-[#FF4D00]" />
+                              {lp.formattedBadge}
+                            </span>
+                          );
+                        })()}
 
                         {rep.Dirigente && (
                           <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
@@ -580,7 +616,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
             </div>
           )}
         </div>
-      )}
+      ))}
 
       {/* VIEW MODE 2: ALL CULTOS GRID/QUADRADINHOS (Easy for 10-20+ Cultos) */}
       {viewMode === 'list' && (
@@ -828,14 +864,57 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   <option value="">-- Escolha uma versão --</option>
                   {versoes.map((v) => {
                     const m = musicas.find((item) => item.ID === v.ID_Musica);
+                    const lastPlayed = getLastPlayedInfo(v.ID, cultos, repertorio, storage.getHistorico());
+                    const flag = lastPlayed.isRecent ? ' ⚠️ (Tocada Recentemente)' : '';
                     return (
                       <option key={v.ID} value={v.ID}>
-                        {m?.Nome} ({m?.Artista}) - {v.Nome_Versao} [Tom {v.Tom}]
+                        {m?.Nome} ({m?.Artista}) - {v.Nome_Versao} [Tom {v.Tom}]{flag}
                       </option>
                     );
                   })}
                 </select>
               </div>
+
+              {/* Informative Alert for Last Played */}
+              {selectedVersaoIdToAdd && (() => {
+                const lastPlayed = getLastPlayedInfo(
+                  selectedVersaoIdToAdd,
+                  cultos,
+                  repertorio,
+                  storage.getHistorico()
+                );
+                return (
+                  <div
+                    className={`p-3 rounded-xl border text-xs leading-relaxed transition-all ${
+                      lastPlayed.isRecent
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                        : 'bg-[#080808] border-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {lastPlayed.isRecent ? (
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <Clock className="w-4 h-4 text-[#FF4D00] shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <strong className="block font-bold">
+                          {lastPlayed.isRecent ? '⚠️ Alerta de Repetição' : 'Informação de Repertório'}
+                        </strong>
+                        <span className="text-[11px]">
+                          Última execução: <strong>{lastPlayed.formattedBadge}</strong>
+                          {lastPlayed.lastCultoName ? ` no ${lastPlayed.lastCultoName}` : ''}.
+                        </span>
+                        {lastPlayed.isRecent && (
+                          <span className="block text-[10px] text-amber-400/80 mt-1 italic">
+                            Dica: Esta música foi tocada recentemente. Você pode adicioná-la normalmente se desejar.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="text-xs font-bold text-slate-300 block mb-1">
