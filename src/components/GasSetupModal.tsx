@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Code2, Copy, Check, FileSpreadsheet, ExternalLink, ShieldCheck, Database, Terminal } from 'lucide-react';
+import { X, Code2, Copy, Check, FileSpreadsheet, ExternalLink, ShieldCheck, Database, Terminal, Eye, EyeOff } from 'lucide-react';
 import { GAS_MILESTONE_1_SETUP_CODE, GAS_MILESTONE_2_3_API_CODE } from '../data/gasScript';
 import { storage } from '../services/storage';
 
@@ -13,6 +13,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
   const [copied, setCopied] = useState(false);
   const [endpointInput, setEndpointInput] = useState(storage.getGasEndpoint());
   const [spreadsheetIdInput, setSpreadsheetIdInput] = useState(storage.getGasSpreadsheetId());
+  const [showSensitive, setShowSensitive] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const currentCode = activeTab === 'm1' ? GAS_MILESTONE_1_SETUP_CODE : GAS_MILESTONE_2_3_API_CODE;
@@ -158,12 +159,22 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
           ) : (
             <div className="space-y-4">
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
-                <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  Conexão Direta ao Google Sheets (Web App GAS)
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Conexão Direta ao Google Sheets (Web App GAS)
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowSensitive(!showSensitive)}
+                    className="text-[11px] font-bold text-slate-400 hover:text-white flex items-center gap-1 underline"
+                  >
+                    {showSensitive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showSensitive ? 'Ocultar Credenciais' : 'Exibir Credenciais'}</span>
+                  </button>
+                </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Insira o ID da planilha gerada no Milestone 1 e a URL do Web App implantado para sincronizar diretamente em tempo real com o seu Google Sheets.
+                  Insira o ID da planilha gerada no Milestone 1 e a URL do Web App implantado para sincronizar diretamente em tempo real com o seu Google Sheets. A sua planilha permanece <strong className="text-white">100% Privada e Segura</strong> no Google Drive.
                 </p>
               </div>
 
@@ -173,7 +184,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
                     ID da Planilha Google Sheets (Spreadsheet ID)
                   </label>
                   <input
-                    type="text"
+                    type={showSensitive ? 'text' : 'password'}
                     value={spreadsheetIdInput}
                     onChange={(e) => setSpreadsheetIdInput(e.target.value)}
                     placeholder="ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
@@ -189,7 +200,7 @@ export const GasSetupModal: React.FC<GasSetupModalProps> = ({ onClose, onDataCha
                     URL do Endpoint Google Apps Script (Web App)
                   </label>
                   <input
-                    type="url"
+                    type={showSensitive ? 'text' : 'password'}
                     value={endpointInput}
                     onChange={(e) => setEndpointInput(e.target.value)}
                     placeholder="https://script.google.com/macros/s/.../exec"
