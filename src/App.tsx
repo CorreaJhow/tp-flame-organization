@@ -55,6 +55,9 @@ export default function App() {
   const [newCultoData, setNewCultoData] = useState('');
   const [newCultoObs, setNewCultoObs] = useState('');
 
+  // Sync State
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const refreshData = useCallback(() => {
     setMusicas(storage.getMusicas());
     setVersoes(storage.getVersoes());
@@ -67,9 +70,17 @@ export default function App() {
     setLogs(storage.getLogs());
   }, []);
 
+  const handleSync = useCallback(async () => {
+    setIsSyncing(true);
+    await storage.fetchFromGas();
+    refreshData();
+    setIsSyncing(false);
+  }, [refreshData]);
+
   useEffect(() => {
     refreshData();
-  }, [refreshData]);
+    handleSync();
+  }, []);
 
   // Compute upcoming Culto
   const upcomingCulto = cultos.find(
@@ -111,6 +122,8 @@ export default function App() {
       <Header
         onOpenGasModal={() => setShowGasModal(true)}
         onNavigateTab={(tab) => setCurrentTab(tab)}
+        onSync={handleSync}
+        isSyncing={isSyncing}
       />
 
       {/* Main Container */}

@@ -1,14 +1,21 @@
 import React from 'react';
-import { Flame, Database, CheckCircle2, Shield } from 'lucide-react';
+import { Flame, Database, CheckCircle2, Shield, RefreshCw } from 'lucide-react';
 import { storage } from '../services/storage';
 import { ViewTab } from '../types';
 
 interface HeaderProps {
   onOpenGasModal: () => void;
   onNavigateTab: (tab: ViewTab) => void;
+  onSync?: () => void;
+  isSyncing?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenGasModal, onNavigateTab }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  onOpenGasModal, 
+  onNavigateTab,
+  onSync,
+  isSyncing = false
+}) => {
   const gasEndpoint = storage.getGasEndpoint();
   const isConnected = Boolean(gasEndpoint);
 
@@ -40,6 +47,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenGasModal, onNavigateTab })
 
         {/* Right Actions - Clean Status Badge & Admin Link */}
         <div className="flex items-center gap-2">
+          {/* Sync Button */}
+          {onSync && (
+            <button
+              onClick={onSync}
+              disabled={isSyncing}
+              className={`p-2 rounded-xl text-slate-300 hover:text-white bg-[#121212] hover:bg-[#181818] transition-all border border-slate-800 ${
+                isSyncing ? 'text-[#FF4D00]' : ''
+              }`}
+              title="Sincronizar com a Planilha Google"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+
           {/* Status Badge -> Opens Admin Tab */}
           <button
             id="header-admin-status-badge"

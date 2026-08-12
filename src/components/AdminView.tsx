@@ -44,6 +44,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // Admin settings state
   const [endpointInput, setEndpointInput] = useState(storage.getGasEndpoint());
   const [spreadsheetIdInput, setSpreadsheetIdInput] = useState(storage.getGasSpreadsheetId());
+  const [showSensitiveConfig, setShowSensitiveConfig] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
 
@@ -61,7 +62,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       setLoginError('');
       setPasswordInput('');
     } else {
-      setLoginError('Senha incorreta. Tente novamente (senha padrão: admin).');
+      setLoginError('Senha incorreta. Tente novamente.');
     }
   };
 
@@ -178,10 +179,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <ChevronRight className="w-4 h-4" />
             </button>
           </form>
-
-          <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-800/80">
-            Senha padrão: <span className="font-mono text-[#FF4D00] font-bold">admin</span>
-          </p>
         </div>
       </div>
     );
@@ -252,17 +249,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </span>
         </div>
 
+        <div className="p-3 bg-[#080808] border border-slate-800 rounded-2xl text-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              Segurança da Planilha Google (SSOT)
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowSensitiveConfig(!showSensitiveConfig)}
+              className="text-[11px] font-bold text-slate-400 hover:text-white flex items-center gap-1 underline"
+            >
+              {showSensitiveConfig ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              <span>{showSensitiveConfig ? 'Ocultar Credenciais' : 'Exibir Credenciais'}</span>
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            A sua planilha no Google Drive permanece <strong className="text-white">100% Privada e Protegida</strong>. Ninguém da equipe precisa ter acesso direto ao arquivo da planilha. Toda comunicação é feita via Web App seguro.
+          </p>
+        </div>
+
         <form onSubmit={handleSaveConnection} className="space-y-3">
           <div>
             <label className="text-xs font-semibold text-slate-300 block mb-1">
               URL da Web App Executável (Google Apps Script)
             </label>
             <input
-              type="text"
+              type={showSensitiveConfig ? 'text' : 'password'}
               value={endpointInput}
               onChange={(e) => setEndpointInput(e.target.value)}
               placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00]"
+              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] font-mono"
             />
           </div>
 
@@ -271,11 +288,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
               ID da Planilha Google (Spreadsheet ID)
             </label>
             <input
-              type="text"
+              type={showSensitiveConfig ? 'text' : 'password'}
               value={spreadsheetIdInput}
               onChange={(e) => setSpreadsheetIdInput(e.target.value)}
               placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00]"
+              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] font-mono"
             />
           </div>
 

@@ -34,6 +34,9 @@ export function generateUUID(): string {
   });
 }
 
+const DEFAULT_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzM45f4onc3vNeM_Dx2oFFrdaC2Kf3q_vBRC9yPV_xYjLbcUlL2WKhmeZmy9J6iVHOhQA/exec';
+const DEFAULT_GAS_SPREADSHEET_ID = '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU';
+
 class StorageService {
   constructor() {
     this.initDefaultData();
@@ -84,7 +87,7 @@ class StorageService {
 
   // GAS Settings
   public getGasEndpoint(): string {
-    return localStorage.getItem(KEYS.GAS_ENDPOINT) || '';
+    return localStorage.getItem(KEYS.GAS_ENDPOINT) || DEFAULT_GAS_ENDPOINT;
   }
 
   public setGasEndpoint(url: string) {
@@ -92,11 +95,61 @@ class StorageService {
   }
 
   public getGasSpreadsheetId(): string {
-    return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || '';
+    return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || DEFAULT_GAS_SPREADSHEET_ID;
   }
 
   public setGasSpreadsheetId(id: string) {
     localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, id.trim());
+  }
+
+  // GAS Syncing
+  public async fetchFromGas(): Promise<{ success: boolean; message?: string }> {
+    const endpoint = this.getGasEndpoint();
+    if (!endpoint) return { success: false, message: 'Endpoint GAS não configurado' };
+
+    try {
+      const res = await fetch(`${endpoint}?action=getAll`);
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const json = await res.json();
+
+      if (json.status === 'success' && json.data) {
+        const d = json.data;
+        if (Array.isArray(d.musicas) && d.musicas.length > 0) this.set(KEYS.MUSICAS, d.musicas);
+        if (Array.isArray(d.versoes) && d.versoes.length > 0) this.set(KEYS.VERSOES, d.versoes);
+        if (Array.isArray(d.arquivos)) this.set(KEYS.ARQUIVOS, d.arquivos);
+        if (Array.isArray(d.notas)) this.set(KEYS.NOTAS, d.notas);
+        if (Array.isArray(d.cultos) && d.cultos.length > 0) this.set(KEYS.CULTOS, d.cultos);
+        if (Array.isArray(d.repertorio)) this.set(KEYS.REPERTORIO, d.repertorio);
+        if (Array.isArray(d.integrantes) && d.integrantes.length > 0) this.set(KEYS.INTEGRANTES, d.integrantes);
+        if (Array.isArray(d.historico)) this.set(KEYS.HISTORICO, d.historico);
+        if (Array.isArray(d.logs)) this.set(KEYS.LOGS, d.logs);
+
+        this.addLog('GAS_SYNC_FETCH', 'Dados sincronizados com sucesso do Google Sheets');
+        return { success: true };
+      } else {
+        return { success: false, message: json.message || 'Erro de formato retornado pelo GAS' };
+      }
+    } catch (err: any) {
+      console.warn('Sincronização com GAS offline/falhou, usando cache local:', err);
+      return { success: false, message: err?.message || 'Falha de conexão com GAS' };
+    }
+  }
+
+  public async sendToGas(table: string, action: string, data: any): Promise<boolean> {
+    const endpoint = this.getGasEndpoint();
+    if (!endpoint) return false;
+
+    try {
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, table, data })
+      });
+      return true;
+    } catch (err) {
+      console.warn(`Erro enviando para GAS [${table}/${action}]:`, err);
+      return false;
+    }
   }
 
   // Admin Auth
@@ -203,6 +256,9 @@ class StorageService {
     this.set(KEYS.MUSICAS, musicas);
     this.set(KEYS.VERSOES, versoes);
 
+    this.sendToGas('Musicas', 'insert', newMusica);
+    this.sendToGas('Versoes', 'insert', newVersao);
+
     this.addLog('INSERT_MUSICA', `Música "${newMusica.Nome}" e Versão "${newVersao.Nome_Versao}" criadas`);
     return { musica: newMusica, versao: newVersao };
   }
@@ -215,6 +271,7 @@ class StorageService {
     };
     versoes.push(newVersao);
     this.set(KEYS.VERSOES, versoes);
+    this.sendToGas('Versoes', 'insert', newVersao);
     this.addLog('INSERT_VERSAO', `Nova versão "${newVersao.Nome_Versao}" adicionada`);
     return newVersao;
   }
@@ -227,6 +284,7 @@ class StorageService {
     };
     notas.push(newNota);
     this.set(KEYS.NOTAS, notas);
+    this.sendToGas('Notas', 'insert', newNota);
     this.addLog('INSERT_NOTA', `Nota para ${newNota.Instrumento} inserida`);
     return newNota;
   }
@@ -239,6 +297,7 @@ class StorageService {
     };
     arquivos.push(newArquivo);
     this.set(KEYS.ARQUIVOS, arquivos);
+    this.sendToGas('Arquivos', 'insert', newArquivo);
     this.addLog('INSERT_ARQUIVO', `Anexo ${newArquivo.Tipo} adicionado`);
     return newArquivo;
   }
@@ -327,6 +386,7 @@ class StorageService {
     };
     cultos.unshift(newCulto);
     this.set(KEYS.CULTOS, cultos);
+    this.sendToGas('Cultos', 'insert', newCulto);
     this.addLog('INSERT_CULTO', `Culto "${newCulto.Nome_Evento}" agendado`);
     return newCulto;
   }
@@ -357,6 +417,7 @@ class StorageService {
 
     repertorio.push(newItem);
     this.set(KEYS.REPERTORIO, repertorio);
+    this.sendToGas('Repertorio', 'insert', newItem);
     this.addLog('INSERT_REPERTORIO', `Música adicionada ao culto ID ${cultoId}`);
     return newItem;
   }
@@ -390,6 +451,7 @@ class StorageService {
     };
     integrantes.push(newMember);
     this.set(KEYS.INTEGRANTES, integrantes);
+    this.sendToGas('Integrantes', 'insert', newMember);
     this.addLog('INSERT_INTEGRANTE', `Integrante ${newMember.Nome} cadastrado`);
     return newMember;
   }
