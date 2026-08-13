@@ -79,4 +79,12 @@ export interface LogItem {
   Registro_Afetado: string;
 }
 
+export interface SyncQueueItem {
+  id: string;
+  table: string;
+  action: 'insert' | 'update' | 'delete';
+  data: any;
+  timestamp: number;
+}
+
 export type ViewTab = 'inicio' | 'biblioteca' | 'cultos' | 'mais' | 'integrantes' | 'historico' | 'admin';

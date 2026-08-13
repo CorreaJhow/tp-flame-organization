@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Lock, 
   LogOut, 
@@ -13,12 +13,26 @@ import {
   EyeOff, 
   ChevronRight,
   ArrowLeft,
-  X
+  FileSpreadsheet,
+  ExternalLink,
+  PlusCircle,
+  FolderOpen,
+  CloudCheck,
+  AlertCircle
 } from 'lucide-react';
 import { storage } from '../services/storage';
 import { ViewTab } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
+import { 
+  googleSignIn, 
+  googleLogout, 
+  getCurrentUser, 
+  getAccessToken, 
+  initAuth 
+} from '../services/googleAuth';
+import { createTPFlameSpreadsheet } from '../services/googleSheetsApi';
+import { User } from 'firebase/auth';
 
 interface AdminViewProps {
   onOpenGasModal: () => void;
@@ -46,9 +60,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
 
+  // Google OAuth User State
+  const [googleUser, setGoogleUser] = useState<User | null>(getCurrentUser());
+  const [isLoggingInGoogle, setIsLoggingInGoogle] = useState(false);
+  const [isCreatingInDrive, setIsCreatingInDrive] = useState(false);
+
   // Admin settings state
   const [endpointInput, setEndpointInput] = useState(storage.getGasEndpoint());
   const [spreadsheetIdInput, setSpreadsheetIdInput] = useState(storage.getGasSpreadsheetId());
+  const [spreadsheetName, setSpreadsheetName] = useState(storage.getSpreadsheetName());
   const [showSensitiveConfig, setShowSensitiveConfig] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
@@ -57,7 +77,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [changePassSuccess, setChangePassSuccess] = useState(false);
 
-  const isConnected = Boolean(endpointInput.trim());
+  useEffect(() => {
+    const unsub = initAuth(
+      (u) => setGoogleUser(u),
+      () => setGoogleUser(null)
+    );
+    return () => {
+      if (unsub) unsub();
+    };
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +102,53 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleLogout = () => {
     storage.logoutAdmin();
     setIsLoggedIn(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoggingInGoogle(true);
+    try {
+      const res = await googleSignIn();
+      if (res) {
+        setGoogleUser(res.user);
+        showToast('Autenticado com a conta Google com sucesso!', 'success');
+        onDataChanged();
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Falha ao autenticar com o Google', 'error');
+    } finally {
+      setIsLoggingInGoogle(false);
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    await googleLogout();
+    setGoogleUser(null);
+    showToast('Conta Google desconectada.', 'info');
+    onDataChanged();
+  };
+
+  const handleCreateSpreadsheetInDrive = async () => {
+    const token = getAccessToken();
+    if (!token) {
+      showToast('Faça login com o Google primeiro!', 'warning');
+      return;
+    }
+
+    setIsCreatingInDrive(true);
+    try {
+      const result = await createTPFlameSpreadsheet(token);
+      storage.setGasSpreadsheetId(result.id);
+      storage.setSpreadsheetName(result.name);
+      setSpreadsheetIdInput(result.id);
+      setSpreadsheetName(result.name);
+      showToast(`Planilha criada com sucesso no seu Google Drive!`, 'success');
+      await storage.syncWithGas();
+      onDataChanged();
+    } catch (err: any) {
+      showToast(err?.message || 'Erro criando planilha no Drive', 'error');
+    } finally {
+      setIsCreatingInDrive(false);
+    }
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -124,7 +199,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
   if (!isLoggedIn) {
     return (
       <div className="max-w-md mx-auto py-8 px-4 space-y-4">
-        {/* Top Mobile Back Navigation */}
         {onNavigate && (
           <button
             onClick={() => onNavigate('mais')}
@@ -144,10 +218,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
           <div>
             <h2 className="text-xl font-bold text-white mb-1">
-              Área Restrita (GAS)
+              Área do Administrador
             </h2>
             <p className="text-xs text-slate-400">
-              Digite a senha de administrador para acessar o painel
+              Digite a senha de administrador para gerenciar o Google Sheets
             </p>
           </div>
 
@@ -183,7 +257,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
             >
               <span>Entrar na Administração</span>
               <ChevronRight className="w-4 h-4" />
@@ -194,10 +268,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
     );
   }
 
+  const hasGoogleToken = Boolean(getAccessToken());
+  const currentSpreadsheetUrl = spreadsheetIdInput ? `https://docs.google.com/spreadsheets/d/${spreadsheetIdInput}/edit` : null;
+
   // Admin Dashboard (Authenticated)
   return (
     <div className="space-y-6 pb-28">
-      {/* Top Mobile Back Navigation */}
       {onNavigate && (
         <button
           onClick={() => onNavigate('mais')}
@@ -219,17 +295,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
               Painel do Administrador
             </h2>
             <p className="text-xs text-slate-400">
-              Modo de Gerenciamento & Integração Google Sheets (SSOT)
+              Modo de Gerenciamento & Integração Google Workspace / Sheets
             </p>
           </div>
         </div>
 
         <button
           onClick={handleLogout}
-          className="py-2 px-3.5 rounded-xl bg-[#1a1a1a] hover:bg-red-950/60 text-slate-300 hover:text-red-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors"
+          className="py-2 px-3.5 rounded-xl bg-[#1a1a1a] hover:bg-red-950/60 text-slate-300 hover:text-red-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>Sair</span>
+          <span>Sair da Administração</span>
         </button>
       </div>
 
@@ -239,44 +315,139 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
-      {/* Connection & Setup Google Apps Script */}
+      {/* Google Workspace Direct Integration Hub */}
+      <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-sm font-bold text-white">
+              Google Workspace & Sheets Hub
+            </h3>
+          </div>
+          <span
+            className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
+              hasGoogleToken
+                ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40'
+                : 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/30'
+            }`}
+          >
+            {hasGoogleToken ? '• GOOGLE OAUTH ATIVO' : '• LOGIN PENDENTE'}
+          </span>
+        </div>
+
+        {/* Google User Info / Login */}
+        <div className="p-4 bg-[#080808] border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          {googleUser ? (
+            <div className="flex items-center gap-3">
+              {googleUser.photoURL ? (
+                <img 
+                  src={googleUser.photoURL} 
+                  alt={googleUser.displayName || 'Google'} 
+                  referrerPolicy="no-referrer"
+                  className="w-10 h-10 rounded-full border border-slate-700 object-cover" 
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#FF4D00] text-slate-950 font-black flex items-center justify-center">
+                  G
+                </div>
+              )}
+              <div>
+                <h4 className="text-xs font-bold text-white">
+                  {googleUser.displayName || 'Conta Google'}
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  {googleUser.email}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h4 className="text-xs font-bold text-white">
+                Autentique com a sua Conta Google
+              </h4>
+              <p className="text-[11px] text-slate-400">
+                Acesse planilhas diretamente pelo Google Sheets API v4 e Drive API v3
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {googleUser ? (
+              <button
+                onClick={handleGoogleLogout}
+                className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-400 text-xs font-bold border border-slate-700 transition-all cursor-pointer"
+              >
+                Desconectar
+              </button>
+            ) : (
+              <button
+                onClick={handleGoogleLogin}
+                disabled={isLoggingInGoogle}
+                className="py-2 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                </svg>
+                <span>{isLoggingInGoogle ? 'Entrando...' : 'Entrar com Google'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenGasModal}
+              className="py-2 px-3 rounded-xl bg-[#1f1f1f] hover:bg-[#282828] text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-[#FF4D00]" />
+              <span>Gerenciar Planilhas</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Spreadsheet Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <button
+            onClick={handleCreateSpreadsheetInDrive}
+            disabled={isCreatingInDrive || !hasGoogleToken}
+            className="p-3 rounded-2xl bg-gradient-to-r from-[#FF4D00] to-[#e04400] text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md hover:opacity-95 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>{isCreatingInDrive ? 'Criando no Google Drive...' : 'Criar Banco de Dados no Google Drive'}</span>
+          </button>
+
+          {currentSpreadsheetUrl && (
+            <a
+              href={currentSpreadsheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 rounded-2xl bg-[#181818] hover:bg-[#222] border border-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 text-center"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Abrir Planilha no Google Sheets</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            </a>
+          )}
+        </div>
+      </section>
+
+      {/* Manual GAS Endpoint Section */}
       <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Server className="w-4 h-4 text-[#FF4D00]" />
             <h3 className="text-sm font-bold text-white">
-              Integração Google Apps Script (GAS)
+              Google Apps Script (Web App Endpoint)
             </h3>
           </div>
-          <span
-            className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
-              isConnected
-                ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40'
-                : 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/30'
-            }`}
+          <button
+            type="button"
+            onClick={() => setShowSensitiveConfig(!showSensitiveConfig)}
+            className="text-[11px] font-bold text-slate-400 hover:text-white flex items-center gap-1 underline"
           >
-            {isConnected ? '• CONECTADO' : '• MODO LOCAL'}
-          </span>
-        </div>
-
-        <div className="p-3 bg-[#080808] border border-slate-800 rounded-2xl text-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Segurança da Planilha Google (SSOT)
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowSensitiveConfig(!showSensitiveConfig)}
-              className="text-[11px] font-bold text-slate-400 hover:text-white flex items-center gap-1 underline"
-            >
-              {showSensitiveConfig ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              <span>{showSensitiveConfig ? 'Ocultar Credenciais' : 'Exibir Credenciais'}</span>
-            </button>
-          </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            A sua planilha no Google Drive permanece <strong className="text-white">100% Privada e Protegida</strong>. Ninguém da equipe precisa ter acesso direto ao arquivo da planilha. Toda comunicação é feita via Web App seguro.
-          </p>
+            {showSensitiveConfig ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            <span>{showSensitiveConfig ? 'Ocultar' : 'Exibir'}</span>
+          </button>
         </div>
 
         <form onSubmit={handleSaveConnection} className="space-y-3">
@@ -310,15 +481,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
             <button
               type="button"
               onClick={onOpenGasModal}
-              className="text-xs font-bold text-[#FF4D00] hover:underline flex items-center gap-1"
+              className="text-xs font-bold text-[#FF4D00] hover:underline flex items-center gap-1 cursor-pointer"
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span>Instruções & Código do Script GAS</span>
+              <span>Instruções & Scripts do GAS</span>
             </button>
 
             <button
               type="submit"
-              className="py-2.5 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md"
+              className="py-2.5 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md cursor-pointer"
             >
               Salvar Conexão
             </button>
@@ -349,7 +520,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           />
           <button
             type="submit"
-            className="py-2 px-4 rounded-xl bg-[#181818] border border-slate-700 hover:border-[#FF4D00] text-white font-bold text-xs"
+            className="py-2 px-4 rounded-xl bg-[#181818] border border-slate-700 hover:border-[#FF4D00] text-white font-bold text-xs cursor-pointer"
           >
             Atualizar
           </button>
@@ -391,7 +562,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
         <div className="pt-2 flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleResetToDefaults}
-            className="flex-1 py-3 px-4 rounded-xl bg-[#181818] hover:bg-[#202020] border border-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+            className="flex-1 py-3 px-4 rounded-xl bg-[#181818] hover:bg-[#202020] border border-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-4 h-4 text-[#FF4D00]" />
             <span>Restaurar Dados de Exemplo</span>
@@ -399,87 +570,75 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
           <button
             onClick={handleClearAllData}
-            className="flex-1 py-3 px-4 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+            className="py-3 px-4 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <Trash2 className="w-4 h-4 text-red-400" />
+            <Trash2 className="w-4 h-4" />
             <span>Zerar Banco de Dados</span>
           </button>
         </div>
       </section>
 
-      {/* Confirm Reset Data Modal */}
+      {/* Confirm Reset Modal */}
       <ConfirmModal
         isOpen={showResetConfirm}
-        title="Restaurar Dados de Exemplo"
-        message="Deseja restaurar as músicas, versões e cultos de exemplo originais do TP Flame?"
-        confirmText="Sim, Restaurar"
-        isDanger={false}
+        title="Restaurar Dados de Exemplo?"
+        message="Isso redefinirá todas as músicas, cultos e integrantes locais para o conjunto inicial de demonstração. Deseja prosseguir?"
+        confirmText="Restaurar"
+        isDanger={true}
         onConfirm={() => {
           storage.resetToDefaults();
           onDataChanged();
-          showToast('Dados de exemplo restaurados com sucesso!', 'success');
-          setActionSuccessMsg('✓ Dados de exemplo restaurados com sucesso.');
+          showToast('Dados de exemplo restaurados!', 'info');
+          setActionSuccessMsg('✓ Dados de exemplo restaurados!');
           setTimeout(() => setActionSuccessMsg(''), 4000);
-          setShowResetConfirm(false);
         }}
         onClose={() => setShowResetConfirm(false)}
       />
 
-      {/* Modal para Zerar Banco de Dados */}
+      {/* Confirm Clear All Modal */}
       {showClearAllConfirm && (
-        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[#121212] border border-slate-800 w-full max-w-md rounded-3xl p-6 space-y-5 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-red-600" />
-
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-red-950/50 text-red-400 border border-red-500/30 flex items-center justify-center shrink-0">
-                  <Trash2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white leading-tight">
-                    Zerar Banco de Dados
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Atenção: Esta ação vai apagar <strong>todas</strong> as músicas, cultos, equipe e registros locais.
-                  </p>
-                </div>
+        <div className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#121212] border border-red-500/40 w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="w-10 h-10 rounded-xl bg-red-950/80 border border-red-500/40 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
               </div>
-
-              <button
-                onClick={() => setShowClearAllConfirm(false)}
-                className="p-1.5 rounded-xl bg-[#181818] text-slate-400 hover:text-white border border-slate-800 shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div>
+                <h3 className="text-base font-extrabold text-white">
+                  Zerar Todo o Banco de Dados?
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Atenção: Esta ação vai apagar todas as tabelas locais de forma irreversível.
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2 bg-[#080808] border border-slate-800 p-3.5 rounded-2xl">
-              <label className="text-[11px] font-bold text-slate-300 block">
-                Digite <span className="text-red-400 font-black">ZERAR</span> para confirmar:
-              </label>
+            <div className="p-3 bg-[#080808] border border-slate-800 rounded-xl space-y-2">
+              <p className="text-xs text-slate-300">
+                Para confirmar, digite <strong className="text-red-400 font-mono">ZERAR</strong> abaixo:
+              </p>
               <input
                 type="text"
                 value={clearConfirmInput}
                 onChange={(e) => setClearConfirmInput(e.target.value)}
                 placeholder="Digite ZERAR"
-                className="w-full bg-[#121212] border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-red-500"
-                autoFocus
+                className="w-full bg-[#121212] border border-slate-700 rounded-xl p-2.5 text-xs text-white uppercase font-mono focus:border-red-500 focus:outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800/80">
+            <div className="flex justify-end gap-2 pt-2">
               <button
+                type="button"
                 onClick={() => setShowClearAllConfirm(false)}
-                className="px-4 py-2.5 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 transition-all active:scale-95"
+                className="px-4 py-2 rounded-xl bg-[#181818] text-slate-400 text-xs font-bold hover:bg-[#222]"
               >
                 Cancelar
               </button>
-
               <button
-                onClick={handleExecuteClearAll}
+                type="button"
                 disabled={clearConfirmInput.trim().toUpperCase() !== 'ZERAR'}
-                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed font-black text-xs text-white shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                onClick={handleExecuteClearAll}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black"
               >
                 Sim, Apagar Tudo
               </button>

@@ -29,7 +29,7 @@ function setupDatabase() {
     "Notas": ["ID", "ID_Versao", "Instrumento", "Observacao"],
     "Cultos": ["ID", "Data", "Nome_Evento", "Status"],
     "Repertorio": ["ID", "ID_Culto", "ID_Versao", "Ordem"],
-    "Integrantes": ["ID", "Nome", "Funcao", "Email"],
+    "Integrantes": ["ID", "Nome", "Funcao", "Email", "Telefone", "Ativo"],
     "Historico": ["ID", "ID_Versao", "ID_Culto", "Data_Execucao"],
     "Logs": ["ID", "Data", "Usuario", "Acao", "Registro_Afetado"]
   };
@@ -131,23 +131,32 @@ function seedInitialData(ss) {
   ss.getSheetByName("Repertorio").appendRow([generateUUID(), culto1Id, ver1Id, 1]);
 
   // Inserir Integrantes
-  ss.getSheetByName("Integrantes").appendRow([generateUUID(), "Davi Silva", "Vocal / Violão", "davi@tpflame.org"]);
-  ss.getSheetByName("Integrantes").appendRow([generateUUID(), "Sarah Costa", "Teclado", "sarah@tpflame.org"]);
+  ss.getSheetByName("Integrantes").appendRow([generateUUID(), "Davi Silva", "Vocal / Violão", "davi@tpflame.org", "(11) 98765-4321", true]);
+  ss.getSheetByName("Integrantes").appendRow([generateUUID(), "Sarah Costa", "Teclado", "sarah@tpflame.org", "(11) 91234-5678", true]);
 }
 `;
 
 export const GAS_MILESTONE_2_3_API_CODE = `/**
  * ============================================================================
- * PLATAFORMA TP FLAME - BACKEND API (Google Apps Script - doGet / doPost)
+ * PLATAFORMA TP FLAME - BACKEND API V2 (Google Apps Script - doGet / doPost)
  * ============================================================================
  * Publicar como 'Web App' com permissão: "Qualquer pessoa" (Anyone)
  */
 
-var SPREADSHEET_ID = "COLE_AQUI_O_ID_DA_SUA_PLANILHA";
+function getSpreadsheet() {
+  // Se executado dentro da planilha vinculada, usa getActiveSpreadsheet()
+  // Se em projeto standalone, usa a ID configurada
+  var SPREADSHEET_ID = "1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU";
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) return ss;
+  } catch (e) {}
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
 
 function doGet(e) {
-  var action = e.parameter.action || 'getAll';
-  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
+  var ss = getSpreadsheet();
   
   try {
     if (action === 'getAll') {
@@ -167,14 +176,13 @@ function doGet(e) {
     }
     
     if (action === 'search') {
-      var query = (e.parameter.q || '').toLowerCase();
+      var query = ((e && e.parameter && e.parameter.q) || '').toLowerCase();
       var musicas = getSheetData(ss, 'Musicas');
-      var versoes = getSheetData(ss, 'Versoes');
       
       var filteredMusicas = musicas.filter(function(m) {
-        return m.Nome.toLowerCase().indexOf(query) !== -1 ||
-               m.Artista.toLowerCase().indexOf(query) !== -1 ||
-               m.Categoria.toLowerCase().indexOf(query) !== -1;
+        return (m.Nome || '').toLowerCase().indexOf(query) !== -1 ||
+               (m.Artista || '').toLowerCase().indexOf(query) !== -1 ||
+               (m.Categoria || '').toLowerCase().indexOf(query) !== -1;
       });
       
       return createJsonResponse({ status: 'success', data: filteredMusicas });
@@ -188,30 +196,108 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return createJsonResponse({ status: 'error', message: 'Nenhum dado recebido no POST' });
+    }
+
     var body = JSON.parse(e.postData.contents);
     var action = body.action;
     var table = body.table;
     var payload = body.data;
-    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    var sheet = ss.getSheetByName(table);
+    var ss = getSpreadsheet();
     
-    if (!sheet) {
-      return createJsonResponse({ status: 'error', message: 'Tabela não encontrada: ' + table });
+    // Suporte a operações em lote (batch)
+    if (action === 'batch' && Array.isArray(body.operations)) {
+      body.operations.forEach(function(op) {
+        processOperation(ss, op.table, op.action, op.data);
+      });
+      return createJsonResponse({ status: 'success', message: 'Batch processado com sucesso' });
     }
     
-    if (action === 'insert') {
-      if (!payload.ID) payload.ID = generateUUID();
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      var row = headers.map(function(h) { return payload[h] !== undefined ? payload[h] : ''; });
-      sheet.appendRow(row);
-      logAction(ss, 'INSERT', table, 'ID: ' + payload.ID);
-      return createJsonResponse({ status: 'success', id: payload.ID });
-    }
-    
-    return createJsonResponse({ status: 'error', message: 'Ação do POST não suportada' });
+    var result = processOperation(ss, table, action, payload);
+    return createJsonResponse(result);
   } catch (err) {
     return createJsonResponse({ status: 'error', message: err.toString() });
   }
+}
+
+function processOperation(ss, table, action, payload) {
+  var sheet = ss.getSheetByName(table);
+  if (!sheet) {
+    return { status: 'error', message: 'Tabela não encontrada: ' + table };
+  }
+  
+  var dataRange = sheet.getDataRange();
+  var values = dataRange.getValues();
+  if (values.length === 0) {
+    return { status: 'error', message: 'Tabela vazia ou sem cabeçalho: ' + table };
+  }
+  
+  var headers = values[0];
+  var idIndex = headers.indexOf("ID");
+  if (idIndex === -1) idIndex = 0;
+
+  if (action === 'insert') {
+    if (!payload.ID) payload.ID = generateUUID();
+    
+    // Upsert: verifica se o ID já existe
+    var existingRow = -1;
+    for (var i = 1; i < values.length; i++) {
+      if (values[i][idIndex] == payload.ID) {
+        existingRow = i + 1;
+        break;
+      }
+    }
+    
+    var row = headers.map(function(h) { 
+      return payload[h] !== undefined ? payload[h] : ''; 
+    });
+    
+    if (existingRow !== -1) {
+      sheet.getRange(existingRow, 1, 1, headers.length).setValues([row]);
+      logAction(ss, 'UPDATE_UPSERT', table, 'ID: ' + payload.ID);
+    } else {
+      sheet.appendRow(row);
+      logAction(ss, 'INSERT', table, 'ID: ' + payload.ID);
+    }
+    
+    return { status: 'success', id: payload.ID };
+  }
+  
+  if (action === 'update') {
+    var targetId = payload.ID || payload.id;
+    for (var i = 1; i < values.length; i++) {
+      if (values[i][idIndex] == targetId) {
+        var rowData = values[i];
+        headers.forEach(function(h, colIdx) {
+          if (payload[h] !== undefined) {
+            rowData[colIdx] = payload[h];
+          }
+        });
+        sheet.getRange(i + 1, 1, 1, headers.length).setValues([rowData]);
+        logAction(ss, 'UPDATE', table, 'ID: ' + targetId);
+        return { status: 'success', id: targetId };
+      }
+    }
+    // Se não encontrou, insere
+    var newRow = headers.map(function(h) { return payload[h] !== undefined ? payload[h] : ''; });
+    sheet.appendRow(newRow);
+    return { status: 'success', id: targetId };
+  }
+  
+  if (action === 'delete') {
+    var targetId = payload.ID || payload.id;
+    for (var i = 1; i < values.length; i++) {
+      if (values[i][idIndex] == targetId) {
+        sheet.deleteRow(i + 1);
+        logAction(ss, 'DELETE', table, 'ID: ' + targetId);
+        return { status: 'success', id: targetId };
+      }
+    }
+    return { status: 'success', message: 'Registro não encontrado para exclusão' };
+  }
+  
+  return { status: 'error', message: 'Ação não suportada: ' + action };
 }
 
 function getSheetData(ss, sheetName) {
