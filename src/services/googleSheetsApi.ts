@@ -15,11 +15,11 @@ import {
 export const SHEET_SCHEMAS: Record<string, string[]> = {
   Config: ['Chave', 'Valor', 'Descricao'],
   Musicas: ['ID', 'Nome', 'Artista', 'Categoria'],
-  Versoes: ['ID', 'ID_Musica', 'Nome_Versao', 'Tom', 'Letra', 'Estrutura', 'Obs'],
-  Arquivos: ['ID', 'ID_Versao', 'Tipo', 'URL'],
+  Versoes: ['ID', 'ID_Musica', 'Nome_Versao', 'Tom', 'BPM', 'Compasso', 'Letra', 'Estrutura', 'Obs'],
+  Arquivos: ['ID', 'ID_Versao', 'Tipo', 'URL', 'Nome'],
   Notas: ['ID', 'ID_Versao', 'Instrumento', 'Observacao'],
-  Cultos: ['ID', 'Data', 'Nome_Evento', 'Status'],
-  Repertorio: ['ID', 'ID_Culto', 'ID_Versao', 'Ordem'],
+  Cultos: ['ID', 'Data', 'Nome_Evento', 'Status', 'Observacoes'],
+  Repertorio: ['ID', 'ID_Culto', 'ID_Versao', 'Ordem', 'Dirigente', 'Observacao_Culto'],
   Integrantes: ['ID', 'Nome', 'Funcao', 'Email', 'Telefone', 'Ativo'],
   Historico: ['ID', 'ID_Versao', 'ID_Culto', 'Data_Execucao'],
   Logs: ['ID', 'Data', 'Usuario', 'Acao', 'Registro_Afetado']

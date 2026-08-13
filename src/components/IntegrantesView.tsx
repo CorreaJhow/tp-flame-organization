@@ -51,7 +51,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
   const handleOpenEdit = (member: Integrante) => {
     setEditingMember(member);
     setNome(member.Nome);
-    const roles = member.Funcao.split(',').map((r) => r.trim()).filter(Boolean);
+    const roles = String(member.Funcao || '').split(',').map((r) => r.trim()).filter(Boolean);
     setSelectedFuncoes(roles.length > 0 ? roles : ['Ministro / Vocal']);
     setEmail(member.Email || '');
     setTelefone(member.Telefone || '');
@@ -157,7 +157,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {integrantes.map((member) => {
-            const roles = member.Funcao.split(',').map((r) => r.trim()).filter(Boolean);
+            const roles = String(member.Funcao || '').split(',').map((r) => r.trim()).filter(Boolean);
 
             return (
               <div

@@ -312,14 +312,16 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                     Estrutura da Música:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {currentVersao.Estrutura.split('-').map((part, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-[#121212] border border-slate-800 text-[#FF4D00]"
-                      >
-                        {part.trim()}
-                      </span>
-                    ))}
+                    {String(currentVersao.Estrutura || '')
+                      .split('-')
+                      .map((part, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-[#121212] border border-slate-800 text-[#FF4D00]"
+                        >
+                          {part.trim()}
+                        </span>
+                      ))}
                   </div>
                 </div>
               )}

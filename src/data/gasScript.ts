@@ -1,51 +1,68 @@
 // Google Apps Script Source Code for TP Flame Platform
-// Milestone 1: Script de Setup Inicial do Banco de Dados no Google Sheets
+// Script Completo de Produção: Setup Automático, API Web App e Rotina de Backup
 
-export const GAS_MILESTONE_1_SETUP_CODE = `/**
+export const GAS_UNIFIED_PRODUCTION_CODE = `/**
  * ============================================================================
- * PLATAFORMA TP FLAME - MILESTONE 1: SCRIPT DE SETUP INICIAL (Google Apps Script)
+ * PLATAFORMA TP FLAME - SCRIPT UNIFICADO DE PRODUÇÃO (Google Apps Script)
  * ============================================================================
- * Instruções de Uso:
- * 1. Acesse https://script.google.com e crie um "Novo projeto".
- * 2. Cole todo este código no arquivo 'Código.gs'.
- * 3. Execute a função 'setupDatabase()'.
- * 4. O script criará a Planilha "TP Flame - Banco de Dados" no seu Google Drive
- *    com todas as 10 abas e cabeçalhos formatados com UUIDs de exemplo!
- * 5. Copie a ID da planilha gerada e cole nas configurações da plataforma Web.
+ * Funcionalidades Integradas:
+ * 1. setupDatabase(): Cria/formata todas as 10 abas com cabeçalhos e estilos.
+ * 2. doGet(e) & doPost(e): API Web App para sincronização instantânea em tempo real.
+ * 3. createBackup(): Gera cópia/backup automático da planilha no Google Drive.
+ * 4. setupDailyBackupTrigger(): Cria gatilho diário de backup automático.
+ * ============================================================================
  */
 
+// Configuração dos Esquemas das 10 Tabelas do Sistema
+var DATABASE_SCHEMA = {
+  "Config": ["Chave", "Valor", "Descricao"],
+  "Musicas": ["ID", "Nome", "Artista", "Categoria"],
+  "Versoes": ["ID", "ID_Musica", "Nome_Versao", "Tom", "BPM", "Compasso", "Letra", "Estrutura", "Obs"],
+  "Arquivos": ["ID", "ID_Versao", "Tipo", "URL", "Nome"],
+  "Notas": ["ID", "ID_Versao", "Instrumento", "Observacao"],
+  "Cultos": ["ID", "Data", "Nome_Evento", "Status", "Observacoes"],
+  "Repertorio": ["ID", "ID_Culto", "ID_Versao", "Ordem", "Dirigente", "Observacao_Culto"],
+  "Integrantes": ["ID", "Nome", "Funcao", "Email", "Telefone", "Ativo"],
+  "Historico": ["ID", "ID_Versao", "ID_Culto", "Data_Execucao"],
+  "Logs": ["ID", "Data", "Usuario", "Acao", "Registro_Afetado"]
+};
+
+/**
+ * Obtém a planilha ativa (quando aberta via Extensões > Apps Script)
+ */
+function getSpreadsheet() {
+  try {
+    var active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (e) {}
+  throw new Error("Não foi possível acessar a planilha ativa. Execute o script a partir do menu Extensões > Apps Script da planilha.");
+}
+
+/**
+ * 1. FUNÇÃO DE SETUP: Inicializa ou ajusta todas as abas e cabeçalhos
+ * Execute esta função uma vez no editor do Apps Script se a planilha for nova.
+ */
 function setupDatabase() {
-  var spreadsheetName = "TP Flame - Banco de Dados V1";
-  var ss = SpreadsheetApp.create(spreadsheetName);
-  Logger.log("Planilha criada com sucesso! ID: " + ss.getId());
-  Logger.log("URL da Planilha: " + ss.getUrl());
+  var ss = getSpreadsheet();
+  Logger.log("Iniciando setup na planilha: " + ss.getName() + " (ID: " + ss.getId() + ")");
 
-  // Definindo o esquema das 10 tabelas
-  var schema = {
-    "Config": ["Chave", "Valor", "Descricao"],
-    "Musicas": ["ID", "Nome", "Artista", "Categoria"],
-    "Versoes": ["ID", "ID_Musica", "Nome_Versao", "Tom", "Letra", "Estrutura", "Obs"],
-    "Arquivos": ["ID", "ID_Versao", "Tipo", "URL"],
-    "Notas": ["ID", "ID_Versao", "Instrumento", "Observacao"],
-    "Cultos": ["ID", "Data", "Nome_Evento", "Status"],
-    "Repertorio": ["ID", "ID_Culto", "ID_Versao", "Ordem"],
-    "Integrantes": ["ID", "Nome", "Funcao", "Email", "Telefone", "Ativo"],
-    "Historico": ["ID", "ID_Versao", "ID_Culto", "Data_Execucao"],
-    "Logs": ["ID", "Data", "Usuario", "Acao", "Registro_Afetado"]
-  };
+  Object.keys(DATABASE_SCHEMA).forEach(function(sheetName) {
+    var headers = DATABASE_SCHEMA[sheetName];
+    var sheet = ss.getSheetByName(sheetName);
 
-  // Remover a aba padrão 'Página1' ou 'Sheet1' no final
-  var defaultSheet = ss.getSheets()[0];
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+    }
 
-  // Criar cada aba com seu cabeçalho e formatação visual
-  Object.keys(schema).forEach(function(sheetName) {
-    var sheet = ss.insertSheet(sheetName);
-    var headers = schema[sheetName];
+    // Se a aba estiver vazia, insere cabeçalho
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(headers);
+    } else {
+      // Atualiza a primeira linha com os cabeçalhos padrão
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
 
-    // Inserir cabeçalho
-    sheet.appendRow(headers);
-
-    // Formatar cabeçalho: Fundo escuro, texto branco, negrito, congelado
+    // Formatação visual do cabeçalho
     var headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setBackground("#1E1E2E")
                .setFontColor("#FFFFFF")
@@ -54,111 +71,94 @@ function setupDatabase() {
 
     sheet.setFrozenRows(1);
     
-    // Auto-ajustar largura das colunas
     for (var col = 1; col <= headers.length; col++) {
       sheet.setColumnWidth(col, 160);
     }
   });
 
-  // Remover a aba inicial
-  ss.deleteSheet(defaultSheet);
+  // Remove a aba padrão Página1 / Sheet1 se existirem outras abas
+  var defaultSheet = ss.getSheetByName("Página1") || ss.getSheetByName("Sheet1");
+  if (defaultSheet && ss.getSheets().length > 1) {
+    try { ss.deleteSheet(defaultSheet); } catch (e) {}
+  }
 
-  // Inserir dados de configuração inicial
-  var configSheet = ss.getSheetByName("Config");
-  configSheet.appendRow(["PLATFORM_NAME", "TP Flame", "Nome da Plataforma"]);
-  configSheet.appendRow(["VERSION", "V1.0.0", "Versão do Sistema"]);
-  configSheet.appendRow(["CREATED_AT", new Date().toISOString(), "Data de Instalação"]);
-
-  // Inserir dados de exemplo para teste do Milestone 1
-  seedInitialData(ss);
-
-  // Gravar Log de Inicialização
-  var logsSheet = ss.getSheetByName("Logs");
-  logsSheet.appendRow([
-    generateUUID(),
-    new Date().toISOString(),
-    "Sistema (Setup)",
-    "SETUP_DATABASE",
-    "Banco de Dados inicializado com 10 abas"
-  ]);
+  // Registra log de setup
+  logAction(ss, "SETUP_DATABASE", "Todas as Tabelas", "Estrutura verificada/inicializada");
 
   Logger.log("=== SETUP CONCLUÍDO COM SUCESSO ===");
-  Logger.log("Planilha criada no Google Drive com ID: " + ss.getId());
   return {
+    status: "success",
     spreadsheetId: ss.getId(),
-    url: ss.getUrl()
+    message: "Banco de dados configurado com sucesso!"
   };
 }
 
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
-function seedInitialData(ss) {
-  var mus1Id = generateUUID();
-  var ver1Id = generateUUID();
-  var culto1Id = generateUUID();
-
-  // Inserir Música Exemplo
-  ss.getSheetByName("Musicas").appendRow([mus1Id, "Ruja o Leão", "Florianópolis House of Prayer", "Adoração"]);
-  
-  // Inserir Versão Exemplo
-  ss.getSheetByName("Versoes").appendRow([
-    ver1Id, 
-    mus1Id, 
-    "Versão Oficial (Original)", 
-    "E", 
-    "[E] Sobre o trono de glória [B] Tu estás sentado [C#m] vestido de majestade [A]", 
-    "INTRO - V1 - C - V2 - C - PONTE - OUTRO", 
-    "Aumentar dinâmica na Ponte"
-  ]);
-
-  // Inserir Arquivos
-  ss.getSheetByName("Arquivos").appendRow([generateUUID(), ver1Id, "Spotify", "https://open.spotify.com"]);
-  ss.getSheetByName("Arquivos").appendRow([generateUUID(), ver1Id, "Youtube", "https://youtube.com"]);
-
-  // Inserir Notas
-  ss.getSheetByName("Notas").appendRow([generateUUID(), ver1Id, "Teclado", "Entrar apenas com Pad suave na V1, piano entra na V2"]);
-  ss.getSheetByName("Notas").appendRow([generateUUID(), ver1Id, "Guitarra", "Distorção pesada na ponte com overdrive e shimmer delay"]);
-
-  // Inserir Culto
-  ss.getSheetByName("Cultos").appendRow([culto1Id, "2026-08-10T19:00", "Culto de Domingo - Noite", "Em Preparação"]);
-
-  // Inserir Repertório
-  ss.getSheetByName("Repertorio").appendRow([generateUUID(), culto1Id, ver1Id, 1]);
-
-  // Inserir Integrantes
-  ss.getSheetByName("Integrantes").appendRow([generateUUID(), "Davi Silva", "Vocal / Violão", "davi@tpflame.org", "(11) 98765-4321", true]);
-  ss.getSheetByName("Integrantes").appendRow([generateUUID(), "Sarah Costa", "Teclado", "sarah@tpflame.org", "(11) 91234-5678", true]);
-}
-`;
-
-export const GAS_MILESTONE_2_3_API_CODE = `/**
- * ============================================================================
- * PLATAFORMA TP FLAME - BACKEND API V2 (Google Apps Script - doGet / doPost)
- * ============================================================================
- * Publicar como 'Web App' com permissão: "Qualquer pessoa" (Anyone)
+/**
+ * 2. ROTINA DE BACKUP: Cria uma cópia com timestamp da planilha no Google Drive
  */
-
-function getSpreadsheet() {
-  // Se executado dentro da planilha vinculada, usa getActiveSpreadsheet()
-  // Se em projeto standalone, usa a ID configurada
-  var SPREADSHEET_ID = "1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU";
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (ss) return ss;
-  } catch (e) {}
-  return SpreadsheetApp.openById(SPREADSHEET_ID);
+function createBackup() {
+  var ss = getSpreadsheet();
+  var fileId = ss.getId();
+  var file = DriveApp.getFileById(fileId);
+  
+  var now = new Date();
+  var timeStamp = Utilities.formatDate(now, Session.getScriptTimeZone() || "GMT-3", "yyyy-MM-dd_HH-mm-ss");
+  var backupName = "Backup - " + ss.getName() + " - " + timeStamp;
+  
+  // Procura ou cria pasta "TP Flame - Backups"
+  var folderName = "TP Flame - Backups";
+  var folders = DriveApp.getFoldersByName(folderName);
+  var backupFolder;
+  if (folders.hasNext()) {
+    backupFolder = folders.next();
+  } else {
+    backupFolder = DriveApp.createFolder(folderName);
+  }
+  
+  var backupFile = file.makeCopy(backupName, backupFolder);
+  logAction(ss, "CREATE_BACKUP", "Drive", "Backup criado: " + backupName);
+  
+  Logger.log("Backup criado com sucesso: " + backupFile.getName() + " (ID: " + backupFile.getId() + ")");
+  return {
+    status: "success",
+    backupFileId: backupFile.getId(),
+    backupFileName: backupName,
+    backupUrl: backupFile.getUrl()
+  };
 }
 
+/**
+ * 3. GATILHO AUTOMÁTICO DE BACKUP DIÁRIO (Opcional)
+ * Execute uma vez para agendar backup automático todo dia às 03:00 da madrugada.
+ */
+function setupDailyBackupTrigger() {
+  // Remove gatilhos anteriores de backup
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "createBackup") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Cria novo gatilho diário às 3h
+  ScriptApp.newTrigger("createBackup")
+    .timeBased()
+    .everyDays(1)
+    .atHour(3)
+    .create();
+
+  Logger.log("Gatilho de backup diário configurado para as 03:00!");
+}
+
+/**
+ * 4. API WEB APP: Endpoints GET (Leitura e Consultas)
+ */
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
-  var ss = getSpreadsheet();
   
   try {
+    var ss = getSpreadsheet();
+
     if (action === 'getAll') {
       var data = {
         config: getSheetData(ss, 'Config'),
@@ -174,30 +174,41 @@ function doGet(e) {
       };
       return createJsonResponse({ status: 'success', data: data });
     }
-    
+
+    if (action === 'setup') {
+      var setupRes = setupDatabase();
+      return createJsonResponse(setupRes);
+    }
+
+    if (action === 'backup') {
+      var backupRes = createBackup();
+      return createJsonResponse(backupRes);
+    }
+
     if (action === 'search') {
       var query = ((e && e.parameter && e.parameter.q) || '').toLowerCase();
       var musicas = getSheetData(ss, 'Musicas');
-      
-      var filteredMusicas = musicas.filter(function(m) {
+      var filtered = musicas.filter(function(m) {
         return (m.Nome || '').toLowerCase().indexOf(query) !== -1 ||
                (m.Artista || '').toLowerCase().indexOf(query) !== -1 ||
                (m.Categoria || '').toLowerCase().indexOf(query) !== -1;
       });
-      
-      return createJsonResponse({ status: 'success', data: filteredMusicas });
+      return createJsonResponse({ status: 'success', data: filtered });
     }
-    
-    return createJsonResponse({ status: 'error', message: 'Ação não reconhecida' });
+
+    return createJsonResponse({ status: 'error', message: 'Ação GET desconhecida: ' + action });
   } catch (err) {
     return createJsonResponse({ status: 'error', message: err.toString() });
   }
 }
 
+/**
+ * 5. API WEB APP: Endpoints POST (Escrita, Alterações e Sincronização em Tempo Real)
+ */
 function doPost(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) {
-      return createJsonResponse({ status: 'error', message: 'Nenhum dado recebido no POST' });
+      return createJsonResponse({ status: 'error', message: 'Nenhum payload recebido no POST' });
     }
 
     var body = JSON.parse(e.postData.contents);
@@ -205,15 +216,54 @@ function doPost(e) {
     var table = body.table;
     var payload = body.data;
     var ss = getSpreadsheet();
-    
-    // Suporte a operações em lote (batch)
+
+    // Trigger remoto de backup
+    if (action === 'backup') {
+      return createJsonResponse(createBackup());
+    }
+
+    // Setup remoto
+    if (action === 'setup') {
+      return createJsonResponse(setupDatabase());
+    }
+
+    // Publicação / Substituição total de dados pelo App
+    if (action === 'replaceAll' && payload) {
+      var allTables = ["Musicas", "Versoes", "Arquivos", "Notas", "Cultos", "Repertorio", "Integrantes", "Historico"];
+      allTables.forEach(function(tableName) {
+        var sh = ss.getSheetByName(tableName);
+        if (sh) {
+          if (sh.getLastRow() > 1) {
+            sh.deleteRows(2, sh.getLastRow() - 1);
+          }
+          var key = tableName.toLowerCase();
+          var items = payload[key] || payload[tableName];
+          if (Array.isArray(items) && items.length > 0) {
+            var headers = sh.getDataRange().getValues()[0];
+            var rowsToAdd = items.map(function(item) {
+              return headers.map(function(h) {
+                return item[h] !== undefined ? item[h] : '';
+              });
+            });
+            if (rowsToAdd.length > 0) {
+              sh.getRange(2, 1, rowsToAdd.length, headers.length).setValues(rowsToAdd);
+            }
+          }
+        }
+      });
+      logAction(ss, 'REPLACE_ALL', 'Todas as Tabelas', 'Publicação completa enviada pelo App');
+      return createJsonResponse({ status: 'success', message: 'Planilha sincronizada e atualizada com sucesso!' });
+    }
+
+    // Operações em lote (batch)
     if (action === 'batch' && Array.isArray(body.operations)) {
       body.operations.forEach(function(op) {
         processOperation(ss, op.table, op.action, op.data);
       });
-      return createJsonResponse({ status: 'success', message: 'Batch processado com sucesso' });
+      return createJsonResponse({ status: 'success', message: 'Operações em lote processadas com sucesso' });
     }
-    
+
+    // Operação individual instantânea (insert, update, delete)
     var result = processOperation(ss, table, action, payload);
     return createJsonResponse(result);
   } catch (err) {
@@ -221,26 +271,35 @@ function doPost(e) {
   }
 }
 
+/**
+ * Executa uma operação (insert / update / delete) em uma tabela específica
+ */
 function processOperation(ss, table, action, payload) {
   var sheet = ss.getSheetByName(table);
   if (!sheet) {
-    return { status: 'error', message: 'Tabela não encontrada: ' + table };
+    // Tenta criar e configurar a tabela caso ainda não exista
+    setupDatabase();
+    sheet = ss.getSheetByName(table);
+    if (!sheet) {
+      return { status: 'error', message: 'Tabela não encontrada: ' + table };
+    }
   }
-  
+
   var dataRange = sheet.getDataRange();
   var values = dataRange.getValues();
   if (values.length === 0) {
-    return { status: 'error', message: 'Tabela vazia ou sem cabeçalho: ' + table };
+    setupDatabase();
+    values = sheet.getDataRange().getValues();
   }
-  
+
   var headers = values[0];
   var idIndex = headers.indexOf("ID");
   if (idIndex === -1) idIndex = 0;
 
   if (action === 'insert') {
     if (!payload.ID) payload.ID = generateUUID();
-    
-    // Upsert: verifica se o ID já existe
+
+    // Upsert: verifica se já existe
     var existingRow = -1;
     for (var i = 1; i < values.length; i++) {
       if (values[i][idIndex] == payload.ID) {
@@ -248,11 +307,11 @@ function processOperation(ss, table, action, payload) {
         break;
       }
     }
-    
-    var row = headers.map(function(h) { 
-      return payload[h] !== undefined ? payload[h] : ''; 
+
+    var row = headers.map(function(h) {
+      return payload[h] !== undefined ? payload[h] : '';
     });
-    
+
     if (existingRow !== -1) {
       sheet.getRange(existingRow, 1, 1, headers.length).setValues([row]);
       logAction(ss, 'UPDATE_UPSERT', table, 'ID: ' + payload.ID);
@@ -260,46 +319,48 @@ function processOperation(ss, table, action, payload) {
       sheet.appendRow(row);
       logAction(ss, 'INSERT', table, 'ID: ' + payload.ID);
     }
-    
     return { status: 'success', id: payload.ID };
   }
-  
+
   if (action === 'update') {
     var targetId = payload.ID || payload.id;
-    for (var i = 1; i < values.length; i++) {
-      if (values[i][idIndex] == targetId) {
-        var rowData = values[i];
+    for (var j = 1; j < values.length; j++) {
+      if (values[j][idIndex] == targetId) {
+        var rowData = values[j];
         headers.forEach(function(h, colIdx) {
           if (payload[h] !== undefined) {
             rowData[colIdx] = payload[h];
           }
         });
-        sheet.getRange(i + 1, 1, 1, headers.length).setValues([rowData]);
+        sheet.getRange(j + 1, 1, 1, headers.length).setValues([rowData]);
         logAction(ss, 'UPDATE', table, 'ID: ' + targetId);
         return { status: 'success', id: targetId };
       }
     }
-    // Se não encontrou, insere
+    // Caso não exista, realiza append
     var newRow = headers.map(function(h) { return payload[h] !== undefined ? payload[h] : ''; });
     sheet.appendRow(newRow);
     return { status: 'success', id: targetId };
   }
-  
+
   if (action === 'delete') {
-    var targetId = payload.ID || payload.id;
-    for (var i = 1; i < values.length; i++) {
-      if (values[i][idIndex] == targetId) {
-        sheet.deleteRow(i + 1);
-        logAction(ss, 'DELETE', table, 'ID: ' + targetId);
-        return { status: 'success', id: targetId };
+    var delId = payload.ID || payload.id;
+    for (var k = 1; k < values.length; k++) {
+      if (values[k][idIndex] == delId) {
+        sheet.deleteRow(k + 1);
+        logAction(ss, 'DELETE', table, 'ID: ' + delId);
+        return { status: 'success', id: delId };
       }
     }
     return { status: 'success', message: 'Registro não encontrado para exclusão' };
   }
-  
+
   return { status: 'error', message: 'Ação não suportada: ' + action };
 }
 
+/**
+ * Lê todas as linhas de uma aba e converte em array de objetos JSON
+ */
 function getSheetData(ss, sheetName) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
@@ -323,10 +384,12 @@ function createJsonResponse(data) {
 }
 
 function logAction(ss, acao, tabela, detalhe) {
-  var sheet = ss.getSheetByName('Logs');
-  if (sheet) {
-    sheet.appendRow([generateUUID(), new Date().toISOString(), 'Web Client', acao + ' em ' + tabela, detalhe]);
-  }
+  try {
+    var sheet = ss.getSheetByName('Logs');
+    if (sheet) {
+      sheet.appendRow([generateUUID(), new Date().toISOString(), 'Web Client', acao + ' em ' + tabela, detalhe]);
+    }
+  } catch (e) {}
 }
 
 function generateUUID() {
@@ -336,3 +399,7 @@ function generateUUID() {
   });
 }
 `;
+
+// Exportações legadas para compatibilidade
+export const GAS_MILESTONE_1_SETUP_CODE = GAS_UNIFIED_PRODUCTION_CODE;
+export const GAS_MILESTONE_2_3_API_CODE = GAS_UNIFIED_PRODUCTION_CODE;
