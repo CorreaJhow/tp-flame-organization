@@ -29,7 +29,8 @@ const KEYS = {
   GAS_SPREADSHEET_ID: 'tp_flame_gas_spreadsheet_id_v1',
   SPREADSHEET_NAME: 'tp_flame_spreadsheet_name_v1',
   SYNC_QUEUE: 'tp_flame_sync_queue_v1',
-  LAST_SYNC: 'tp_flame_last_sync_v1'
+  LAST_SYNC: 'tp_flame_last_sync_v1',
+  TOMBSTONES: 'tp_flame_tombstones_v1'
 };
 
 export function generateUUID(): string {
@@ -75,10 +76,11 @@ class StorageService {
     localStorage.removeItem(KEYS.HISTORICO);
     localStorage.removeItem(KEYS.LOGS);
     localStorage.removeItem(KEYS.SYNC_QUEUE);
+    localStorage.removeItem(KEYS.TOMBSTONES);
     this.initDefaultData();
   }
 
-  public clearAllData() {
+  public async clearAllData(clearRemote = true): Promise<boolean> {
     localStorage.setItem(KEYS.CONFIG, JSON.stringify([]));
     localStorage.setItem(KEYS.MUSICAS, JSON.stringify([]));
     localStorage.setItem(KEYS.VERSOES, JSON.stringify([]));
@@ -90,7 +92,40 @@ class StorageService {
     localStorage.setItem(KEYS.HISTORICO, JSON.stringify([]));
     localStorage.setItem(KEYS.LOGS, JSON.stringify([]));
     this.clearSyncQueue();
+    this.clearTombstones();
     this.addLog('SYSTEM_CLEAR', 'Todos os dados locais foram zerados');
+
+    if (clearRemote) {
+      await this.sendToGas('', 'clearAll', {});
+    }
+    return true;
+  }
+
+  // ==========================================
+  // TOMBSTONES (DELETION TRACKING)
+  // ==========================================
+
+  public getTombstones(): Set<string> {
+    const data = localStorage.getItem(KEYS.TOMBSTONES);
+    return new Set(data ? JSON.parse(data) : []);
+  }
+
+  public addTombstone(id: string) {
+    if (!id) return;
+    const tombstones = this.getTombstones();
+    tombstones.add(id);
+    localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(Array.from(tombstones)));
+  }
+
+  public removeTombstone(id: string) {
+    if (!id) return;
+    const tombstones = this.getTombstones();
+    tombstones.delete(id);
+    localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(Array.from(tombstones)));
+  }
+
+  public clearTombstones() {
+    localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify([]));
   }
 
   // ==========================================
@@ -192,7 +227,12 @@ class StorageService {
   }
 
   public setGasSpreadsheetId(id: string) {
-    localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, id.trim());
+    let cleanId = id.trim();
+    const match = cleanId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      cleanId = match[1];
+    }
+    localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, cleanId);
   }
 
   public getSpreadsheetName(): string {
@@ -204,7 +244,10 @@ class StorageService {
   }
 
   public getActiveSyncMode(): 'google_sheets_direct' | 'gas_endpoint' | 'offline_local' {
-    if (getAccessToken()) return 'google_sheets_direct';
+    const token = getAccessToken();
+    const spreadsheetId = this.getGasSpreadsheetId();
+    const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
+    if (token && isRealSpreadsheetId) return 'google_sheets_direct';
     if (this.getGasEndpoint()) return 'gas_endpoint';
     return 'offline_local';
   }
@@ -216,9 +259,10 @@ class StorageService {
   public async sendToGas(table: string, action: string, data: any): Promise<boolean> {
     const token = getAccessToken();
     const spreadsheetId = this.getGasSpreadsheetId();
+    const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
 
-    // 1. If user is authenticated via Google OAuth, use direct Sheets API v4
-    if (token && spreadsheetId) {
+    // 1. If user is authenticated via Google OAuth and has a valid Spreadsheet ID, use direct Sheets API v4
+    if (token && isRealSpreadsheetId) {
       const success = await pushTableActionToGoogleSheets(
         token, 
         spreadsheetId, 
@@ -249,9 +293,8 @@ class StorageService {
 
   /**
    * Smart bidirectional synchronization:
-   * 1. Direct Google Sheets API v4 (if signed in with Google Workspace OAuth)
-   * 2. GAS Web App endpoint (fallback)
-   * 3. SMART MERGE: Never delete un-synced local data!
+   * 1. Direct Google Sheets API v4 (if signed in with Google Workspace OAuth and valid sheet ID)
+   * 2. GAS Web App endpoint (public web app)
    */
   public async syncWithGas(): Promise<{ 
     success: boolean; 
@@ -262,11 +305,12 @@ class StorageService {
   }> {
     const token = getAccessToken();
     const spreadsheetId = this.getGasSpreadsheetId();
+    const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
     let pushedCount = 0;
     let pulledCount = 0;
 
     // PATH A: DIRECT GOOGLE SHEETS API V4 (WHEN LOGGED IN WITH GOOGLE WORKSPACE)
-    if (token && spreadsheetId) {
+    if (token && isRealSpreadsheetId) {
       try {
         const queue = this.getSyncQueue();
         if (queue.length > 0) {
@@ -326,29 +370,26 @@ class StorageService {
           this.setDirect(KEYS.ARQUIVOS, merged);
         }
 
-        if (Array.isArray(sheetsData.historico) && sheetsData.historico.length > 0) {
+        if (Array.isArray(sheetsData.historico)) {
           this.setDirect(KEYS.HISTORICO, sheetsData.historico);
         }
 
-        if (Array.isArray(sheetsData.logs) && sheetsData.logs.length > 0) {
-          const localLogs = this.getLogs();
-          const mergedLogs = this.mergeCollections(localLogs, sheetsData.logs, [], 'Logs');
-          this.setDirect(KEYS.LOGS, mergedLogs.slice(0, 50));
+        if (Array.isArray(sheetsData.logs)) {
+          this.setDirect(KEYS.LOGS, sheetsData.logs.slice(0, 50));
         }
 
         localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
         this.addLog('GOOGLE_SHEETS_SYNC', `Sincronização direta com Google Sheets API v4 (${pushedCount} enviados, ${pulledCount} recebidos)`);
         return { success: true, pushedCount, pulledCount, mode: 'Google Sheets API v4' };
       } catch (err: any) {
-        console.warn('Erro na sincronização direta do Sheets API:', err);
-        // If Direct API fails, try falling back to GAS
+        console.warn('Erro na sincronização direta do Sheets API, tentando via GAS Web App:', err);
       }
     }
 
     // PATH B: GOOGLE APPS SCRIPT WEB APP ENDPOINT
     const endpoint = this.getGasEndpoint();
     if (!endpoint) {
-      return { success: false, message: 'Nenhuma conexão ativa configurada', pushedCount: 0, pulledCount: 0 };
+      return { success: false, message: 'Nenhuma URL de Web App configurada', pushedCount: 0, pulledCount: 0 };
     }
 
     try {
@@ -408,30 +449,70 @@ class StorageService {
           this.setDirect(KEYS.ARQUIVOS, merged);
         }
 
-        if (Array.isArray(d.historico) && d.historico.length > 0) {
+        if (Array.isArray(d.historico)) {
           this.setDirect(KEYS.HISTORICO, d.historico);
         }
 
-        if (Array.isArray(d.logs) && d.logs.length > 0) {
-          const localLogs = this.getLogs();
-          const mergedLogs = this.mergeCollections(localLogs, d.logs, [], 'Logs');
-          this.setDirect(KEYS.LOGS, mergedLogs.slice(0, 50));
+        if (Array.isArray(d.logs)) {
+          this.setDirect(KEYS.LOGS, d.logs.slice(0, 50));
         }
 
         localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
-        this.addLog('GAS_SYNC_SUCCESS', `Sincronização concluída via GAS (${pushedCount} enviados)`);
+        this.addLog('GAS_SYNC_SUCCESS', `Sincronização concluída via GAS (${pushedCount} enviados, ${pulledCount} recebidos)`);
         return { success: true, pushedCount, pulledCount, mode: 'Google Apps Script' };
       } else {
-        return { success: false, message: json.message || 'Erro de formato retornado pela planilha', pushedCount, pulledCount };
+        return { success: false, message: json.message || 'Erro retornado pela planilha Google', pushedCount, pulledCount };
       }
     } catch (err: any) {
       console.warn('Sincronização offline/falhou:', err);
-      return { success: false, message: err?.message || 'Falha de conexão com a planilha', pushedCount, pulledCount };
+      const isCorsOrAuth = err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError');
+      const errorMsg = isCorsOrAuth
+        ? 'Não foi possível conectar ao Web App. Verifique se na implantação do Apps Script o campo "Quem tem acesso" foi definido como "Qualquer pessoa" (Anyone).'
+        : (err?.message || 'Falha de conexão com a planilha');
+      return { success: false, message: errorMsg, pushedCount, pulledCount };
     }
   }
 
   public async fetchFromGas() {
     return this.syncWithGas();
+  }
+
+  /**
+   * Pushes entire local database to Google Sheets (Authoritative Overwrite)
+   */
+  public async pushAllToGas(): Promise<{ success: boolean; message: string }> {
+    const payload = {
+      musicas: this.getMusicas(),
+      versoes: this.getVersoes(),
+      arquivos: this.getArquivos(),
+      notas: this.getNotas(),
+      cultos: this.getCultos(),
+      repertorio: this.getRepertorio(),
+      integrantes: this.getIntegrantes(),
+      historico: this.getHistorico()
+    };
+
+    const endpoint = this.getGasEndpoint();
+    if (!endpoint) {
+      return { success: false, message: 'URL da API Google Apps Script não configurada.' };
+    }
+
+    try {
+      await fetch(endpoint, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'replaceAll', data: payload })
+      });
+
+      this.clearSyncQueue();
+      this.clearTombstones();
+      localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
+      this.addLog('REPLACE_ALL', 'Planilha Google substituída com dados atuais do aplicativo');
+      return { success: true, message: 'Planilha atualizada e sincronizada com sucesso!' };
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'Erro ao comunicar com a planilha' };
+    }
   }
 
   /**
@@ -443,6 +524,7 @@ class StorageService {
     queue: SyncQueueItem[],
     table: string
   ): T[] {
+    const tombstones = this.getTombstones();
     const tablePending = queue.filter((q) => q.table === table);
     const pendingDeleteIds = new Set(
       tablePending.filter((q) => q.action === 'delete').map((q) => q.data?.ID || q.data?.id)
@@ -456,28 +538,18 @@ class StorageService {
 
     const resultMap = new Map<string, T>();
 
-    // 1. Add all valid remote items (except those deleted locally in queue)
+    // 1. Add all valid remote items from Google Sheets (except those explicitly deleted locally or tombstoned)
     for (const remote of remoteList) {
-      if (remote && remote.ID && !pendingDeleteIds.has(remote.ID)) {
+      if (remote && remote.ID && !pendingDeleteIds.has(remote.ID) && !tombstones.has(remote.ID)) {
         resultMap.set(remote.ID, remote);
       }
     }
 
-    // 2. Preserve local items that do not exist remotely yet (Never delete local work!)
-    for (const local of localList) {
-      if (local && local.ID && !pendingDeleteIds.has(local.ID)) {
-        if (!resultMap.has(local.ID)) {
-          resultMap.set(local.ID, local);
-          if (!pendingUpsertMap.has(local.ID)) {
-            this.addToSyncQueue(table, 'insert', local);
-          }
-        }
-      }
-    }
-
-    // 3. Apply local pending modifications (local priority for in-flight edits)
+    // 2. Add local items only if they are actively in the pending sync queue (user created/updated them offline)
     pendingUpsertMap.forEach((pendingItem, id) => {
-      resultMap.set(id, pendingItem);
+      if (!tombstones.has(id) && !pendingDeleteIds.has(id)) {
+        resultMap.set(id, pendingItem);
+      }
     });
 
     return Array.from(resultMap.values());
@@ -539,6 +611,8 @@ class StorageService {
     };
     logs.unshift(newLog);
     this.set(KEYS.LOGS, logs.slice(0, 50));
+    this.addToSyncQueue('Logs', 'insert', newLog);
+    this.sendToGas('Logs', 'insert', newLog);
   }
 
   // ==========================================
@@ -590,6 +664,8 @@ class StorageService {
         };
         notas.push(newNota);
         this.addToSyncQueue('Notas', 'insert', newNota);
+        this.sendToGas('Notas', 'insert', newNota);
+        this.removeTombstone(newNota.ID);
       });
       this.set(KEYS.NOTAS, notas);
     }
@@ -603,12 +679,17 @@ class StorageService {
         };
         arquivos.push(newArquivo);
         this.addToSyncQueue('Arquivos', 'insert', newArquivo);
+        this.sendToGas('Arquivos', 'insert', newArquivo);
+        this.removeTombstone(newArquivo.ID);
       });
       this.set(KEYS.ARQUIVOS, arquivos);
     }
 
     this.sendToGas('Musicas', 'insert', newMusica);
     this.sendToGas('Versoes', 'insert', newVersao);
+
+    this.removeTombstone(newMusica.ID);
+    this.removeTombstone(newVersao.ID);
 
     this.addLog('INSERT_MUSICA', `Música "${newMusica.Nome}" criada`);
     return { musica: newMusica, versao: newVersao };
@@ -624,8 +705,50 @@ class StorageService {
     this.set(KEYS.VERSOES, versoes);
     this.addToSyncQueue('Versoes', 'insert', newVersao);
     this.sendToGas('Versoes', 'insert', newVersao);
+    this.removeTombstone(newVersao.ID);
     this.addLog('INSERT_VERSAO', `Nova versão "${newVersao.Nome_Versao}" adicionada`);
     return newVersao;
+  }
+
+  public deleteVersao(id: string) {
+    this.addTombstone(id);
+    let versoes = this.getVersoes();
+    versoes = versoes.filter((v) => v.ID !== id);
+    this.set(KEYS.VERSOES, versoes);
+    this.addToSyncQueue('Versoes', 'delete', { ID: id });
+    this.sendToGas('Versoes', 'delete', { ID: id });
+
+    let notas = this.getNotas();
+    const removedNotas = notas.filter((n) => n.ID_Versao === id);
+    removedNotas.forEach((n) => {
+      this.addTombstone(n.ID);
+      this.addToSyncQueue('Notas', 'delete', { ID: n.ID });
+      this.sendToGas('Notas', 'delete', { ID: n.ID });
+    });
+    notas = notas.filter((n) => n.ID_Versao !== id);
+    this.set(KEYS.NOTAS, notas);
+
+    let arquivos = this.getArquivos();
+    const removedArquivos = arquivos.filter((a) => a.ID_Versao === id);
+    removedArquivos.forEach((a) => {
+      this.addTombstone(a.ID);
+      this.addToSyncQueue('Arquivos', 'delete', { ID: a.ID });
+      this.sendToGas('Arquivos', 'delete', { ID: a.ID });
+    });
+    arquivos = arquivos.filter((a) => a.ID_Versao !== id);
+    this.set(KEYS.ARQUIVOS, arquivos);
+
+    let repertorio = this.getRepertorio();
+    const removedRepertorio = repertorio.filter((r) => r.ID_Versao === id);
+    removedRepertorio.forEach((r) => {
+      this.addTombstone(r.ID);
+      this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
+      this.sendToGas('Repertorio', 'delete', { ID: r.ID });
+    });
+    repertorio = repertorio.filter((r) => r.ID_Versao !== id);
+    this.set(KEYS.REPERTORIO, repertorio);
+
+    this.addLog('DELETE_VERSAO', `Versão ID ${id} excluída`);
   }
 
   public addNota(notaData: Omit<Nota, 'ID'>): Nota {
@@ -638,6 +761,7 @@ class StorageService {
     this.set(KEYS.NOTAS, notas);
     this.addToSyncQueue('Notas', 'insert', newNota);
     this.sendToGas('Notas', 'insert', newNota);
+    this.removeTombstone(newNota.ID);
     this.addLog('INSERT_NOTA', `Nota para ${newNota.Instrumento} inserida`);
     return newNota;
   }
@@ -652,35 +776,60 @@ class StorageService {
     this.set(KEYS.ARQUIVOS, arquivos);
     this.addToSyncQueue('Arquivos', 'insert', newArquivo);
     this.sendToGas('Arquivos', 'insert', newArquivo);
+    this.removeTombstone(newArquivo.ID);
     this.addLog('INSERT_ARQUIVO', `Anexo ${newArquivo.Tipo} adicionado`);
     return newArquivo;
   }
 
   public deleteMusica(id: string) {
+    this.addTombstone(id);
     let musicas = this.getMusicas();
     musicas = musicas.filter((m) => m.ID !== id);
     this.set(KEYS.MUSICAS, musicas);
     this.addToSyncQueue('Musicas', 'delete', { ID: id });
+    this.sendToGas('Musicas', 'delete', { ID: id });
 
     let versoes = this.getVersoes();
-    const removedVersaoIds = versoes.filter((v) => v.ID_Musica === id).map((v) => v.ID);
+    const removedVersoes = versoes.filter((v) => v.ID_Musica === id);
+    const removedVersaoIds = removedVersoes.map((v) => v.ID);
+    removedVersaoIds.forEach((vId) => {
+      this.addTombstone(vId);
+      this.addToSyncQueue('Versoes', 'delete', { ID: vId });
+      this.sendToGas('Versoes', 'delete', { ID: vId });
+    });
     versoes = versoes.filter((v) => v.ID_Musica !== id);
     this.set(KEYS.VERSOES, versoes);
-    removedVersaoIds.forEach((vId) => this.addToSyncQueue('Versoes', 'delete', { ID: vId }));
 
     let notas = this.getNotas();
+    const removedNotas = notas.filter((n) => removedVersaoIds.includes(n.ID_Versao));
+    removedNotas.forEach((n) => {
+      this.addTombstone(n.ID);
+      this.addToSyncQueue('Notas', 'delete', { ID: n.ID });
+      this.sendToGas('Notas', 'delete', { ID: n.ID });
+    });
     notas = notas.filter((n) => !removedVersaoIds.includes(n.ID_Versao));
     this.set(KEYS.NOTAS, notas);
 
     let arquivos = this.getArquivos();
+    const removedArquivos = arquivos.filter((a) => removedVersaoIds.includes(a.ID_Versao));
+    removedArquivos.forEach((a) => {
+      this.addTombstone(a.ID);
+      this.addToSyncQueue('Arquivos', 'delete', { ID: a.ID });
+      this.sendToGas('Arquivos', 'delete', { ID: a.ID });
+    });
     arquivos = arquivos.filter((a) => !removedVersaoIds.includes(a.ID_Versao));
     this.set(KEYS.ARQUIVOS, arquivos);
 
     let repertorio = this.getRepertorio();
+    const removedRepertorio = repertorio.filter((r) => removedVersaoIds.includes(r.ID_Versao));
+    removedRepertorio.forEach((r) => {
+      this.addTombstone(r.ID);
+      this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
+      this.sendToGas('Repertorio', 'delete', { ID: r.ID });
+    });
     repertorio = repertorio.filter((r) => !removedVersaoIds.includes(r.ID_Versao));
     this.set(KEYS.REPERTORIO, repertorio);
 
-    this.sendToGas('Musicas', 'delete', { ID: id });
     this.addLog('DELETE_MUSICA', `Música ID ${id} excluída`);
   }
 
@@ -709,6 +858,7 @@ class StorageService {
   }
 
   public deleteNota(id: string) {
+    this.addTombstone(id);
     let notas = this.getNotas();
     notas = notas.filter((n) => n.ID !== id);
     this.set(KEYS.NOTAS, notas);
@@ -718,6 +868,7 @@ class StorageService {
   }
 
   public deleteArquivo(id: string) {
+    this.addTombstone(id);
     let arquivos = this.getArquivos();
     arquivos = arquivos.filter((a) => a.ID !== id);
     this.set(KEYS.ARQUIVOS, arquivos);
@@ -743,6 +894,7 @@ class StorageService {
     this.set(KEYS.CULTOS, cultos);
     this.addToSyncQueue('Cultos', 'insert', newCulto);
     this.sendToGas('Cultos', 'insert', newCulto);
+    this.removeTombstone(newCulto.ID);
     this.addLog('INSERT_CULTO', `Culto "${newCulto.Nome_Evento}" agendado`);
     return newCulto;
   }
@@ -760,16 +912,23 @@ class StorageService {
   }
 
   public deleteCulto(id: string) {
+    this.addTombstone(id);
     let cultos = this.getCultos();
     cultos = cultos.filter((c) => c.ID !== id);
     this.set(KEYS.CULTOS, cultos);
     this.addToSyncQueue('Cultos', 'delete', { ID: id });
+    this.sendToGas('Cultos', 'delete', { ID: id });
 
     let repertorio = this.getRepertorio();
+    const removedRepertorio = repertorio.filter((r) => r.ID_Culto === id);
+    removedRepertorio.forEach((r) => {
+      this.addTombstone(r.ID);
+      this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
+      this.sendToGas('Repertorio', 'delete', { ID: r.ID });
+    });
     repertorio = repertorio.filter((r) => r.ID_Culto !== id);
     this.set(KEYS.REPERTORIO, repertorio);
 
-    this.sendToGas('Cultos', 'delete', { ID: id });
     this.addLog('DELETE_CULTO', `Culto ID ${id} excluído`);
   }
 
@@ -791,11 +950,13 @@ class StorageService {
     this.set(KEYS.REPERTORIO, repertorio);
     this.addToSyncQueue('Repertorio', 'insert', newItem);
     this.sendToGas('Repertorio', 'insert', newItem);
+    this.removeTombstone(newItem.ID);
     this.addLog('INSERT_REPERTORIO', `Música adicionada ao culto ID ${cultoId}`);
     return newItem;
   }
 
   public removeSongFromRepertorio(repertorioId: string) {
+    this.addTombstone(repertorioId);
     let repertorio = this.getRepertorio();
     repertorio = repertorio.filter((r) => r.ID !== repertorioId);
     this.set(KEYS.REPERTORIO, repertorio);
@@ -811,6 +972,7 @@ class StorageService {
       if (item) {
         item.Ordem = index + 1;
         this.addToSyncQueue('Repertorio', 'update', item);
+        this.sendToGas('Repertorio', 'update', item);
       }
     });
     this.set(KEYS.REPERTORIO, repertorio);
@@ -833,11 +995,13 @@ class StorageService {
     this.set(KEYS.INTEGRANTES, integrantes);
     this.addToSyncQueue('Integrantes', 'insert', newMember);
     this.sendToGas('Integrantes', 'insert', newMember);
+    this.removeTombstone(newMember.ID);
     this.addLog('INSERT_INTEGRANTE', `Integrante ${newMember.Nome} cadastrado`);
     return newMember;
   }
 
   public deleteIntegrante(id: string) {
+    this.addTombstone(id);
     let integrantes = this.getIntegrantes();
     integrantes = integrantes.filter((i) => i.ID !== id);
     this.set(KEYS.INTEGRANTES, integrantes);
@@ -864,6 +1028,31 @@ class StorageService {
 
   public getHistorico(): HistoricoItem[] { return this.get<HistoricoItem>(KEYS.HISTORICO); }
   public getLogs(): LogItem[] { return this.get<LogItem>(KEYS.LOGS); }
+
+  public addHistorico(data: Omit<HistoricoItem, 'ID'>): HistoricoItem {
+    const historico = this.getHistorico();
+    const newHist: HistoricoItem = {
+      ...data,
+      ID: generateUUID()
+    };
+    historico.unshift(newHist);
+    this.set(KEYS.HISTORICO, historico);
+    this.addToSyncQueue('Historico', 'insert', newHist);
+    this.sendToGas('Historico', 'insert', newHist);
+    this.removeTombstone(newHist.ID);
+    this.addLog('INSERT_HISTORICO', `Histórico registrado`);
+    return newHist;
+  }
+
+  public deleteHistorico(id: string) {
+    this.addTombstone(id);
+    let historico = this.getHistorico();
+    historico = historico.filter((h) => h.ID !== id);
+    this.set(KEYS.HISTORICO, historico);
+    this.addToSyncQueue('Historico', 'delete', { ID: id });
+    this.sendToGas('Historico', 'delete', { ID: id });
+    this.addLog('DELETE_HISTORICO', `Item de histórico removido`);
+  }
 }
 
 export const storage = new StorageService();

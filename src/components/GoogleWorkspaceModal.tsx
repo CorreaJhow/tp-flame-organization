@@ -17,7 +17,7 @@ import {
   AlertCircle,
   CloudCheck
 } from 'lucide-react';
-import { GAS_MILESTONE_1_SETUP_CODE, GAS_MILESTONE_2_3_API_CODE } from '../data/gasScript';
+import { GAS_UNIFIED_PRODUCTION_CODE } from '../data/gasScript';
 import { storage } from '../services/storage';
 import { 
   googleSignIn, 
@@ -61,7 +61,6 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
 
   // Code Copy
   const [copied, setCopied] = useState(false);
-  const [gasCodeTab, setGasCodeTab] = useState<'m1' | 'm2_3'>('m1');
 
   useEffect(() => {
     const unsubscribe = initAuth(
@@ -167,7 +166,7 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
     onDataChanged();
   };
 
-  const currentGasCode = gasCodeTab === 'm1' ? GAS_MILESTONE_1_SETUP_CODE : GAS_MILESTONE_2_3_API_CODE;
+  const currentGasCode = GAS_UNIFIED_PRODUCTION_CODE;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(currentGasCode);
@@ -597,43 +596,34 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
           {/* TAB 4: GAS SCRIPTS */}
           {activeTab === 'gas_scripts' && (
             <div className="space-y-4">
+              <div className="bg-[#141414] border border-slate-800 rounded-2xl p-4 space-y-2">
+                <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Terminal className="w-4 h-4 text-[#FF4D00]" />
+                  Script Unificado de Produção (Google Apps Script)
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Este script contém tudo em um único arquivo: <strong>Setup Automático das 10 Abas</strong>, <strong>API Web App para Sincronização em Tempo Real</strong> e <strong>Rotina de Backup Automático</strong> no Google Drive.
+                </p>
+              </div>
+
               <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setGasCodeTab('m1')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                      gasCodeTab === 'm1'
-                        ? 'bg-[#FF4D00]/20 border-[#FF4D00] text-[#FF4D00]'
-                        : 'bg-[#141414] border-slate-800 text-slate-400'
-                    }`}
-                  >
-                    Milestone 1 (Setup Inicial)
-                  </button>
-                  <button
-                    onClick={() => setGasCodeTab('m2_3')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                      gasCodeTab === 'm2_3'
-                        ? 'bg-[#FF4D00]/20 border-[#FF4D00] text-[#FF4D00]'
-                        : 'bg-[#141414] border-slate-800 text-slate-400'
-                    }`}
-                  >
-                    Milestone 2 & 3 (API Web App)
-                  </button>
-                </div>
+                <span className="text-xs font-bold text-slate-300">
+                  Código.gs (Pronto para Implantação)
+                </span>
 
                 <button
                   onClick={handleCopyCode}
                   className="py-1.5 px-3 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
                 >
                   {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Terminal className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Copiado!' : 'Copiar Código'}</span>
+                  <span>{copied ? 'Copiado!' : 'Copiar Código Completo'}</span>
                 </button>
               </div>
 
               <div className="relative rounded-2xl border border-slate-800 bg-[#080808] overflow-hidden">
                 <div className="bg-[#141414] px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
                   <span>Código.gs</span>
-                  <span>Google Apps Script</span>
+                  <span>Google Apps Script V2 (Unificado)</span>
                 </div>
                 <pre className="p-4 font-mono text-[11px] text-slate-200 overflow-x-auto max-h-[340px] leading-relaxed">
                   {currentGasCode}

@@ -2,7 +2,7 @@ import React from 'react';
 import { transposeChord } from '../utils/chordTransposer';
 
 interface ChordViewerProps {
-  text: string;
+  text?: string | null | any;
   semitones?: number;
   displayMode?: 'cifra' | 'letra';
   fontSizeStep?: number; // e.g. -1, 0, 1, 2, 3
@@ -28,7 +28,8 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
   fontSizeStep = 0,
   className = ''
 }) => {
-  if (!text) {
+  const safeText = typeof text === 'string' ? text : text != null ? String(text) : '';
+  if (!safeText.trim()) {
     return <p className="text-slate-500 italic text-xs">Nenhuma letra ou cifra cadastrada.</p>;
   }
 
@@ -53,7 +54,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
 
   const fontClass = getFontSizeClass();
 
-  const lines = text.split('\n');
+  const lines = safeText.split('\n');
 
   // Helper to parse line content
   const renderLine = (line: string, lineIndex: number) => {

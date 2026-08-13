@@ -15,7 +15,8 @@ const KEY_MAPPINGS: Record<string, number> = {
 export const ALL_KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
 
 export function getNextKey(currentKey: string, semitones: number): string {
-  const normalizedKey = currentKey.trim();
+  const safeKey = typeof currentKey === 'string' ? currentKey : String(currentKey || 'C');
+  const normalizedKey = safeKey.trim();
   const baseIndex = KEY_MAPPINGS[normalizedKey] ?? 0;
   let newIndex = (baseIndex + semitones) % 12;
   if (newIndex < 0) newIndex += 12;
@@ -29,18 +30,19 @@ export function getNextKey(currentKey: string, semitones: number): string {
 
 // Simple chord transposer inside lyrics lines bracketed or inline
 export function transposeChord(chord: string, semitones: number): string {
-  if (!chord || semitones === 0) return chord;
+  if (!chord || semitones === 0) return typeof chord === 'string' ? chord : String(chord || '');
+  const safeChord = typeof chord === 'string' ? chord : String(chord);
 
   // Handle slashed chords e.g. D/F#
-  if (chord.includes('/')) {
-    const parts = chord.split('/');
+  if (safeChord.includes('/')) {
+    const parts = safeChord.split('/');
     return parts.map(part => transposeChord(part.trim(), semitones)).join('/');
   }
 
   // Regex to match root note + optional sharp/flat
   const regex = /^([A-G][#b]?)(.*)$/;
-  const match = chord.match(regex);
-  if (!match) return chord;
+  const match = safeChord.match(regex);
+  if (!match) return safeChord;
 
   const root = match[1];
   const extension = match[2];
@@ -50,12 +52,13 @@ export function transposeChord(chord: string, semitones: number): string {
 }
 
 export function transposeTextChords(text: string, semitones: number): string {
-  if (!text || semitones === 0) return text;
+  if (!text || semitones === 0) return typeof text === 'string' ? text : String(text || '');
+  const safeText = typeof text === 'string' ? text : String(text);
 
   // Replace chords in square brackets e.g. [G], [D/F#], [Em7] or standalone chord lines
-  return text.replace(/\[([A-G][#b]?[^\]]*)\]/g, (_, chordInside) => {
+  return safeText.replace(/\[([A-G][#b]?[^\]]*)\]/g, (_, chordInside) => {
     // Handle slashed chords e.g. D/F#
-    const parts = chordInside.split('/');
+    const parts = String(chordInside).split('/');
     const transposedParts = parts.map((part: string) => transposeChord(part.trim(), semitones));
     return `[${transposedParts.join('/')}]`;
   });

@@ -86,7 +86,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   // Determine beats per measure (e.g. 3/4 -> 3 beats, 6/8 -> 6 beats, default 4)
   const beatsPerMeasure = React.useMemo(() => {
     if (!currentVersao?.Compasso) return 4;
-    const num = parseInt(currentVersao.Compasso.split('/')[0], 10);
+    const num = parseInt(String(currentVersao.Compasso).split('/')[0], 10);
     return isNaN(num) || num <= 0 ? 4 : num;
   }, [currentVersao?.Compasso]);
 
