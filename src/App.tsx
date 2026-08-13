@@ -78,14 +78,18 @@ function AppContent() {
 
   const handleSync = useCallback(async (isManual = false) => {
     setIsSyncing(true);
-    const res = await storage.fetchFromGas();
+    const res = await storage.syncWithGas();
     refreshData();
     setIsSyncing(false);
     if (isManual) {
       if (res.success) {
-        showToast('Sincronizado com a planilha com sucesso!', 'success');
+        if (res.pushedCount && res.pushedCount > 0) {
+          showToast(`Sincronizado! ${res.pushedCount} alteração(ões) enviadas para o Sheets.`, 'success');
+        } else {
+          showToast('Sincronizado com a planilha com sucesso!', 'success');
+        }
       } else {
-        showToast(res.message || 'Erro ao comunicar com o Google Sheets', 'warning');
+        showToast(res.message || 'Dados mantidos localmente (sem conexão no momento)', 'warning');
       }
     }
   }, [refreshData, showToast]);
