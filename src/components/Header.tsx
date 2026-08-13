@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Shield, RefreshCw, WifiOff } from 'lucide-react';
-import { ViewTab } from '../types';
+import { Flame, Shield, RefreshCw, WifiOff, User, Mic, Guitar, Music } from 'lucide-react';
+import { ViewTab, Integrante } from '../types';
 
 interface HeaderProps {
   onOpenGasModal?: () => void;
   onNavigateTab: (tab: ViewTab) => void;
   onSync?: () => void;
   isSyncing?: boolean;
+  onOpenMemberProfile?: () => void;
+  activeMember?: Integrante | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   onNavigateTab,
   onSync,
-  isSyncing = false
+  isSyncing = false,
+  onOpenMemberProfile,
+  activeMember
 }) => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
@@ -28,6 +32,13 @@ export const Header: React.FC<HeaderProps> = ({
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const getRoleIcon = (funcao: string) => {
+    const f = (funcao || '').toLowerCase();
+    if (f.includes('vocal') || f.includes('ministro')) return <Mic className="w-3.5 h-3.5 text-pink-400" />;
+    if (f.includes('baixo') || f.includes('guitarra') || f.includes('violão')) return <Guitar className="w-3.5 h-3.5 text-[#FF4D00]" />;
+    return <Music className="w-3.5 h-3.5 text-cyan-400" />;
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-[#0c0c0c]/95 backdrop-blur-md border-b border-slate-800/80 text-white px-4 py-3 shadow-xl">
@@ -57,6 +68,32 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Member Profile Quick Switcher */}
+          {onOpenMemberProfile && (
+            <button
+              onClick={onOpenMemberProfile}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                activeMember
+                  ? 'bg-gradient-to-r from-[#FF4D00]/15 to-slate-900 border-[#FF4D00]/40 text-white shadow-sm hover:border-[#FF4D00]'
+                  : 'bg-[#121212] hover:bg-[#181818] border-slate-800 text-slate-300'
+              }`}
+              title={activeMember ? `Perfil ativo: ${activeMember.Nome} (${activeMember.Funcao})` : "Conectar perfil do integrante"}
+            >
+              {activeMember ? (
+                <>
+                  {getRoleIcon(activeMember.Funcao)}
+                  <span className="max-w-[100px] sm:max-w-[120px] truncate">{activeMember.Nome.split(' ')[0]}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                </>
+              ) : (
+                <>
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Meu Perfil</span>
+                </>
+              )}
+            </button>
+          )}
+
           {/* Offline Mode Indicator */}
           {!isOnline && (
             <div 

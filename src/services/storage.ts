@@ -30,7 +30,8 @@ const KEYS = {
   SPREADSHEET_NAME: 'tp_flame_spreadsheet_name_v1',
   SYNC_QUEUE: 'tp_flame_sync_queue_v1',
   LAST_SYNC: 'tp_flame_last_sync_v1',
-  TOMBSTONES: 'tp_flame_tombstones_v1'
+  TOMBSTONES: 'tp_flame_tombstones_v1',
+  ACTIVE_MEMBER: 'tp_flame_active_member_id_v1'
 };
 
 export function generateUUID(): string {
@@ -584,6 +585,32 @@ class StorageService {
   }
 
   // ==========================================
+  // ACTIVE MEMBER / MUSICIAN PROFILE
+  // ==========================================
+
+  public getActiveMemberId(): string | null {
+    return localStorage.getItem(KEYS.ACTIVE_MEMBER);
+  }
+
+  public setActiveMemberId(id: string | null) {
+    if (id) {
+      localStorage.setItem(KEYS.ACTIVE_MEMBER, id);
+      const member = this.getIntegrantes().find(i => i.ID === id);
+      if (member) {
+        this.addLog('MEMBER_LOGIN', `Integrante ${member.Nome} (${member.Funcao}) conectou seu perfil`, member.Nome);
+      }
+    } else {
+      localStorage.removeItem(KEYS.ACTIVE_MEMBER);
+    }
+  }
+
+  public getActiveMember(): Integrante | null {
+    const id = this.getActiveMemberId();
+    if (!id) return null;
+    return this.getIntegrantes().find(i => i.ID === id) || null;
+  }
+
+  // ==========================================
   // LOCAL GETTERS & SETTERS
   // ==========================================
 
@@ -600,12 +627,15 @@ class StorageService {
     localStorage.setItem(key, JSON.stringify(data));
   }
 
-  public addLog(action: string, detail: string, user = 'Usuário Portal') {
+  public addLog(action: string, detail: string, user?: string) {
+    const active = this.getActiveMember();
+    const effectiveUser = user || (active ? `${active.Nome} (${active.Funcao})` : 'Usuário Portal');
+
     const logs = this.get<LogItem>(KEYS.LOGS);
     const newLog: LogItem = {
       ID: generateUUID(),
       Data: new Date().toISOString(),
-      Usuario: user,
+      Usuario: effectiveUser,
       Acao: action,
       Registro_Afetado: detail
     };
@@ -854,6 +884,18 @@ class StorageService {
       this.addToSyncQueue('Versoes', 'update', versoes[index]);
       this.sendToGas('Versoes', 'update', versoes[index]);
       this.addLog('UPDATE_VERSAO', `Versão "${versoes[index].Nome_Versao}" atualizada`);
+    }
+  }
+
+  public updateNota(id: string, data: Partial<Nota>) {
+    const notas = this.getNotas();
+    const index = notas.findIndex((n) => n.ID === id);
+    if (index !== -1) {
+      notas[index] = { ...notas[index], ...data };
+      this.set(KEYS.NOTAS, notas);
+      this.addToSyncQueue('Notas', 'update', notas[index]);
+      this.sendToGas('Notas', 'update', notas[index]);
+      this.addLog('UPDATE_NOTA', `Nota/Cifra para ${notas[index].Instrumento} atualizada`);
     }
   }
 
