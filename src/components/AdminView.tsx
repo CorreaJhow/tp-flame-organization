@@ -431,14 +431,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       </section>
 
-      {/* Manual GAS Endpoint Section */}
+      {/* Google Apps Script (Primary Central Database Connector) */}
       <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Server className="w-4 h-4 text-[#FF4D00]" />
-            <h3 className="text-sm font-bold text-white">
-              Google Apps Script (Web App Endpoint)
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-white">
+                Banco de Dados Central (Google Sheets & Apps Script)
+              </h3>
+              <p className="text-xs text-slate-400">
+                Conecta todos os celulares e computadores da equipe à mesma planilha sem precisar de login
+              </p>
+            </div>
           </div>
           <button
             type="button"
@@ -448,6 +453,16 @@ export const AdminView: React.FC<AdminViewProps> = ({
             {showSensitiveConfig ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             <span>{showSensitiveConfig ? 'Ocultar' : 'Exibir'}</span>
           </button>
+        </div>
+
+        <div className="p-3.5 bg-[#0a0a0a] border border-slate-800/80 rounded-2xl text-xs text-slate-300 space-y-1.5">
+          <p className="font-semibold text-white flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            Como funciona para a equipe (Bianca, músicos e vocalistas):
+          </p>
+          <p className="text-slate-400">
+            Qualquer integrante que abrir o app no celular ou computador acessa automaticamente este mesmo banco de dados. Eles <strong>não precisam fazer login</strong> no Google nem configurar nada.
+          </p>
         </div>
 
         <form onSubmit={handleSaveConnection} className="space-y-3">
@@ -472,27 +487,48 @@ export const AdminView: React.FC<AdminViewProps> = ({
               type={showSensitiveConfig ? 'text' : 'password'}
               value={spreadsheetIdInput}
               onChange={(e) => setSpreadsheetIdInput(e.target.value)}
-              placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+              placeholder="1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU"
               className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] font-mono"
             />
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={onOpenGasModal}
-              className="text-xs font-bold text-[#FF4D00] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <Code2 className="w-3.5 h-3.5" />
-              <span>Instruções & Scripts do GAS</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onOpenGasModal}
+                className="text-xs font-bold text-[#FF4D00] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>Ver Scripts do Google Apps Script</span>
+              </button>
+            </div>
 
-            <button
-              type="submit"
-              className="py-2.5 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md cursor-pointer"
-            >
-              Salvar Conexão
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  showToast('Sincronizando com a planilha...', 'info');
+                  const res = await storage.syncWithGas();
+                  if (res.success) {
+                    showToast('Sincronização concluída com sucesso!', 'success');
+                  } else {
+                    showToast(res.message || 'Erro ao sincronizar', 'warning');
+                  }
+                  onDataChanged();
+                }}
+                className="py-2.5 px-3.5 rounded-xl bg-[#1c1c1c] hover:bg-[#252525] border border-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Sincronizar Agora</span>
+              </button>
+
+              <button
+                type="submit"
+                className="py-2.5 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md cursor-pointer"
+              >
+                Salvar Conexão
+              </button>
+            </div>
           </div>
 
           {saveSuccess && (

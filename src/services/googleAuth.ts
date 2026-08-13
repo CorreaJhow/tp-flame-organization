@@ -54,6 +54,11 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
     console.error('Erro de autenticação Google Workspace:', error);
+    if (error?.code === 'auth/unauthorized-domain') {
+      throw new Error(
+        'Domínio não cadastrado no Firebase Auth para login popup. Não se preocupe: a sincronização via Google Apps Script (Web App) funciona normalmente em qualquer domínio sem necessidade de login!'
+      );
+    }
     throw error;
   } finally {
     isSigningIn = false;
