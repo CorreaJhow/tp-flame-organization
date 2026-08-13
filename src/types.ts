@@ -36,6 +36,9 @@ export interface Nota {
   ID_Versao: string;
   Instrumento: 'Violão' | 'Guitarra' | 'Teclado' | 'Baixo' | 'Bateria' | 'Vocal' | 'Som/Mídia' | 'Geral';
   Observacao: string;
+  Autor?: string; // e.g. "Pedro (Baixo)", "Matheus (Guitarra)"
+  Titulo?: string; // e.g. "Cifra com Inversões do Baixo", "Arranjo de Teclado"
+  TipoNota?: 'cifra_personalizada' | 'nota_tecnica';
 }
 
 export interface Culto {
@@ -61,6 +64,7 @@ export interface Integrante {
   Funcao: string; // Vocal, Guitarra, Violão, Teclado, Baixo, Bateria, Mídia, Som
   Email: string;
   Telefone?: string;
+  PIN?: string; // Simple 4-digit PIN for quick login
   Ativo?: boolean;
 }
 

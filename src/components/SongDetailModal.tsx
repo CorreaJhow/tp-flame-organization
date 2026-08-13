@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   X, 
   Trash2, 
@@ -14,7 +14,12 @@ import {
   Edit3,
   Clock,
   Activity,
-  Copy
+  Copy,
+  Mic,
+  Music2,
+  Sparkles,
+  Eye,
+  Check
 } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
 import { getNextKey } from '../utils/chordTransposer';
@@ -24,6 +29,7 @@ import { SongFormModal } from './SongFormModal';
 import { getLastPlayedInfo } from '../utils/songHistory';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
+import { getVocalConfig } from '../utils/vocalColors';
 
 interface SongDetailModalProps {
   musica: Musica;
@@ -54,10 +60,15 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   // Edit Song Modal State
   const [showEditSongModal, setShowEditSongModal] = useState(false);
 
+  // Vocal Annotation & Focus State in Song Detail
+  const [focusVoice, setFocusVoice] = useState<string | null>(null);
+  const [showVocalHighlights, setShowVocalHighlights] = useState(true);
+
   // Form states for adding notes/files
   const [showAddNota, setShowAddNota] = useState(false);
   const [newNotaInst, setNewNotaInst] = useState<Nota['Instrumento']>('Teclado');
   const [newNotaObs, setNewNotaObs] = useState('');
+  const [isCustomCifraMode, setIsCustomCifraMode] = useState(false);
 
   const [showAddArq, setShowAddArq] = useState(false);
   const [newArqTipo, setNewArqTipo] = useState<Arquivo['Tipo']>('Spotify');
@@ -65,6 +76,17 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const [newArqNome, setNewArqNome] = useState('');
 
   const currentVersao = versoes.find(v => v.ID === selectedVersaoId) || versoes[0];
+
+  // Available vocals from integrantes
+  const availableVocals = useMemo(() => {
+    const integrantes = storage.getIntegrantes();
+    const vocalMembers = integrantes
+      .filter((i) => i.Funcao?.toLowerCase().includes('vocal') || i.Funcao?.toLowerCase().includes('ministro'))
+      .map((i) => i.Nome.split(' ')[0]);
+
+    const defaultVocals = ['Larissa', 'Bianca', 'Leticia', 'Jhow', 'Todos'];
+    return Array.from(new Set([...defaultVocals, ...vocalMembers]));
+  }, []);
 
   const currentKeyDisplay = currentVersao
     ? getNextKey(currentVersao.Tom, semitones)
@@ -87,6 +109,13 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
     return getLastPlayedInfo(currentVersao.ID, cultosList, repList, histList);
   }, [currentVersao, versoes]);
 
+  const handleStartCifrarBase = () => {
+    if (!currentVersao) return;
+    setNewNotaObs(currentVersao.Letra || '');
+    setIsCustomCifraMode(true);
+    setShowAddNota(true);
+  };
+
   const handleAddNotaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentVersao || !newNotaObs.trim()) return;
@@ -98,8 +127,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
     });
 
     setNewNotaObs('');
+    setIsCustomCifraMode(false);
     setShowAddNota(false);
-    showToast('Nota de instrumento adicionada!', 'success');
+    showToast(isCustomCifraMode ? 'Cifra do músico salva com sucesso!' : 'Nota de instrumento adicionada!', 'success');
     onDataChanged();
   };
 
@@ -367,111 +397,252 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
               {/* Tab Content */}
               {activeTab === 'letra' && (
-                <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-4 sm:p-5 font-mono text-xs text-slate-200 leading-relaxed shadow-inner relative group">
-                  <div className="flex justify-end mb-2">
-                    <button
-                      onClick={() => {
-                        if (currentVersao?.Letra) {
-                          navigator.clipboard.writeText(currentVersao.Letra);
-                          showToast('Cifra copiada para a área de transferência!', 'success');
-                        }
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white border border-slate-700 font-sans font-bold text-xs transition-all active:scale-95"
-                      title="Copiar Cifra"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-[#FF4D00]" />
-                      <span>Copiar Cifra</span>
-                    </button>
+                <div className="space-y-3">
+                  {/* Vocal Controls & Voice Filter Chips */}
+                  <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-3 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowVocalHighlights(!showVocalHighlights)}
+                          className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
+                            showVocalHighlights
+                              ? 'bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40'
+                              : 'bg-[#121212] text-slate-500 border border-slate-800'
+                          }`}
+                          title="Ativar/Desativar Destaques de Vozes"
+                        >
+                          <Mic className="w-3.5 h-3.5" />
+                          <span>Destaques de Vozes: {showVocalHighlights ? 'ON' : 'OFF'}</span>
+                        </button>
+
+                        {focusVoice && (
+                          <span className="text-[11px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            Foco: {focusVoice}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (currentVersao?.Letra) {
+                              navigator.clipboard.writeText(currentVersao.Letra);
+                              showToast('Cifra copiada para a área de transferência!', 'success');
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white border border-slate-700 font-sans font-bold text-xs transition-all active:scale-95"
+                          title="Copiar Cifra"
+                        >
+                          <Copy className="w-3.5 h-3.5 text-[#FF4D00]" />
+                          <span>Copiar Cifra</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {showVocalHighlights && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-800/60">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
+                          Filtrar Voz:
+                        </span>
+                        <button
+                          onClick={() => setFocusVoice(null)}
+                          className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold shrink-0 transition-all ${
+                            focusVoice === null
+                              ? 'bg-white text-slate-950 shadow-md font-extrabold'
+                              : 'bg-[#121212] text-slate-400 hover:text-white border border-slate-800'
+                          }`}
+                        >
+                          Todas as Vozes
+                        </button>
+
+                        {availableVocals.map((vocal) => {
+                          const cfg = getVocalConfig(vocal);
+                          const isSelected = focusVoice?.toLowerCase() === vocal.toLowerCase();
+                          return (
+                            <button
+                              key={vocal}
+                              onClick={() => setFocusVoice(isSelected ? null : vocal)}
+                              className={`px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold border shrink-0 transition-all ${
+                                isSelected
+                                  ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/40 shadow-sm`
+                                  : 'bg-[#121212] border-slate-800 text-slate-400 hover:text-slate-200'
+                              }`}
+                            >
+                              {isSelected ? `✓ ${vocal}` : vocal}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <ChordViewer text={currentVersao.Letra} semitones={semitones} />
+
+                  <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-4 sm:p-5 font-mono text-xs text-slate-200 leading-relaxed shadow-inner">
+                    <ChordViewer 
+                      text={currentVersao.Letra} 
+                      semitones={semitones}
+                      focusVoice={focusVoice}
+                      showVocalHighlights={showVocalHighlights}
+                      knownSingers={availableVocals}
+                    />
+                  </div>
                 </div>
               )}
 
               {activeTab === 'notas' && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs text-slate-400">
-                      Orientações específicas por instrumento
+                      Cifras personalizadas e orientações por integrante/instrumento
                     </span>
-                    <button
-                      onClick={() => setShowAddNota(!showAddNota)}
-                      className="py-1 px-2.5 rounded-xl bg-[#FF4D00]/20 text-[#FF4D00] hover:bg-[#FF4D00]/30 text-xs font-bold flex items-center gap-1 border border-[#FF4D00]/30"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Nova Nota</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleStartCifrarBase}
+                        className="py-1 px-2.5 rounded-xl bg-gradient-to-r from-[#FF4D00] to-orange-600 text-slate-950 hover:opacity-90 text-xs font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                        title="Criar versão cifrada personalizada a partir da letra base"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Cifrar a partir da Letra Base</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsCustomCifraMode(false);
+                          setShowAddNota(!showAddNota);
+                        }}
+                        className="py-1 px-2.5 rounded-xl bg-[#1a1a1a] text-slate-300 hover:bg-[#222] text-xs font-bold flex items-center gap-1 border border-slate-700"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Nota Rápida</span>
+                      </button>
+                    </div>
                   </div>
 
                   {showAddNota && (
-                    <form onSubmit={handleAddNotaSubmit} className="bg-[#080808] p-3 rounded-2xl border border-slate-800 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={newNotaInst}
-                          onChange={(e) => setNewNotaInst(e.target.value as Nota['Instrumento'])}
-                          className="bg-[#121212] border border-slate-800 rounded-xl text-xs text-white p-2"
-                        >
-                          <option value="Teclado">Teclado</option>
-                          <option value="Guitarra">Guitarra</option>
-                          <option value="Violão">Violão</option>
-                          <option value="Baixo">Baixo</option>
-                          <option value="Bateria">Bateria</option>
-                          <option value="Vocal">Vocal</option>
-                          <option value="Som/Mídia">Som/Mídia</option>
-                          <option value="Geral">Geral</option>
-                        </select>
+                    <form onSubmit={handleAddNotaSubmit} className="bg-[#080808] p-3.5 rounded-2xl border border-slate-800 space-y-2.5 animate-in fade-in">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-300">Instrumento / Integrante:</span>
+                          <select
+                            value={newNotaInst}
+                            onChange={(e) => setNewNotaInst(e.target.value as Nota['Instrumento'])}
+                            className="bg-[#121212] border border-slate-700 rounded-xl text-xs text-white p-2 font-bold"
+                          >
+                            <option value="Teclado">Teclado</option>
+                            <option value="Violão">Violão</option>
+                            <option value="Guitarra">Guitarra</option>
+                            <option value="Baixo">Baixo</option>
+                            <option value="Bateria">Bateria</option>
+                            <option value="Vocal">Vocal</option>
+                            <option value="Som/Mídia">Som/Mídia</option>
+                            <option value="Geral">Geral</option>
+                          </select>
+                        </div>
+
+                        {isCustomCifraMode && (
+                          <span className="text-[10px] font-bold text-[#FF4D00] bg-[#FF4D00]/10 border border-[#FF4D00]/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                            <Music2 className="w-3 h-3" />
+                            Cifra Personalizada
+                          </span>
+                        )}
                       </div>
+
+                      {isCustomCifraMode && (
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase shrink-0">Inserir Acordes:</span>
+                          {['[C]', '[G]', '[Am]', '[F]', '[D]', '[Em]', '[A]', '[E]', '[B]', '[C#m]', '[Bb]'].map((chord) => (
+                            <button
+                              key={chord}
+                              type="button"
+                              onClick={() => setNewNotaObs((prev) => `${prev} ${chord}`)}
+                              className="px-1.5 py-0.5 rounded bg-[#181818] hover:bg-[#252525] text-[#FF4D00] font-mono text-[11px] font-black border border-slate-800 shrink-0"
+                            >
+                              {chord}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       <textarea
                         value={newNotaObs}
                         onChange={(e) => setNewNotaObs(e.target.value)}
-                        placeholder="Escreva a observação técnica ou instrução..."
-                        className="w-full bg-[#121212] border border-slate-800 rounded-xl p-2.5 text-xs text-white"
-                        rows={2}
+                        placeholder={isCustomCifraMode ? "Edite e cifre a música diretamente a partir da letra base..." : "Escreva a observação técnica ou instrução..."}
+                        className={`w-full bg-[#121212] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] ${
+                          isCustomCifraMode ? 'font-mono leading-relaxed' : ''
+                        }`}
+                        rows={isCustomCifraMode ? 10 : 3}
+                        required
                       />
 
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={() => setShowAddNota(false)}
-                          className="px-2.5 py-1 rounded-xl text-xs text-slate-400"
+                          onClick={() => {
+                            setShowAddNota(false);
+                            setIsCustomCifraMode(false);
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
                         >
                           Cancelar
                         </button>
                         <button
                           type="submit"
-                          className="px-3 py-1 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs"
+                          className="px-4 py-1.5 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5"
                         >
-                          Salvar Nota
+                          <Check className="w-3.5 h-3.5" />
+                          <span>{isCustomCifraMode ? 'Salvar Cifra Personalizada' : 'Salvar Nota'}</span>
                         </button>
                       </div>
                     </form>
                   )}
 
                   {currentNotas.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic py-4 text-center bg-[#080808] rounded-xl border border-slate-800/80">
-                      Nenhuma nota técnica cadastrada para esta versão.
-                    </p>
+                    <div className="py-6 text-center bg-[#080808] rounded-2xl border border-slate-800/80 space-y-2">
+                      <p className="text-xs text-slate-400">
+                        Nenhuma cifra ou nota personalizada cadastrada para esta versão.
+                      </p>
+                      <p className="text-[11px] text-slate-600">
+                        Cada músico da equipe pode criar sua própria cifra ou observação a partir da letra base.
+                      </p>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
-                      {currentNotas.map((n) => (
-                        <div key={n.ID} className="bg-[#080808] border border-slate-800 rounded-2xl p-3 text-xs flex items-start justify-between gap-2">
-                          <div>
-                            <span className="font-extrabold text-[#FF4D00] block mb-1">
-                              [{n.Instrumento}]
-                            </span>
-                            <p className="text-slate-300 leading-relaxed">
-                              {n.Observacao}
-                            </p>
+                    <div className="space-y-2.5">
+                      {currentNotas.map((n) => {
+                        const isFullCifra = n.Observacao && n.Observacao.includes('\n');
+                        return (
+                          <div key={n.ID} className="bg-[#080808] border border-slate-800 rounded-2xl p-3.5 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-[#FF4D00] bg-[#FF4D00]/10 border border-[#FF4D00]/30 px-2.5 py-0.5 rounded-lg text-xs">
+                                  [{n.Instrumento}]
+                                </span>
+                                {isFullCifra && (
+                                  <span className="text-[10px] text-slate-500 font-bold bg-[#141414] px-2 py-0.5 rounded border border-slate-800">
+                                    Cifra Completa
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleDeleteNota(n.ID)}
+                                className="p-1 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-900 transition-colors"
+                                title="Remover nota"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {isFullCifra ? (
+                              <div className="bg-[#121212] p-3 rounded-xl border border-slate-800/80 max-h-60 overflow-y-auto">
+                                <ChordViewer text={n.Observacao} semitones={semitones} />
+                              </div>
+                            ) : (
+                              <p className="text-slate-300 leading-relaxed font-sans">
+                                {n.Observacao}
+                              </p>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleDeleteNota(n.ID)}
-                            className="p-1 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-900"
-                            title="Remover nota"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

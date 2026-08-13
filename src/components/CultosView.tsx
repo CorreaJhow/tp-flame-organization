@@ -441,10 +441,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
                     <button
                       onClick={() => {
-                        if (window.confirm(`Deseja mesmo excluir o culto "${currentCulto.Nome_Evento}"?`)) {
-                          storage.deleteCulto(currentCulto.ID);
-                          onDataChanged();
-                        }
+                        setCultoToDelete({ id: currentCulto.ID, name: currentCulto.Nome_Evento });
                       }}
                       className="p-2.5 rounded-xl text-slate-400 bg-[#181818] hover:text-red-400 hover:bg-red-950/40 border border-slate-700 transition-colors"
                       title="Excluir Culto"

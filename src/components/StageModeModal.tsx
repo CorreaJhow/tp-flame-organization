@@ -19,11 +19,17 @@ import {
   Activity,
   Volume2,
   VolumeX,
-  Clock
+  Clock,
+  Mic,
+  Eye,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
 import { getNextKey } from '../utils/chordTransposer';
 import { ChordViewer } from './ChordViewer';
+import { storage } from '../services/storage';
+import { getVocalConfig } from '../utils/vocalColors';
 
 interface StageModeModalProps {
   culto: Culto;
@@ -56,6 +62,11 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const [scrollSpeed, setScrollSpeed] = useState(1); // 0.5, 1, 1.5, 2, 3, 4
   const [showNotes, setShowNotes] = useState(false);
 
+  // Vocal Annotation & Focus State
+  const [focusVoice, setFocusVoice] = useState<string | null>(null);
+  const [showVocalHighlights, setShowVocalHighlights] = useState(true);
+  const [selectedLayerId, setSelectedLayerId] = useState<string>('oficial');
+
   // Metronome & Audio Click State
   const [isMetronomeActive, setIsMetronomeActive] = useState(false);
   const [isAudioClick, setIsAudioClick] = useState(false); // Audio click disabled by default
@@ -70,6 +81,32 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const currentVersao = currentRep ? versoes.find((v) => v.ID === currentRep.ID_Versao) : undefined;
   const currentMusica = currentVersao ? musicas.find((m) => m.ID === currentVersao.ID_Musica) : undefined;
   const currentNotas = currentVersao ? notas.filter((n) => n.ID_Versao === currentVersao.ID) : [];
+
+  // Registered vocalists
+  const availableVocals = React.useMemo(() => {
+    const integrantes = storage.getIntegrantes();
+    const vocalMembers = integrantes
+      .filter((i) => i.Funcao?.toLowerCase().includes('vocal') || i.Funcao?.toLowerCase().includes('ministro'))
+      .map((i) => i.Nome.split(' ')[0]);
+
+    const defaultVocals = ['Larissa', 'Bianca', 'Leticia', 'Jhow', 'Todos'];
+    return Array.from(new Set([...defaultVocals, ...vocalMembers]));
+  }, []);
+
+  // Custom musician chord sheets (Notas that contain multiline text or chords)
+  const customChordLayers = React.useMemo(() => {
+    return currentNotas.filter((n) => n.Observacao && n.Observacao.length > 20);
+  }, [currentNotas]);
+
+  // Determine current active text to display in ChordViewer
+  const currentDisplayText = React.useMemo(() => {
+    if (!currentVersao) return '';
+    if (selectedLayerId !== 'oficial') {
+      const selectedNota = currentNotas.find((n) => n.ID === selectedLayerId);
+      if (selectedNota) return selectedNota.Observacao;
+    }
+    return currentVersao.Letra;
+  }, [currentVersao, selectedLayerId, currentNotas]);
 
   const currentKeyDisplay = currentVersao ? getNextKey(currentVersao.Tom, semitones) : 'C';
 
@@ -503,6 +540,103 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
           </div>
         </div>
 
+        {/* Vocal Division & Voice Focus Mode Bar */}
+        <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3 space-y-2 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowVocalHighlights(!showVocalHighlights)}
+                className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
+                  showVocalHighlights
+                    ? 'bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40'
+                    : 'bg-[#080808] text-slate-500 border border-slate-800'
+                }`}
+                title="Ativar/Desativar Destaques de Vozes"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                <span>Vozes: {showVocalHighlights ? 'ATIVAS' : 'OCULTAS'}</span>
+              </button>
+
+              {focusVoice && (
+                <span className="text-[11px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  Foco: {focusVoice}
+                </span>
+              )}
+            </div>
+
+            {/* Custom Musician Chord Layer Selector (if any member has custom notes/cifras) */}
+            {customChordLayers.length > 0 && (
+              <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800 text-xs">
+                <span className="text-[10px] text-slate-400 font-bold px-1 flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-[#FF4D00]" />
+                  Camada:
+                </span>
+                <button
+                  onClick={() => setSelectedLayerId('oficial')}
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
+                    selectedLayerId === 'oficial'
+                      ? 'bg-[#FF4D00] text-slate-950'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Oficial
+                </button>
+                {customChordLayers.map((layer) => (
+                  <button
+                    key={layer.ID}
+                    onClick={() => setSelectedLayerId(layer.ID)}
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
+                      selectedLayerId === layer.ID
+                        ? 'bg-[#FF4D00] text-slate-950'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {layer.Instrumento}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Voice Focus Filter Chips */}
+          {showVocalHighlights && (
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-800/60">
+              <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
+                Filtrar Foco:
+              </span>
+              <button
+                onClick={() => setFocusVoice(null)}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all ${
+                  focusVoice === null
+                    ? 'bg-white text-slate-950 shadow-md font-extrabold scale-105'
+                    : 'bg-[#181818] text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                Todas as Vozes
+              </button>
+
+              {availableVocals.map((vocal) => {
+                const cfg = getVocalConfig(vocal);
+                const isSelected = focusVoice?.toLowerCase() === vocal.toLowerCase();
+                return (
+                  <button
+                    key={vocal}
+                    onClick={() => setFocusVoice(isSelected ? null : vocal)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold border shrink-0 transition-all ${
+                      isSelected
+                        ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105 shadow-md`
+                        : 'bg-[#181818] border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {isSelected ? `✓ ${vocal}` : vocal}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Instrument Notes Box */}
         {showNotes && (
           <div className="bg-[#121212] border border-[#FF4D00]/40 rounded-2xl p-4 space-y-2 animate-in fade-in">
@@ -524,10 +658,13 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         {/* 100% Width Formatted Cifra & Letra Display */}
         <div className="w-full bg-[#080808] border border-slate-800/80 rounded-3xl p-4 sm:p-8 shadow-inner">
           <ChordViewer 
-            text={currentVersao.Letra} 
+            text={currentDisplayText} 
             semitones={semitones} 
             displayMode={displayMode}
             fontSizeStep={fontSizeStep}
+            focusVoice={focusVoice}
+            showVocalHighlights={showVocalHighlights}
+            knownSingers={availableVocals}
           />
         </div>
       </div>
