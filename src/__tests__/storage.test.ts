@@ -8,11 +8,12 @@ describe('2. Local Storage & Sync Engine Tests', () => {
     vi.restoreAllMocks();
   });
 
-  it('2.1 Sem configuracao, o app nao inventa backend e opera 100% local', () => {
-    // Endpoint vazio e estado valido: melhor nao sincronizar do que
-    // sincronizar com a planilha errada.
-    expect(storage.getGasEndpoint()).toBe('');
-    expect(storage.getActiveSyncMode()).toBe('offline_local');
+  it('2.1 O app ja vem apontando para o backend de producao', () => {
+    // Endpoint e a unica configuracao que existe; o ID da planilha e derivado
+    // dele em runtime (ver 2.1b), entao nao ha um segundo valor para divergir.
+    const endpoint = storage.getGasEndpoint();
+    expect(endpoint).toContain('script.google.com/macros/s/');
+    expect(endpoint.endsWith('/exec')).toBe(true);
   });
 
   it('2.1b O Spreadsheet ID vem do endpoint, nunca de uma constante', async () => {
@@ -54,12 +55,14 @@ describe('2. Local Storage & Sync Engine Tests', () => {
     expect(storage.getGasEndpoint()).toBe(customUrl);
   });
 
-  it('2.3 Should initialize default songs and allow fetching songs list', () => {
-    const songs = storage.getMusicas();
-    expect(Array.isArray(songs)).toBe(true);
-    expect(songs.length).toBeGreaterThan(0);
-    expect(songs[0]).toHaveProperty('ID');
-    expect(songs[0]).toHaveProperty('Nome');
+  it('2.3 Um dispositivo novo comeca vazio, sem musicas de demonstracao', () => {
+    // Dados de exemplo nunca eram enviados para a planilha: sumiam na primeira
+    // sincronizacao e pareciam perda de dados. Agora o aparelho abre vazio e se
+    // preenche pela planilha, que e a unica fonte de verdade.
+    expect(storage.getMusicas()).toEqual([]);
+    expect(storage.getVersoes()).toEqual([]);
+    expect(storage.getCultos()).toEqual([]);
+    expect(storage.getIntegrantes()).toEqual([]);
   });
 
   it('2.4 Should add a new song with version and set pending sync flag to true', () => {
