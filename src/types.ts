@@ -1,17 +1,28 @@
+/**
+ * Campos de auditoria gravados em toda mutacao (ver stampAudit em storage.ts).
+ * Atualizado_Em e a base da resolucao de conflito planejada para a Fase 2.
+ * Excluido_Em fica reservado para a lixeira (Fase 3).
+ */
+export interface Auditavel {
+  Atualizado_Em?: string;
+  Atualizado_Por?: string;
+  Excluido_Em?: string;
+}
+
 export interface ConfigItem {
   Chave: string;
   Valor: string;
   Descricao: string;
 }
 
-export interface Musica {
+export interface Musica extends Auditavel {
   ID: string;
   Nome: string;
   Artista: string;
   Categoria: string; // Adoração, Celebração, Oferta, Ceia, Avulsa, etc.
 }
 
-export interface Versao {
+export interface Versao extends Auditavel {
   ID: string;
   ID_Musica: string;
   Nome_Versao: string; // ex: "Original (Morada)", "Acústico", "Ao Vivo"
@@ -23,7 +34,7 @@ export interface Versao {
   Obs: string;
 }
 
-export interface Arquivo {
+export interface Arquivo extends Auditavel {
   ID: string;
   ID_Versao: string;
   Tipo: 'Spotify' | 'PDF' | 'Cifra' | 'Youtube' | 'Drive' | 'Outro';
@@ -31,7 +42,7 @@ export interface Arquivo {
   Nome?: string;
 }
 
-export interface Nota {
+export interface Nota extends Auditavel {
   ID: string;
   ID_Versao: string;
   Instrumento: 'Violão' | 'Guitarra' | 'Teclado' | 'Baixo' | 'Bateria' | 'Vocal' | 'Som/Mídia' | 'Geral';
@@ -41,7 +52,7 @@ export interface Nota {
   TipoNota?: 'cifra_personalizada' | 'nota_tecnica';
 }
 
-export interface Culto {
+export interface Culto extends Auditavel {
   ID: string;
   Data: string; // YYYY-MM-DD THH:mm
   Nome_Evento: string; // ex: "Culto de Domingo - Noite", "Flame Night"
@@ -49,7 +60,7 @@ export interface Culto {
   Observacoes?: string;
 }
 
-export interface RepertorioItem {
+export interface RepertorioItem extends Auditavel {
   ID: string;
   ID_Culto: string;
   ID_Versao: string;
@@ -58,7 +69,7 @@ export interface RepertorioItem {
   Observacao_Culto?: string;
 }
 
-export interface Integrante {
+export interface Integrante extends Auditavel {
   ID: string;
   Nome: string;
   Funcao: string; // Vocal, Guitarra, Violão, Teclado, Baixo, Bateria, Mídia, Som
@@ -68,7 +79,7 @@ export interface Integrante {
   Ativo?: boolean;
 }
 
-export interface HistoricoItem {
+export interface HistoricoItem extends Auditavel {
   ID: string;
   ID_Versao: string;
   ID_Culto: string;

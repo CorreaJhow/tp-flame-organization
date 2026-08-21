@@ -19,17 +19,34 @@ export const GAS_UNIFIED_PRODUCTION_CODE = `/**
  * ============================================================================
  */
 
-// Configuração dos Esquemas das 10 Tabelas do Sistema
+// Versão do esquema. Precisa bater com SCHEMA_VERSION em googleSheetsApi.ts;
+// o app avisa quando a planilha está atrás do código.
+var SCHEMA_VERSION = 2;
+
+/**
+ * Esquema das 10 tabelas.
+ *
+ * As três últimas colunas de quase toda tabela são de auditoria:
+ *   Atualizado_Em  - ISO da última alteração, base para resolver conflito
+ *   Atualizado_Por - quem alterou, para a equipe saber a quem perguntar
+ *   Excluido_Em    - reservado para a lixeira (exclusão reversível)
+ *
+ * Logs não tem auditoria: log é imutável por definição.
+ * Config não tem ID nem auditoria: é chave-valor.
+ *
+ * O PIN dos integrantes NÃO fica aqui de propósito. Esta planilha é lida por
+ * um Web App público; guardar PIN nela seria publicar a senha de todo mundo.
+ */
 var DATABASE_SCHEMA = {
   "Config": ["Chave", "Valor", "Descricao"],
-  "Musicas": ["ID", "Nome", "Artista", "Categoria"],
-  "Versoes": ["ID", "ID_Musica", "Nome_Versao", "Tom", "BPM", "Compasso", "Letra", "Estrutura", "Obs"],
-  "Arquivos": ["ID", "ID_Versao", "Tipo", "URL", "Nome"],
-  "Notas": ["ID", "ID_Versao", "Instrumento", "Observacao"],
-  "Cultos": ["ID", "Data", "Nome_Evento", "Status", "Observacoes"],
-  "Repertorio": ["ID", "ID_Culto", "ID_Versao", "Ordem", "Dirigente", "Observacao_Culto"],
-  "Integrantes": ["ID", "Nome", "Funcao", "Email", "Telefone", "Ativo"],
-  "Historico": ["ID", "ID_Versao", "ID_Culto", "Data_Execucao"],
+  "Musicas": ["ID", "Nome", "Artista", "Categoria", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Versoes": ["ID", "ID_Musica", "Nome_Versao", "Tom", "BPM", "Compasso", "Letra", "Estrutura", "Obs", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Arquivos": ["ID", "ID_Versao", "Tipo", "URL", "Nome", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Notas": ["ID", "ID_Versao", "Instrumento", "Observacao", "Autor", "Titulo", "TipoNota", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Cultos": ["ID", "Data", "Nome_Evento", "Status", "Observacoes", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Repertorio": ["ID", "ID_Culto", "ID_Versao", "Ordem", "Dirigente", "Observacao_Culto", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Integrantes": ["ID", "Nome", "Funcao", "Email", "Telefone", "Ativo", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Historico": ["ID", "ID_Versao", "ID_Culto", "Data_Execucao", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
   "Logs": ["ID", "Data", "Usuario", "Acao", "Registro_Afetado"]
 };
 
@@ -97,6 +114,57 @@ function setupDatabase() {
     spreadsheetId: ss.getId(),
     message: "Banco de dados configurado com sucesso!"
   };
+}
+
+/**
+ * 0. INSTALAÇÃO — execute ESTA função, uma vez, numa planilha nova.
+ *
+ * Faz tudo o que precisa ser feito e imprime o que você precisa saber:
+ *   - cria e formata as 10 abas
+ *   - liga o backup diário automático
+ *   - mostra o ID e a URL desta planilha
+ *
+ * Depois disso, só falta publicar: Implantar > Nova implantação > App da Web,
+ * com "Executar como: eu" e "Quem tem acesso: qualquer pessoa". Cole a URL
+ * gerada no painel de administração do app. O app descobre a planilha sozinho
+ * a partir dessa URL — não existe segundo lugar para configurar, e por isso
+ * não existe como as duas configurações divergirem.
+ */
+function bootstrap() {
+  var ss = getSpreadsheet();
+
+  setupDatabase();
+
+  try {
+    setupDailyBackupTrigger();
+  } catch (e) {
+    Logger.log("AVISO: não foi possível criar o gatilho de backup: " + e);
+  }
+
+  var info = {
+    status: "success",
+    spreadsheetId: ss.getId(),
+    spreadsheetName: ss.getName(),
+    spreadsheetUrl: ss.getUrl(),
+    schemaVersion: SCHEMA_VERSION,
+    abas: Object.keys(DATABASE_SCHEMA).length,
+    backupDiario: "03:00"
+  };
+
+  Logger.log("=========================================");
+  Logger.log(" TP FLAME - INSTALAÇÃO CONCLUÍDA");
+  Logger.log("=========================================");
+  Logger.log(" Planilha : " + info.spreadsheetName);
+  Logger.log(" ID       : " + info.spreadsheetId);
+  Logger.log(" URL      : " + info.spreadsheetUrl);
+  Logger.log(" Esquema  : v" + SCHEMA_VERSION + " (" + info.abas + " abas)");
+  Logger.log("");
+  Logger.log(" PROXIMO PASSO: Implantar > Nova implantacao > App da Web");
+  Logger.log(" Executar como: eu | Quem tem acesso: qualquer pessoa");
+  Logger.log(" Depois cole a URL /exec no painel admin do TP Flame.");
+  Logger.log("=========================================");
+
+  return info;
 }
 
 /**
@@ -179,6 +247,20 @@ function doGet(e) {
         logs: getSheetData(ss, 'Logs')
       };
       return createJsonResponse({ status: 'success', data: data });
+    }
+
+    // Identidade do backend. É daqui que o app descobre QUAL planilha este
+    // endpoint serve, em vez de guardar um ID próprio que pode divergir.
+    // Enquanto o app tinha o ID separado, ele gravava numa planilha estando
+    // logado e em outra estando deslogado.
+    if (action === 'whoami') {
+      return createJsonResponse({
+        status: 'success',
+        spreadsheetId: ss.getId(),
+        spreadsheetName: ss.getName(),
+        spreadsheetUrl: ss.getUrl(),
+        schemaVersion: SCHEMA_VERSION
+      });
     }
 
     if (action === 'setup') {
