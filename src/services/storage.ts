@@ -12,7 +12,7 @@ import {
   INITIAL_LOGS 
 } from '../data/initialData';
 import { getAccessToken } from './googleAuth';
-import { readAllSpreadsheetData, pushTableActionToGoogleSheets } from './googleSheetsApi';
+import { readAllSpreadsheetData, pushTableActionToGoogleSheets, SCHEMA_VERSION } from './googleSheetsApi';
 
 const KEYS = {
   CONFIG: 'tp_flame_config_v1',
@@ -41,8 +41,51 @@ export function generateUUID(): string {
   });
 }
 
-const DEFAULT_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyM3rjR09i9uFi-JaE1dac3CNbTWEejhmcUdh54A2C6iHzBGndlmR5LEqT2YJN495hI/exec';
-const DEFAULT_GAS_SPREADSHEET_ID = '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU';
+/**
+ * BACKEND ÚNICO — UMA CONFIGURAÇÃO, NÃO DUAS
+ *
+ * O endpoint do Apps Script é a ÚNICA coisa configurável. O ID da planilha,
+ * usado pelo caminho OAuth direto, não é mais uma constante: o app pergunta
+ * ao próprio endpoint qual planilha ele serve (`?action=whoami`) e guarda a
+ * resposta em cache.
+ *
+ * O motivo é concreto. Enquanto o ID era configurado separadamente, ele
+ * divergiu do endpoint e o app passou a gravar numa planilha estando logado
+ * no Google e em outra estando deslogado. Chegaram a existir três destinos
+ * de escrita ao mesmo tempo, e o dado que "sumia" estava, na verdade, em
+ * outra planilha. Derivar o ID do endpoint torna essa divergência impossível
+ * por construção, não apenas improvável.
+ */
+/**
+ * Endpoint do backend. Pode vir da Vercel (`VITE_GAS_ENDPOINT`) ou do valor
+ * abaixo, que serve de fallback para desenvolvimento local.
+ *
+ * ⚠️ ISTO NÃO É UM SEGREDO, e a variável de ambiente não o torna um.
+ *
+ * O TP Flame roda inteiro no navegador. Qualquer `VITE_*` é embutida no bundle
+ * durante o build — abrir o DevTools e procurar por "script.google.com" acha a
+ * URL em segundos, esteja ela na Vercel ou aqui. Não existe "esconder" um
+ * endereço que o próprio navegador precisa chamar.
+ *
+ * O que a variável de ambiente resolve de verdade:
+ *   - trocar de planilha sem alterar código e sem novo commit
+ *   - manter produção e testes em planilhas diferentes
+ *   - girar a URL rapidamente se ela vazar
+ *
+ * O que ela NÃO resolve: qualquer pessoa com a URL continua podendo ler e
+ * escrever no banco. Fechar isso exige um intermediário no servidor — está
+ * registrado como Fase 3 no diagnóstico.
+ */
+const ENV_GAS_ENDPOINT = (import.meta.env?.VITE_GAS_ENDPOINT || '').trim();
+const FALLBACK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7jPlO1a4twVVxpWigeiio8paO2VWbEu0hzcFiLp60E3kPqbIcu6/exec';
+const DEFAULT_GAS_ENDPOINT = ENV_GAS_ENDPOINT || FALLBACK_GAS_ENDPOINT;
+
+/**
+ * Versão da configuração de backend. Incrementar força cada dispositivo a
+ * descartar o endpoint em cache e voltar ao default na próxima abertura.
+ */
+const CONFIG_VERSION = 4;
+const KEY_CONFIG_VERSION = 'tp_flame_backend_config_version_v1';
 
 class StorageService {
   constructor() {
@@ -146,7 +189,31 @@ class StorageService {
     return data ? JSON.parse(data) : [];
   }
 
-  public addToSyncQueue(table: string, action: 'insert' | 'update' | 'delete', data: any) {
+  /**
+   * Carimba quem alterou e quando.
+   *
+   * Fica aqui, na entrada da fila, e não em cada método de mutação: é o único
+   * ponto por onde toda alteração passa obrigatoriamente, então não há como
+   * esquecer de carimbar ao adicionar uma funcionalidade nova.
+   *
+   * Hoje o carimbo é só informativo. Na Fase 2 ele vira a base para decidir
+   * quem vence um conflito — e por isso precisa começar a ser gravado agora,
+   * senão os registros criados até lá ficam sem histórico.
+   */
+  private stampAudit(table: string, action: 'insert' | 'update' | 'delete', data: any): any {
+    if (table === 'Logs' || table === 'Config' || action === 'delete') return data;
+    if (!data || typeof data !== 'object') return data;
+
+    const active = this.getActiveMember();
+    return {
+      ...data,
+      Atualizado_Em: new Date().toISOString(),
+      Atualizado_Por: active ? `${active.Nome} (${active.Funcao})` : 'Usuário Portal'
+    };
+  }
+
+  public addToSyncQueue(table: string, action: 'insert' | 'update' | 'delete', rawData: any) {
+    const data = this.stampAudit(table, action, rawData);
     const queue = this.getSyncQueue();
     const itemId = data?.ID || data?.id;
 
@@ -219,21 +286,89 @@ class StorageService {
   // SPREADSHEET & GAS CONFIGURATION
   // ==========================================
 
+  /**
+   * Alinha o backend salvo no dispositivo com os defaults do build.
+   *
+   * Roda uma vez por versão de configuração. Sobrescreve endpoint e
+   * Spreadsheet ID em cache porque a divergência entre eles era justamente o
+   * bug: um aparelho podia ficar preso numa planilha antiga indefinidamente,
+   * já que o valor em localStorage sempre vencia o default.
+   */
+  private migrateBackendConfig() {
+    const stored = Number(localStorage.getItem(KEY_CONFIG_VERSION) || '0');
+    if (stored >= CONFIG_VERSION) return;
+
+    localStorage.setItem(KEYS.GAS_ENDPOINT, DEFAULT_GAS_ENDPOINT);
+    // O ID em cache pertence ao endpoint anterior; descartar evita que o app
+    // continue gravando na planilha antiga pelo caminho OAuth.
+    localStorage.removeItem(KEYS.GAS_SPREADSHEET_ID);
+    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
+  }
+
   public getGasEndpoint(): string {
-    const saved = localStorage.getItem(KEYS.GAS_ENDPOINT);
-    if (!saved || saved.includes('AKfycbzM45f4onc3vNeM')) {
-      localStorage.setItem(KEYS.GAS_ENDPOINT, DEFAULT_GAS_ENDPOINT);
-      return DEFAULT_GAS_ENDPOINT;
+    this.migrateBackendConfig();
+    return localStorage.getItem(KEYS.GAS_ENDPOINT) || DEFAULT_GAS_ENDPOINT;
+  }
+
+  /**
+   * Pergunta ao endpoint qual planilha ele serve e guarda em cache.
+   *
+   * É o que garante que os dois caminhos de escrita — OAuth direto e Apps
+   * Script — apontem sempre para a mesma planilha. Enquanto não resolver, o
+   * ID fica vazio, o caminho OAuth não é usado e tudo passa pelo endpoint:
+   * mais lento, porém nunca dividido entre dois bancos.
+   */
+  public async refreshBackendIdentity(): Promise<{
+    spreadsheetId: string;
+    spreadsheetName: string;
+    schemaVersion: number;
+  } | null> {
+    const endpoint = this.getGasEndpoint();
+    if (!endpoint) return null;
+
+    try {
+      const res = await fetch(`${endpoint}?action=whoami`);
+      if (!res.ok) return null;
+
+      const json = await res.json();
+      if (json?.status !== 'success' || !json.spreadsheetId) return null;
+
+      localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, json.spreadsheetId);
+      if (json.spreadsheetName) localStorage.setItem(KEYS.SPREADSHEET_NAME, json.spreadsheetName);
+
+      const remoteSchema = Number(json.schemaVersion || 0);
+      if (remoteSchema && remoteSchema < SCHEMA_VERSION) {
+        console.warn(
+          `[sync] Planilha no esquema v${remoteSchema}, app espera v${SCHEMA_VERSION}. Rode bootstrap() no Apps Script.`
+        );
+      }
+
+      return {
+        spreadsheetId: json.spreadsheetId,
+        spreadsheetName: json.spreadsheetName || '',
+        schemaVersion: remoteSchema
+      };
+    } catch {
+      // Offline é situação normal aqui; o caminho GAS segue funcionando.
+      return null;
     }
-    return saved;
   }
 
   public setGasEndpoint(url: string) {
     localStorage.setItem(KEYS.GAS_ENDPOINT, url.trim());
+    // Escolha deliberada do usuário: marca a config como atual para que a
+    // migração não sobrescreva um endpoint customizado na próxima leitura.
+    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
   }
 
+  /**
+   * ID da planilha resolvido a partir do endpoint (ver refreshBackendIdentity).
+   * Vazio significa "ainda nao sei": o caminho OAuth fica desligado e tudo vai
+   * pelo Apps Script, que e o comportamento seguro.
+   */
   public getGasSpreadsheetId(): string {
-    return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || DEFAULT_GAS_SPREADSHEET_ID;
+    this.migrateBackendConfig();
+    return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || '';
   }
 
   public setGasSpreadsheetId(id: string) {
@@ -243,6 +378,7 @@ class StorageService {
       cleanId = match[1];
     }
     localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, cleanId);
+    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
   }
 
   public getSpreadsheetName(): string {
@@ -398,6 +534,13 @@ class StorageService {
     pulledCount: number;
     mode?: string;
   }> {
+    // Descobre a planilha a partir do endpoint antes de qualquer coisa. Sem
+    // isso o caminho OAuth fica desligado e tudo passa pelo Apps Script —
+    // funciona, mas mais devagar.
+    if (!this.getGasSpreadsheetId()) {
+      await this.refreshBackendIdentity();
+    }
+
     const token = getAccessToken();
     const spreadsheetId = this.getGasSpreadsheetId();
     const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
@@ -471,7 +614,12 @@ class StorageService {
     // PATH B: GOOGLE APPS SCRIPT WEB APP ENDPOINT
     const endpoint = this.getGasEndpoint();
     if (!endpoint) {
-      return { success: false, message: 'Nenhuma URL de Web App configurada', pushedCount: 0, pulledCount: 0 };
+      return {
+        success: false,
+        message: 'Backend nao configurado. Cole a URL /exec do Apps Script no painel de administracao.',
+        pushedCount: 0,
+        pulledCount: 0
+      };
     }
 
     try {
