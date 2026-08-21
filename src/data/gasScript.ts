@@ -10,6 +10,12 @@ export const GAS_UNIFIED_PRODUCTION_CODE = `/**
  * 2. doGet(e) & doPost(e): API Web App para sincronização instantânea em tempo real.
  * 3. createBackup(): Gera cópia/backup automático da planilha no Google Drive.
  * 4. setupDailyBackupTrigger(): Cria gatilho diário de backup automático.
+ * 5. repairDatabase(): Limpeza única — duplicatas, linhas vazias e excesso de logs.
+ * ============================================================================
+ * IMPORTANTE: ao alterar este script, é preciso REPUBLICAR a implantação
+ * (Implantar > Gerenciar implantações > editar > Nova versão). Editar o
+ * código sem republicar deixa a versão antiga no ar — foi o que aconteceu
+ * antes: a versão publicada estava atrás da que está no repositório.
  * ============================================================================
  */
 
@@ -206,6 +212,23 @@ function doGet(e) {
  * 5. API WEB APP: Endpoints POST (Escrita, Alterações e Sincronização em Tempo Real)
  */
 function doPost(e) {
+  // TRAVA DE CONCORRÊNCIA
+  //
+  // Toda operação aqui é ler-tudo -> alterar -> gravar. Sem trava, duas
+  // pessoas salvando ao mesmo tempo executam o script em paralelo, cada uma
+  // lendo a planilha antes da outra gravar, e a última sobrescreve a
+  // primeira. Criar uma música dispara várias mutações de uma vez, então
+  // isso acontece até com um único usuário.
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (lockErr) {
+    return createJsonResponse({
+      status: 'error',
+      message: 'Planilha ocupada por outra gravação. O app tentará de novo automaticamente.'
+    });
+  }
+
   try {
     if (!e || !e.postData || !e.postData.contents) {
       return createJsonResponse({ status: 'error', message: 'Nenhum payload recebido no POST' });
@@ -268,6 +291,8 @@ function doPost(e) {
     return createJsonResponse(result);
   } catch (err) {
     return createJsonResponse({ status: 'error', message: err.toString() });
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -314,10 +339,8 @@ function processOperation(ss, table, action, payload) {
 
     if (existingRow !== -1) {
       sheet.getRange(existingRow, 1, 1, headers.length).setValues([row]);
-      logAction(ss, 'UPDATE_UPSERT', table, 'ID: ' + payload.ID);
     } else {
       sheet.appendRow(row);
-      logAction(ss, 'INSERT', table, 'ID: ' + payload.ID);
     }
     return { status: 'success', id: payload.ID };
   }
@@ -333,7 +356,6 @@ function processOperation(ss, table, action, payload) {
           }
         });
         sheet.getRange(j + 1, 1, 1, headers.length).setValues([rowData]);
-        logAction(ss, 'UPDATE', table, 'ID: ' + targetId);
         return { status: 'success', id: targetId };
       }
     }
@@ -348,7 +370,6 @@ function processOperation(ss, table, action, payload) {
     for (var k = 1; k < values.length; k++) {
       if (values[k][idIndex] == delId) {
         sheet.deleteRow(k + 1);
-        logAction(ss, 'DELETE', table, 'ID: ' + delId);
         return { status: 'success', id: delId };
       }
     }
@@ -356,6 +377,86 @@ function processOperation(ss, table, action, payload) {
   }
 
   return { status: 'error', message: 'Ação não suportada: ' + action };
+}
+
+/**
+ * 6. REPARO ÚNICO DA PLANILHA
+ *
+ * Execute UMA VEZ no editor do Apps Script (Executar > repairDatabase) para
+ * limpar a sujeira acumulada pelos bugs corrigidos na Fase 1:
+ *
+ *  - linhas com ID duplicado (o app fazia append cego e gravava duas vezes)
+ *  - linhas totalmente em branco (exclusões antigas só limpavam a linha)
+ *  - excesso de logs (o app registrava a própria sincronização)
+ *
+ * Faz um backup antes de qualquer alteração. Só remove linhas; nunca edita
+ * o conteúdo de uma linha que sobrevive.
+ */
+function repairDatabase() {
+  var ss = getSpreadsheet();
+  var LOGS_TO_KEEP = 200;
+  var report = { backup: null, duplicatesRemoved: {}, blankRowsRemoved: {}, logsTruncated: 0 };
+
+  // Rede de segurança: nada é removido antes de existir uma cópia.
+  report.backup = createBackup().backupFileName;
+
+  Object.keys(DATABASE_SCHEMA).forEach(function(sheetName) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet || sheet.getLastRow() <= 1) return;
+
+    var values = sheet.getDataRange().getValues();
+    var headers = values[0];
+    var idIndex = headers.indexOf("ID");
+
+    var seenIds = {};
+    var rowsToDelete = [];
+
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+
+      var isBlank = row.every(function(cell) {
+        return cell === '' || cell === null || cell === undefined;
+      });
+      if (isBlank) {
+        rowsToDelete.push({ row: i + 1, reason: 'blank' });
+        continue;
+      }
+
+      if (idIndex !== -1) {
+        var id = String(row[idIndex]);
+        if (id === '') continue;
+        if (seenIds[id]) {
+          rowsToDelete.push({ row: i + 1, reason: 'duplicate' });
+        } else {
+          seenIds[id] = true;
+        }
+      }
+    }
+
+    // De baixo para cima: apagar de cima desloca os índices das linhas seguintes.
+    var dup = 0, blank = 0;
+    for (var d = rowsToDelete.length - 1; d >= 0; d--) {
+      sheet.deleteRow(rowsToDelete[d].row);
+      if (rowsToDelete[d].reason === 'duplicate') dup++; else blank++;
+    }
+
+    if (dup > 0) report.duplicatesRemoved[sheetName] = dup;
+    if (blank > 0) report.blankRowsRemoved[sheetName] = blank;
+  });
+
+  // Logs: mantém apenas os mais recentes.
+  var logSheet = ss.getSheetByName('Logs');
+  if (logSheet) {
+    var totalLogRows = logSheet.getLastRow() - 1;
+    if (totalLogRows > LOGS_TO_KEEP) {
+      var excess = totalLogRows - LOGS_TO_KEEP;
+      logSheet.deleteRows(2, excess);
+      report.logsTruncated = excess;
+    }
+  }
+
+  Logger.log(JSON.stringify(report, null, 2));
+  return report;
 }
 
 /**
