@@ -68,6 +68,8 @@ function AppContent() {
   // desatualizado em relação ao que a equipe fez em outro celular.
   const [isInitialSync, setIsInitialSync] = useState(true);
   const hasSyncedOnceRef = useRef(false);
+  const isSyncInFlightRef = useRef(false);
+  const lastSyncAtRef = useRef(0);
 
   const refreshData = useCallback(() => {
     setMusicas(storage.getMusicas());
@@ -93,6 +95,11 @@ function AppContent() {
    * ficava sabendo que estava vendo dados possivelmente desatualizados.
    */
   const handleSync = useCallback(async (isManual = false) => {
+    // Evita sincronizações sobrepostas: o botão manual, o sync periódico, o
+    // de reconexão e o de foco de aba podem disparar quase ao mesmo tempo.
+    if (isSyncInFlightRef.current) return;
+    isSyncInFlightRef.current = true;
+
     const isFirstSyncOfSession = !hasSyncedOnceRef.current;
 
     setIsSyncing(true);
@@ -100,42 +107,49 @@ function AppContent() {
       showToast('Sincronizando com a planilha da equipe...', 'info', 2000);
     }
 
-    const res = await storage.syncWithGas();
-    refreshData();
-    setIsSyncing(false);
-    hasSyncedOnceRef.current = true;
-    setIsInitialSync(false);
+    try {
+      const res = await storage.syncWithGas();
+      refreshData();
+      hasSyncedOnceRef.current = true;
+      lastSyncAtRef.current = Date.now();
+      setIsInitialSync(false);
 
-    // Conflito avisa sempre, mesmo fora do primeiro sync ou de um sync manual:
-    // significa que uma edição feita NESTE aparelho foi descartada porque
-    // alguém já tinha salvo uma versão mais recente do mesmo registro. Quem
-    // editou precisa saber que o que digitou não "colou", para conferir e
-    // refazer se for o caso.
-    if (res.conflictCount > 0) {
-      showToast(
-        res.conflictCount === 1
-          ? 'Uma edição sua foi descartada: alguém já havia salvo uma versão mais recente do mesmo registro.'
-          : `${res.conflictCount} edições suas foram descartadas: alguém já havia salvo versões mais recentes.`,
-        'warning',
-        6000
-      );
-    }
-
-    if (isManual || isFirstSyncOfSession) {
-      if (res.success) {
-        if (res.pushedCount && res.pushedCount > 0) {
-          showToast(`Sincronizado! ${res.pushedCount} alteração(ões) enviadas para o Sheets.`, 'success');
-        } else if (isFirstSyncOfSession) {
-          showToast('Dados atualizados com a planilha da equipe.', 'success');
-        } else {
-          showToast('Sincronizado com a planilha com sucesso!', 'success');
-        }
-      } else {
+      // Conflito avisa sempre, mesmo fora do primeiro sync ou de um sync
+      // manual: significa que uma edição feita NESTE aparelho foi descartada
+      // porque alguém já tinha salvo uma versão mais recente do mesmo
+      // registro. Quem editou precisa saber que o que digitou não "colou".
+      if (res.conflictCount > 0) {
         showToast(
-          res.message || 'Sem conexão com a planilha agora — mostrando os últimos dados salvos neste aparelho.',
-          'warning'
+          res.conflictCount === 1
+            ? 'Uma edição sua foi descartada: alguém já havia salvo uma versão mais recente do mesmo registro.'
+            : `${res.conflictCount} edições suas foram descartadas: alguém já havia salvo versões mais recentes.`,
+          'warning',
+          6000
         );
       }
+
+      if (isManual || isFirstSyncOfSession) {
+        if (res.success) {
+          if (res.pushedCount && res.pushedCount > 0) {
+            showToast(`Sincronizado! ${res.pushedCount} alteração(ões) enviadas para o Sheets.`, 'success');
+          } else if (isFirstSyncOfSession) {
+            showToast('Dados atualizados com a planilha da equipe.', 'success');
+          } else {
+            showToast('Sincronizado com a planilha com sucesso!', 'success');
+          }
+        } else {
+          showToast(
+            res.message || 'Sem conexão com a planilha agora — mostrando os últimos dados salvos neste aparelho.',
+            'warning'
+          );
+        }
+      }
+    } finally {
+      // Sempre libera, mesmo se algo lançar uma exceção inesperada — senão a
+      // flag fica travada em "sincronizando" e nenhum sync automático futuro
+      // roda de novo até a página ser recarregada.
+      setIsSyncing(false);
+      isSyncInFlightRef.current = false;
     }
   }, [refreshData, showToast]);
 
@@ -143,6 +157,46 @@ function AppContent() {
     refreshData();
     handleSync(false);
   }, []);
+
+  /**
+   * Fase 2, item 2: sincronização sem depender de reabrir o app.
+   *
+   * Antes, só rodava no mount e no clique manual — quem deixasse o app
+   * aberto no palco durante o ensaio nunca via o que os outros adicionaram, a
+   * não ser que fechasse e abrisse de novo. Agora sincroniza sozinho:
+   *   - periodicamente, a cada 90s, enquanto o app fica aberto
+   *   - ao reconectar à internet (evento 'online')
+   *   - ao voltar o foco para a aba/app (o celular volta da tela de bloqueio,
+   *     ou a pessoa troca de app e volta)
+   *
+   * MIN_GAP_MS evita disparos redundantes quando dois desses gatilhos
+   * acontecem quase juntos (ex.: destravar o celular já reconecta o wifi).
+   */
+  useEffect(() => {
+    const MIN_GAP_MS = 20000;
+    const PERIODIC_MS = 90000;
+
+    const maybeSync = () => {
+      if (!navigator.onLine) return;
+      if (Date.now() - lastSyncAtRef.current < MIN_GAP_MS) return;
+      handleSync(false);
+    };
+
+    const onOnline = () => maybeSync();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') maybeSync();
+    };
+
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    const intervalId = setInterval(maybeSync, PERIODIC_MS);
+
+    return () => {
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      clearInterval(intervalId);
+    };
+  }, [handleSync]);
 
   // Compute upcoming Culto
   const upcomingCulto = cultos.find(

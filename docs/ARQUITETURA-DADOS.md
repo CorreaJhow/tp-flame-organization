@@ -382,6 +382,32 @@ mesmo fora de uma sincronização manual — perder uma edição em silêncio n�
   direto, isolada do resto do motor de sync — esse arquivo não tinha nenhuma cobertura
   antes, e é onde a lógica de comparação é escrita manualmente (não delegada ao Apps Script)
 
+## 9b. Fase 2, item 2 — sincronizacao automatica (21/08/2026)
+
+Ate aqui, o app so sincronizava no mount e no clique manual. Quem deixasse o
+app aberto no palco durante o ensaio nunca via o que os outros adicionaram, a
+nao ser que fechasse e reabrisse.
+
+`App.tsx` passa a chamar `handleSync(false)` sozinho em tres gatilhos, alem
+do mount:
+
+- **periodico**, a cada 90s, enquanto o app fica aberto
+- **ao reconectar** (evento `online`)
+- **ao voltar o foco** para a aba/app (`visibilitychange` -> `visible`)
+
+Um `MIN_GAP_MS` de 20s evita disparos redundantes quando dois gatilhos
+acontecem quase juntos (destravar o celular ja reconecta o wifi, por
+exemplo). Um guard (`isSyncInFlightRef`) impede chamadas sobrepostas
+regardless da origem -- manual, periodica, reconexao ou foco -- e e liberado
+em `finally`, entao uma excecao inesperada dentro de `syncWithGas()` nao
+trava a sincronizacao automatica para sempre ate a pagina ser recarregada.
+
+Sincronizacoes automaticas alem da primeira da sessao continuam silenciosas
+em caso de sucesso (nao viram toast a cada 90s) -- so falha e conflito
+continuam sempre visiveis, pelo mesmo motivo ja documentado na secao 8d.
+
+---
+
 ## 10. Comandos
 
 ```bash
