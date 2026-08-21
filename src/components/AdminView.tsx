@@ -83,7 +83,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   const handleSaveConnection = (e: React.FormEvent) => {
     e.preventDefault();
-    storage.setGasEndpoint(endpointInput);
+    const saved = storage.setGasEndpoint(endpointInput);
+    if (!saved) {
+      showToast(
+        'URL inválida. Copie exatamente a URL /exec do Apps Script, sem cortar nem editar.',
+        'warning'
+      );
+      return;
+    }
+
     setSaveSuccess(true);
     showToast('Endpoint salvo. Detectando a planilha...', 'success');
     // O ID vem do proprio endpoint; trocar de endpoint troca de planilha.

@@ -76,7 +76,57 @@ export function generateUUID(): string {
  * escrever no banco. Fechar isso exige um intermediário no servidor — está
  * registrado como Fase 3 no diagnóstico.
  */
-const ENV_GAS_ENDPOINT = (import.meta.env?.VITE_GAS_ENDPOINT || '').trim();
+/**
+ * Valida o formato de uma URL de Web App do Apps Script e remove lixo comum
+ * de colagem (reticências "…", aspas curvas, espaços invisíveis).
+ *
+ * Existe porque um valor corrompido já vazou para produção uma vez através da
+ * variável de ambiente da Vercel — provavelmente colado com reticências no
+ * meio, sinal de que veio de algum lugar que exibia a URL truncada. O
+ * `fetch` para uma URL assim nunca chega a sair (erro de rede local, não
+ * nem CORS), então a falha ficava invisível para quem não abrisse o
+ * DevTools. Esta função garante que uma URL malformada nunca seja usada —
+ * ela cai para o fallback confiável em vez de tentar sincronizar com lixo.
+ */
+function sanitizeGasEndpoint(raw: string): string {
+  if (!raw) return '';
+
+  const cleaned = raw.trim();
+
+  // Caracteres invisíveis/decorativos comuns em colagem malformada:
+  // reticências, aspas curvas, marcador de lista, espaços e junções de
+  // largura zero, BOM. Escritos por code point para não depender de
+  // caracteres literais não-ASCII no arquivo-fonte.
+  const JUNK = ['…', '•', '‘', '’', '“', '”', '​', '‌', '‍', '﻿'];
+
+  // Deliberado: ao encontrar lixo, REJEITA a string inteira em vez de
+  // remover o caractere e validar o que sobrou. Remover primeiro é o que
+  // causou o bug de verdade: "AKfycbzXHtLDcy3p…/exec" vira, depois de tirar
+  // a reticência, "AKfycbzXHtLDcy3p/exec" — um ID TRUNCADO que ainda bate
+  // com o formato esperado (letras/números/traço), e portanto passaria
+  // como "válido" apontando para uma implantação que não existe. Só a URL
+  // que já chega limpa, sem qualquer sinal de colagem malformada, é aceita.
+  if (JUNK.some((ch) => cleaned.includes(ch))) {
+    console.warn(
+      `[config] URL de endpoint contém caractere de colagem inválido, rejeitada: "${raw}"`
+    );
+    return '';
+  }
+
+  const isValid = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(cleaned);
+  if (!isValid) {
+    if (cleaned) {
+      console.warn(
+        `[config] URL de endpoint invalida, ignorada: "${raw}". Esperado algo como ` +
+        `https://script.google.com/macros/s/SEU_ID/exec`
+      );
+    }
+    return '';
+  }
+  return cleaned;
+}
+
+const ENV_GAS_ENDPOINT = sanitizeGasEndpoint(import.meta.env?.VITE_GAS_ENDPOINT || '');
 const FALLBACK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7jPlO1a4twVVxpWigeiio8paO2VWbEu0hzcFiLp60E3kPqbIcu6/exec';
 const DEFAULT_GAS_ENDPOINT = ENV_GAS_ENDPOINT || FALLBACK_GAS_ENDPOINT;
 
@@ -307,7 +357,11 @@ class StorageService {
 
   public getGasEndpoint(): string {
     this.migrateBackendConfig();
-    return localStorage.getItem(KEYS.GAS_ENDPOINT) || DEFAULT_GAS_ENDPOINT;
+    const stored = localStorage.getItem(KEYS.GAS_ENDPOINT) || '';
+    // Sanitiza também na leitura: um valor corrompido pode ter sido salvo
+    // antes desta validação existir. Sem isso, o dispositivo ficaria preso
+    // numa URL quebrada mesmo depois do código corrigido.
+    return sanitizeGasEndpoint(stored) || DEFAULT_GAS_ENDPOINT;
   }
 
   /**
@@ -354,11 +408,21 @@ class StorageService {
     }
   }
 
-  public setGasEndpoint(url: string) {
-    localStorage.setItem(KEYS.GAS_ENDPOINT, url.trim());
+  /**
+   * Salva um endpoint colado à mão (painel admin ou modal do Google Workspace).
+   * Devolve false e NÃO salva nada se a URL não tiver o formato esperado —
+   * evita repetir, por colagem manual, o mesmo tipo de corrupção que já
+   * vazou uma vez através de uma variável de ambiente.
+   */
+  public setGasEndpoint(url: string): boolean {
+    const clean = sanitizeGasEndpoint(url);
+    if (!clean) return false;
+
+    localStorage.setItem(KEYS.GAS_ENDPOINT, clean);
     // Escolha deliberada do usuário: marca a config como atual para que a
     // migração não sobrescreva um endpoint customizado na próxima leitura.
     localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
+    return true;
   }
 
   /**

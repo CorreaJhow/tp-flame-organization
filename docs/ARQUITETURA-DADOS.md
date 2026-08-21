@@ -264,6 +264,33 @@ incrementar `CONFIG_VERSION` e o ultimo passo antes de publicar.
 
 ---
 
+## 8c. Validacao contra colagem malformada (21/08/2026)
+
+O bundle publicado apareceu, duas vezes seguidas, com a URL do endpoint
+contendo um caractere de reticencias real (`…`) no meio do ID de implantacao
+-- evidencia consistente com `VITE_GAS_ENDPOINT` configurado na Vercel com um
+valor colado incompleto. Sem acesso ao painel da Vercel para confirmar a
+causa exata, a correcao aplicada protege o app independente de onde a
+corrupcao venha: variavel de ambiente, colagem manual no admin, ou qualquer
+fonte futura.
+
+`sanitizeGasEndpoint()`, em `storage.ts`, e aplicada nos tres pontos de
+entrada de uma URL de endpoint: a variavel de ambiente, a leitura do cache
+(`getGasEndpoint`) e a gravacao manual (`setGasEndpoint`, que agora devolve
+`boolean` e rejeita URLs invalidas em vez de salva-las).
+
+Decisao deliberada: ao encontrar um caractere de colagem malformada
+(reticencias, aspas curvas, espacos de largura zero), a funcao **rejeita a
+string inteira**, nunca remove o caractere e valida o que sobrou. Remover
+primeiro foi tentado e descartado: "AKfycbzXHtLDcy3p…/exec" sem a reticencia
+vira "AKfycbzXHtLDcy3p/exec", um ID truncado que ainda bate com o formato
+esperado (letras/numeros/traco) e passaria como "valido" apontando para uma
+implantacao que nao existe. So aceita quem chega limpo.
+
+Testes `2.1e` a `2.1g` cobrem exatamente o caractere observado em producao.
+
+---
+
 ## 9. Comandos
 
 ```bash
