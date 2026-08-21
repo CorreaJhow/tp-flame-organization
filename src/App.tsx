@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DashboardView } from './components/DashboardView';
@@ -63,6 +63,11 @@ function AppContent() {
 
   // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
+  // Verdadeiro só até a primeira sincronização desta sessão terminar. Até lá,
+  // a tela mostra o que já estava salvo neste aparelho — que pode estar
+  // desatualizado em relação ao que a equipe fez em outro celular.
+  const [isInitialSync, setIsInitialSync] = useState(true);
+  const hasSyncedOnceRef = useRef(false);
 
   const refreshData = useCallback(() => {
     setMusicas(storage.getMusicas());
@@ -76,20 +81,45 @@ function AppContent() {
     setLogs(storage.getLogs());
   }, []);
 
+  /**
+   * A primeira sincronização de cada sessão sempre avisa na tela, mesmo
+   * quando disparada automaticamente (isManual=false).
+   *
+   * Antes, uma sincronização automática nunca mostrava nada — nem quando
+   * dava certo, nem quando falhava. Isso significava duas coisas ruins ao
+   * mesmo tempo: quem abria o app via a biblioteca antiga deste aparelho por
+   * alguns segundos sem saber que era um dado provisório, e se a
+   * sincronização falhasse (rede ruim no ensaio, por exemplo), ninguém jamais
+   * ficava sabendo que estava vendo dados possivelmente desatualizados.
+   */
   const handleSync = useCallback(async (isManual = false) => {
+    const isFirstSyncOfSession = !hasSyncedOnceRef.current;
+
     setIsSyncing(true);
+    if (isFirstSyncOfSession) {
+      showToast('Sincronizando com a planilha da equipe...', 'info', 2000);
+    }
+
     const res = await storage.syncWithGas();
     refreshData();
     setIsSyncing(false);
-    if (isManual) {
+    hasSyncedOnceRef.current = true;
+    setIsInitialSync(false);
+
+    if (isManual || isFirstSyncOfSession) {
       if (res.success) {
         if (res.pushedCount && res.pushedCount > 0) {
           showToast(`Sincronizado! ${res.pushedCount} alteração(ões) enviadas para o Sheets.`, 'success');
+        } else if (isFirstSyncOfSession) {
+          showToast('Dados atualizados com a planilha da equipe.', 'success');
         } else {
           showToast('Sincronizado com a planilha com sucesso!', 'success');
         }
       } else {
-        showToast(res.message || 'Dados mantidos localmente (sem conexão no momento)', 'warning');
+        showToast(
+          res.message || 'Sem conexão com a planilha agora — mostrando os últimos dados salvos neste aparelho.',
+          'warning'
+        );
       }
     }
   }, [refreshData, showToast]);
@@ -146,6 +176,16 @@ function AppContent() {
 
       {/* Main Container */}
       <main className="max-w-2xl mx-auto px-4 pt-4">
+        {/* Aviso de primeira sincronização: o que aparece abaixo pode ser o
+            dado salvo neste aparelho, ainda não conferido com a planilha da
+            equipe. Some assim que a sincronização inicial terminar. */}
+        {isInitialSync && isSyncing && (
+          <div className="mb-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-[#141414] border border-slate-800 text-slate-300 text-xs font-semibold animate-in fade-in duration-200">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-600 border-t-[#FF4D00] animate-spin shrink-0" />
+            <span>Sincronizando com a planilha da equipe — o que você vê agora pode mudar em instantes.</span>
+          </div>
+        )}
+
         {currentTab === 'inicio' && (
           <DashboardView
             upcomingCulto={upcomingCulto}

@@ -291,6 +291,26 @@ Testes `2.1e` a `2.1g` cobrem exatamente o caractere observado em producao.
 
 ---
 
+## 8d. Sincronizacao inicial silenciosa (21/08/2026)
+
+Reportado pelo usuario: abrir o app num aparelho as vezes mostra dados
+antigos por um instante, depois "atualiza sozinho". Mecanismo confirmado em
+`App.tsx`: no mount, `refreshData()` le o `localStorage` do proprio aparelho
+IMEDIATAMENTE (o que ja estava salvo ali, de uma visita anterior), e so
+depois `handleSync(false)` busca a planilha e substitui. Como a chamada
+automatica nunca mostrava toast -- nem de sucesso, nem de falha -- a troca
+acontecia em silencio, e uma falha de sincronizacao (rede ruim no ensaio, por
+exemplo) deixava a pessoa vendo dado desatualizado sem nenhum aviso.
+
+Corrigido em `App.tsx`: a primeira sincronizacao de cada sessao agora sempre
+avisa, mesmo sendo automatica -- toast ao iniciar, toast de sucesso ou aviso
+ao terminar, mais uma faixa persistente acima do conteudo enquanto ela roda
+(o toast some sozinho em poucos segundos e podia passar despercebido).
+Sincronizacoes seguintes na mesma sessao continuam silenciosas em caso de
+sucesso, para nao virar ruido quando a Fase 2 trouxer sync periodico.
+
+---
+
 ## 9. Comandos
 
 ```bash
