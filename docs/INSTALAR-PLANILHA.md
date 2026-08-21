@@ -66,11 +66,20 @@ Copie a **URL do App da Web** — termina em `/exec`.
 
 Duas opções:
 
-**Definitiva (para toda a equipe):** cole a URL em `DEFAULT_GAS_ENDPOINT`, no
-começo de [`src/services/storage.ts`](../src/services/storage.ts), e incremente
-o `CONFIG_VERSION` logo abaixo. O incremento é o que faz cada celular já em uso
-adotar o backend novo — sem ele, o valor em cache no `localStorage` continua
-vencendo. Depois é só fazer o deploy.
+**Definitiva (para toda a equipe):** defina `VITE_GAS_ENDPOINT` nas variáveis
+de ambiente da Vercel — *Settings > Environment Variables* — ou, na falta dela,
+edite `FALLBACK_GAS_ENDPOINT` em
+[`src/services/storage.ts`](../src/services/storage.ts).
+
+Em qualquer um dos dois casos, **incremente o `CONFIG_VERSION`** logo abaixo. É
+o incremento que faz cada celular já em uso adotar o backend novo; sem ele o
+valor em cache no `localStorage` continua vencendo e o aparelho fica preso na
+planilha antiga.
+
+> ⚠️ A variável de ambiente **não esconde a URL**. Todo `VITE_*` é embutido no
+> bundle durante o build e aparece no DevTools de qualquer visitante. Ela serve
+> para trocar de planilha sem commit e separar produção de testes. Restringir
+> de fato quem lê e escreve exige um intermediário no servidor — Fase 3.
 
 **Rápida (só neste aparelho):** painel admin do app > **URL da Web App
 Executável** > colar > **Salvar Conexão**. O app detecta a planilha sozinho e

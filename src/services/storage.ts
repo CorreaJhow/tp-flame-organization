@@ -56,17 +56,35 @@ export function generateUUID(): string {
  * outra planilha. Derivar o ID do endpoint torna essa divergência impossível
  * por construção, não apenas improvável.
  */
-// ⚠️ PREENCHER com a URL /exec da nova implantação antes de publicar.
-// Vazio = o app funciona 100% offline no dispositivo, sem sincronizar, e o
-// painel admin avisa que falta configurar. Não quebra, mas também não
-// compartilha nada com a equipe.
-const DEFAULT_GAS_ENDPOINT = '';
+/**
+ * Endpoint do backend. Pode vir da Vercel (`VITE_GAS_ENDPOINT`) ou do valor
+ * abaixo, que serve de fallback para desenvolvimento local.
+ *
+ * ⚠️ ISTO NÃO É UM SEGREDO, e a variável de ambiente não o torna um.
+ *
+ * O TP Flame roda inteiro no navegador. Qualquer `VITE_*` é embutida no bundle
+ * durante o build — abrir o DevTools e procurar por "script.google.com" acha a
+ * URL em segundos, esteja ela na Vercel ou aqui. Não existe "esconder" um
+ * endereço que o próprio navegador precisa chamar.
+ *
+ * O que a variável de ambiente resolve de verdade:
+ *   - trocar de planilha sem alterar código e sem novo commit
+ *   - manter produção e testes em planilhas diferentes
+ *   - girar a URL rapidamente se ela vazar
+ *
+ * O que ela NÃO resolve: qualquer pessoa com a URL continua podendo ler e
+ * escrever no banco. Fechar isso exige um intermediário no servidor — está
+ * registrado como Fase 3 no diagnóstico.
+ */
+const ENV_GAS_ENDPOINT = (import.meta.env?.VITE_GAS_ENDPOINT || '').trim();
+const FALLBACK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7jPlO1a4twVVxpWigeiio8paO2VWbEu0hzcFiLp60E3kPqbIcu6/exec';
+const DEFAULT_GAS_ENDPOINT = ENV_GAS_ENDPOINT || FALLBACK_GAS_ENDPOINT;
 
 /**
  * Versão da configuração de backend. Incrementar força cada dispositivo a
  * descartar o endpoint em cache e voltar ao default na próxima abertura.
  */
-const CONFIG_VERSION = 3;
+const CONFIG_VERSION = 4;
 const KEY_CONFIG_VERSION = 'tp_flame_backend_config_version_v1';
 
 class StorageService {
