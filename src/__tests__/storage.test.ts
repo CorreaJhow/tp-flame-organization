@@ -10,7 +10,24 @@ describe('2. Local Storage & Sync Engine Tests', () => {
 
   it('2.1 Should return default GAS endpoint URL correctly when no local custom value is stored', () => {
     const endpoint = storage.getGasEndpoint();
-    expect(endpoint).toContain('script.google.com/macros/s/AKfycbyM3rjR09i9uFi-JaE1dac3CNbTWEejhmcUdh54A2C6iHzBGndlmR5LEqT2YJN495hI/exec');
+    expect(endpoint).toContain('script.google.com/macros/s/AKfycbyGB5nV1P6fATpYwgn5_Cz3oNW3bTYpOdbYBpj4EFapqsCzYY9DuJVvtDYtCTZnZsSX/exec');
+  });
+
+  it('2.1b Endpoint e Spreadsheet ID padrao devem apontar para a MESMA planilha', () => {
+    // Enquanto divergirem, o app grava em bancos diferentes conforme o
+    // usuario esteja logado no Google ou nao.
+    localStorage.clear();
+    expect(storage.getGasSpreadsheetId()).toBe('1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI');
+    expect(storage.getGasEndpoint()).toContain('AKfycbyGB5nV1P6f');
+  });
+
+  it('2.1c Configuracao antiga em cache deve ser migrada para o backend atual', () => {
+    localStorage.clear();
+    localStorage.setItem('tp_flame_gas_endpoint_v1', 'https://script.google.com/macros/s/ENDPOINT_ANTIGO/exec');
+    localStorage.setItem('tp_flame_gas_spreadsheet_id_v1', '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU');
+
+    expect(storage.getGasEndpoint()).toContain('AKfycbyGB5nV1P6f');
+    expect(storage.getGasSpreadsheetId()).toBe('1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI');
   });
 
   it('2.2 Should allow updating and retrieving custom GAS Endpoint URL', () => {

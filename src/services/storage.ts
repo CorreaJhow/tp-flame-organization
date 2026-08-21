@@ -41,8 +41,30 @@ export function generateUUID(): string {
   });
 }
 
-const DEFAULT_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyM3rjR09i9uFi-JaE1dac3CNbTWEejhmcUdh54A2C6iHzBGndlmR5LEqT2YJN495hI/exec';
-const DEFAULT_GAS_SPREADSHEET_ID = '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU';
+/**
+ * BACKEND ÚNICO
+ *
+ * Estas duas constantes precisam apontar para a MESMA planilha, sempre.
+ *
+ * O endpoint é usado quando ninguém está logado no Google; o Spreadsheet ID é
+ * usado pelo caminho OAuth direto. Antes eles apontavam para planilhas
+ * diferentes, e o app gravava em bancos distintos conforme o estado de login
+ * — chegou a haver três destinos de escrita simultâneos. Era a causa de dados
+ * que "sumiam" e reapareciam: estavam em outra planilha o tempo todo.
+ *
+ * Ao trocar o endpoint, troque também o ID e incremente CONFIG_VERSION, senão
+ * os aparelhos da equipe continuam usando o valor antigo em cache.
+ */
+const DEFAULT_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyGB5nV1P6fATpYwgn5_Cz3oNW3bTYpOdbYBpj4EFapqsCzYY9DuJVvtDYtCTZnZsSX/exec';
+const DEFAULT_GAS_SPREADSHEET_ID = '1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI';
+
+/**
+ * Versão da configuração de backend. Incrementar força cada dispositivo a
+ * adotar o endpoint e o ID acima na próxima abertura do app, descartando o
+ * que estiver em cache no localStorage.
+ */
+const CONFIG_VERSION = 2;
+const KEY_CONFIG_VERSION = 'tp_flame_backend_config_version_v1';
 
 class StorageService {
   constructor() {
@@ -219,20 +241,37 @@ class StorageService {
   // SPREADSHEET & GAS CONFIGURATION
   // ==========================================
 
+  /**
+   * Alinha o backend salvo no dispositivo com os defaults do build.
+   *
+   * Roda uma vez por versão de configuração. Sobrescreve endpoint e
+   * Spreadsheet ID em cache porque a divergência entre eles era justamente o
+   * bug: um aparelho podia ficar preso numa planilha antiga indefinidamente,
+   * já que o valor em localStorage sempre vencia o default.
+   */
+  private migrateBackendConfig() {
+    const stored = Number(localStorage.getItem(KEY_CONFIG_VERSION) || '0');
+    if (stored >= CONFIG_VERSION) return;
+
+    localStorage.setItem(KEYS.GAS_ENDPOINT, DEFAULT_GAS_ENDPOINT);
+    localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, DEFAULT_GAS_SPREADSHEET_ID);
+    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
+  }
+
   public getGasEndpoint(): string {
-    const saved = localStorage.getItem(KEYS.GAS_ENDPOINT);
-    if (!saved || saved.includes('AKfycbzM45f4onc3vNeM')) {
-      localStorage.setItem(KEYS.GAS_ENDPOINT, DEFAULT_GAS_ENDPOINT);
-      return DEFAULT_GAS_ENDPOINT;
-    }
-    return saved;
+    this.migrateBackendConfig();
+    return localStorage.getItem(KEYS.GAS_ENDPOINT) || DEFAULT_GAS_ENDPOINT;
   }
 
   public setGasEndpoint(url: string) {
     localStorage.setItem(KEYS.GAS_ENDPOINT, url.trim());
+    // Escolha deliberada do usuário: marca a config como atual para que a
+    // migração não sobrescreva um endpoint customizado na próxima leitura.
+    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
   }
 
   public getGasSpreadsheetId(): string {
+    this.migrateBackendConfig();
     return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || DEFAULT_GAS_SPREADSHEET_ID;
   }
 
@@ -243,6 +282,7 @@ class StorageService {
       cleanId = match[1];
     }
     localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, cleanId);
+    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
   }
 
   public getSpreadsheetName(): string {
