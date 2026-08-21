@@ -51,15 +51,22 @@ próximo `syncWithGas()` o apaga do dispositivo.
 | Aba | Colunas | Chave estrangeira |
 |---|---|---|
 | `Config` | Chave, Valor, Descricao | — (sem coluna ID) |
-| `Musicas` | ID, Nome, Artista, Categoria | — |
-| `Versoes` | ID, ID_Musica, Nome_Versao, Tom, BPM, Compasso, Letra, Estrutura, Obs | → Musicas |
-| `Arquivos` | ID, ID_Versao, Tipo, URL, Nome | → Versoes |
-| `Notas` | ID, ID_Versao, Instrumento, Observacao | → Versoes |
-| `Cultos` | ID, Data, Nome_Evento, Status, Observacoes | — |
-| `Repertorio` | ID, ID_Culto, ID_Versao, Ordem, Dirigente, Observacao_Culto | → Cultos, Versoes |
-| `Integrantes` | ID, Nome, Funcao, Email, Telefone, Ativo | — |
-| `Historico` | ID, ID_Versao, ID_Culto, Data_Execucao | → Versoes, Cultos |
-| `Logs` | ID, Data, Usuario, Acao, Registro_Afetado | — |
+| `Musicas` | ID, Nome, Artista, Categoria, +auditoria | — |
+| `Versoes` | ID, ID_Musica, Nome_Versao, Tom, BPM, Compasso, Letra, Estrutura, Obs, +auditoria | → Musicas |
+| `Arquivos` | ID, ID_Versao, Tipo, URL, Nome, +auditoria | → Versoes |
+| `Notas` | ID, ID_Versao, Instrumento, Observacao, **Autor, Titulo, TipoNota**, +auditoria | → Versoes |
+| `Cultos` | ID, Data, Nome_Evento, Status, Observacoes, +auditoria | — |
+| `Repertorio` | ID, ID_Culto, ID_Versao, Ordem, Dirigente, Observacao_Culto, +auditoria | → Cultos, Versoes |
+| `Integrantes` | ID, Nome, Funcao, Email, Telefone, Ativo, +auditoria | — |
+| `Historico` | ID, ID_Versao, ID_Culto, Data_Execucao, +auditoria | → Versoes, Cultos |
+| `Logs` | ID, Data, Usuario, Acao, Registro_Afetado | — (log e imutavel) |
+
+**Esquema v2.** `+auditoria` = `Atualizado_Em`, `Atualizado_Por`, `Excluido_Em`.
+O carimbo e aplicado num unico ponto, `stampAudit()` na entrada da fila de
+sincronizacao, para nao haver como esquecer numa funcionalidade nova.
+`Atualizado_Em` ja e gravado hoje, mesmo sem resolucao de conflito: sem isso os
+registros criados antes da Fase 2 ficariam sem historico. `Excluido_Em` esta
+reservado para a lixeira da Fase 3.
 
 O esquema está declarado em **três lugares que precisam ficar em sincronia**:
 
@@ -67,10 +74,13 @@ O esquema está declarado em **três lugares que precisam ficar em sincronia**:
 - `src/services/googleSheetsApi.ts` → `SHEET_SCHEMAS` — caminho OAuth
 - `src/data/gasScript.ts` → `DATABASE_SCHEMA` — caminho Apps Script
 
-⚠️ Campos que existem em `types.ts` mas **não** existem no esquema da planilha são
-silenciosamente descartados na sincronização: `Nota.Autor`, `Nota.Titulo`,
-`Nota.TipoNota`, `Integrante.PIN`. Ou seja, anotações vocais e cifras personalizadas
-sobrevivem no celular de quem criou, mas **não chegam nos outros dispositivos**.
+`Nota.Autor`, `Nota.Titulo` e `Nota.TipoNota` entraram no esquema v2 — antes eram
+descartados na sincronizacao, e as anotacoes vocais nao saiam do celular de quem
+as criou.
+
+`Integrante.PIN` continua **de fora, de proposito**: a planilha e servida por um
+Web App publico, e guardar PIN nela publicaria a senha de todo mundo. Ele vive
+apenas no dispositivo.
 
 ---
 
@@ -176,50 +186,57 @@ tombstone vai filtrá-lo permanentemente e ninguém vai entender por quê.
 
 ---
 
-## 7. Um backend, nunca dois
+## 7. Um backend, e um jeito de nao ter dois
 
-`DEFAULT_GAS_ENDPOINT` e `DEFAULT_GAS_SPREADSHEET_ID`, em `storage.ts`, precisam
-apontar para a **mesma planilha**. O endpoint atende quem não está logado; o ID
-atende o caminho OAuth. Enquanto divergirem, o app grava em bancos diferentes
-conforme o estado de login do usuário.
+O endpoint do Apps Script e a **unica** coisa configuravel. O ID da planilha
+nao e mais uma constante nem um campo de formulario: o app pergunta ao endpoint
+qual planilha ele serve, via `?action=whoami`, e guarda a resposta em cache.
 
-Isso aconteceu de verdade: em 21/08/2026 havia **três destinos de escrita**
-simultâneos — o endpoint publicado apontava para uma planilha, o
-`DEFAULT_GAS_SPREADSHEET_ID` para outra, e uma terceira recebia a implantação
-mais recente do script. Dado que "sumia" estava, na verdade, em outra planilha.
+```
+DEFAULT_GAS_ENDPOINT  ──?action=whoami──>  spreadsheetId
+   (uma constante)                          (derivado, em cache)
+        │                                        │
+        └──── caminho Apps Script ───┐   ┌────────┘
+                                     ▼   ▼
+                            a MESMA planilha, sempre
+```
 
-Planilha oficial desde então: `1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI`.
+Antes existiam duas configuracoes independentes, e elas divergiram: o endpoint
+apontava para uma planilha e o `DEFAULT_GAS_SPREADSHEET_ID` para outra, entao o
+app gravava em bancos diferentes conforme o usuario estivesse logado no Google
+ou nao. Chegaram a existir tres destinos de escrita simultaneos. Derivar o ID do
+endpoint torna isso **impossivel por construcao** — nao ha segundo valor para
+sair de sincronia.
 
-**Ao trocar de planilha ou republicar o script com URL nova**, altere as duas
-constantes *e* incremente `CONFIG_VERSION`. Sem isso, cada aparelho da equipe
-continua usando o valor em cache no `localStorage`, que sempre vence o default.
-Um endpoint definido à mão pelo usuário no painel admin marca a config como
-atual e não é sobrescrito pela migração.
+Enquanto o `whoami` nao responde, `getGasSpreadsheetId()` devolve string vazia,
+o caminho OAuth fica desligado e tudo passa pelo Apps Script. Mais lento, jamais
+dividido.
 
-Há teste para as duas coisas: `2.1b` (defaults coerentes entre si) e `2.1c`
-(cache antigo é migrado).
+**Ao trocar de planilha ou republicar com URL nova:** altere
+`DEFAULT_GAS_ENDPOINT` *e* incremente `CONFIG_VERSION`. Sem o incremento, cada
+aparelho continua usando o endpoint em cache, que sempre vence o default. Um
+endpoint definido a mao no painel admin carimba a versao atual e nao e
+sobrescrito pela migracao.
+
+Passo a passo completo em [INSTALAR-PLANILHA.md](INSTALAR-PLANILHA.md).
+
+Testes: `2.1` (sem config, opera local), `2.1b` (ID vem do endpoint), `2.1c`
+(cache antigo e descartado).
 
 ---
 
-## 8. Passos manuais pendentes (Fase 1)
+## 8. Reinstalacao (21/08/2026)
 
-✅ Ambos concluídos em 21/08/2026 na planilha
-`1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI`, que passou a ser a oficial.
-O procedimento fica registrado para as próximas vezes:
+As planilhas anteriores continham apenas dados de teste e foram descartadas.
+O banco foi reinstalado do zero, com o esquema v2 e o modelo de configuracao
+unica descrito na secao 7.
 
-**1. Republicar o Apps Script.** A trava de concorrência (`LockService`) e a função
-`repairDatabase()` vivem em `src/data/gasScript.ts`. Copie o conteúdo para o editor
-do Apps Script da planilha e publique uma **nova versão** da implantação:
-*Implantar > Gerenciar implantações > editar (lápis) > Versão: Nova versão > Implantar*.
-Editar o código sem republicar mantém a versão antiga no ar.
+Procedimento completo: [INSTALAR-PLANILHA.md](INSTALAR-PLANILHA.md).
 
-**2. Rodar `repairDatabase()` uma vez.** No editor do Apps Script, selecione a função
-`repairDatabase` e execute. Ela tira um backup antes de mexer em qualquer coisa, e então
-remove linhas com ID duplicado, linhas em branco e o excesso de logs. O resultado sai
-no *Registro de execução*.
-
-Enquanto o passo 1 não for feito, escritas simultâneas de dois integrantes ainda podem
-se atropelar. As demais correções da Fase 1 são do lado do app e já valem.
+`DEFAULT_GAS_ENDPOINT` fica **vazio** ate a nova implantacao existir. Com ele
+vazio o app funciona normalmente offline, no proprio aparelho, e o painel admin
+avisa que falta configurar — mas nada e compartilhado com a equipe. Preencher e
+incrementar `CONFIG_VERSION` e o ultimo passo antes de publicar.
 
 ---
 
