@@ -25,6 +25,34 @@ export const SHEET_SCHEMAS: Record<string, string[]> = {
   Logs: ['ID', 'Data', 'Usuario', 'Acao', 'Registro_Afetado']
 };
 
+/**
+ * Campos que devem voltar como número ou booleano. Todo o resto é string.
+ *
+ * O Google Sheets devolve valores já tipados quando lido com UNFORMATTED_VALUE:
+ * uma música chamada "123" volta como number, um Tom "7" vira number, e a
+ * comparação de IDs passa a falhar silenciosamente. Normalizar na leitura
+ * garante que o formato em memória seja sempre o declarado em types.ts.
+ */
+const NUMERIC_FIELDS = new Set(['BPM', 'Ordem']);
+const BOOLEAN_FIELDS = new Set(['Ativo']);
+
+function normalizeCell(field: string, raw: any): any {
+  if (NUMERIC_FIELDS.has(field)) {
+    if (raw === '' || raw === null || raw === undefined) return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
+  if (BOOLEAN_FIELDS.has(field)) {
+    if (typeof raw === 'boolean') return raw;
+    const s = String(raw).trim().toLowerCase();
+    return s === 'true' || s === 'sim' || s === '1' || s === 'verdadeiro';
+  }
+
+  if (raw === null || raw === undefined) return '';
+  return String(raw);
+}
+
 export interface DriveSpreadsheetFile {
   id: string;
   name: string;
@@ -120,7 +148,7 @@ export async function createTPFlameSpreadsheet(accessToken: string): Promise<{ i
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       data: headerData
     })
   });
@@ -137,7 +165,10 @@ export async function createTPFlameSpreadsheet(accessToken: string): Promise<{ i
  */
 export async function readAllSpreadsheetData(accessToken: string, spreadsheetId: string): Promise<SheetsAllData> {
   const tables = Object.keys(SHEET_SCHEMAS);
-  const rangesQuery = tables.map((t) => `ranges=${encodeURIComponent(t + '!A1:Z500')}`).join('&');
+  // Range é o nome da aba, sem limite de células: o teto anterior de A1:Z500
+  // truncava silenciosamente o remoto, e o merge apagava do dispositivo tudo
+  // que ficasse além da linha 500.
+  const rangesQuery = tables.map((t) => `ranges=${encodeURIComponent(t)}`).join('&');
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?${rangesQuery}&valueRenderOption=UNFORMATTED_VALUE`;
 
   const res = await fetch(url, {
@@ -178,20 +209,72 @@ export async function readAllSpreadsheetData(accessToken: string, spreadsheetId:
     const headers = values[0].map((h: any) => String(h).trim());
     const rows = values.slice(1);
 
-    parsedData[key] = rows.map((row: any[]) => {
-      const obj: any = {};
-      headers.forEach((h: string, colIdx: number) => {
-        obj[h] = row[colIdx] !== undefined ? row[colIdx] : '';
-      });
-      return obj;
-    });
+    parsedData[key] = rows
+      .map((row: any[]) => {
+        const obj: any = {};
+        headers.forEach((h: string, colIdx: number) => {
+          obj[h] = normalizeCell(h, row[colIdx]);
+        });
+        return obj;
+      })
+      // Descarta linhas em branco deixadas por exclusões antigas (values:clear
+      // esvaziava a linha em vez de removê-la, veja pushTableActionToGoogleSheets).
+      .filter((obj: any) => Object.values(obj).some((v) => v !== '' && v !== undefined && v !== false));
   });
 
   return parsedData as SheetsAllData;
 }
 
+/** Converte índice de coluna (1-based) em letra A1: 1 -> A, 27 -> AA. */
+function a1Col(index: number): string {
+  let s = '';
+  let n = index;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+/** Mapa aba -> sheetId, necessário para excluir linhas de verdade. */
+const sheetIdCache = new Map<string, Record<string, number>>();
+
+async function getSheetIds(
+  accessToken: string,
+  spreadsheetId: string
+): Promise<Record<string, number>> {
+  const cached = sheetIdCache.get(spreadsheetId);
+  if (cached) return cached;
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error(`Não foi possível ler a estrutura da planilha (${res.status})`);
+
+  const json = await res.json();
+  const map: Record<string, number> = {};
+  (json.sheets || []).forEach((s: any) => {
+    if (s?.properties?.title !== undefined) map[s.properties.title] = s.properties.sheetId;
+  });
+
+  sheetIdCache.set(spreadsheetId, map);
+  return map;
+}
+
 /**
- * Pushes individual table operations directly to Google Sheets API v4.
+ * Aplica uma operação de uma tabela direto na Google Sheets API v4.
+ *
+ * Invariantes que esta função precisa respeitar:
+ *
+ * 1. `insert` é UPSERT, nunca append cego. Um append puro duplicava a linha
+ *    sempre que a mesma mutação era reenviada — por retry, ou pelo caminho
+ *    duplo de escrita que existia antes. Duplicatas reais foram observadas
+ *    em produção nas abas Musicas, Versoes e Integrantes.
+ * 2. A escrita usa RAW. Com USER_ENTERED a planilha reinterpretava o
+ *    conteúdo: uma letra começando com "=" virava fórmula e um nome
+ *    numérico virava number.
+ * 3. `delete` remove a linha de verdade. O `values:clear` anterior deixava
+ *    uma linha vazia no meio da aba, divergindo do caminho Apps Script.
  */
 export async function pushTableActionToGoogleSheets(
   accessToken: string,
@@ -201,88 +284,99 @@ export async function pushTableActionToGoogleSheets(
   data: any
 ): Promise<boolean> {
   try {
-    const headers = SHEET_SCHEMAS[table] || Object.keys(data);
-    const rowValues = headers.map((h) => (data[h] !== undefined ? data[h] : ''));
+    const schema = SHEET_SCHEMAS[table] || Object.keys(data);
+    const rowValues = schema.map((h) => (data[h] !== undefined && data[h] !== null ? data[h] : ''));
     const targetId = data.ID || data.id;
 
-    if (action === 'insert') {
-      // Append row to sheet
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${table}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          values: [rowValues]
-        })
-      });
-      return res.ok;
+    if (!targetId) {
+      console.error(`Ação [${table}/${action}] sem ID; ignorada para não corromper a planilha.`);
+      return false;
     }
 
-    if (action === 'update' || action === 'delete') {
-      // Fetch table to locate row index
-      const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${table}!A1:Z500`;
-      const readRes = await fetch(readUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      if (!readRes.ok) return false;
-      const readJson = await readRes.json();
-      const rows = readJson.values || [];
-      if (rows.length <= 1) return false;
+    // Lê a aba inteira (sem range fixo) para localizar a linha pelo ID.
+    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(table)}`;
+    const readRes = await fetch(readUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!readRes.ok) return false;
 
-      const headerRow = rows[0].map((h: any) => String(h).trim());
-      const idColIdx = headerRow.indexOf('ID');
-      if (idColIdx === -1) return false;
+    const rows: any[][] = (await readRes.json()).values || [];
+    const headerRow: string[] = (rows[0] || []).map((h: any) => String(h).trim());
+    const idColIdx = headerRow.indexOf('ID');
 
-      let targetRowIndex = -1;
+    let targetRowIndex = -1;
+    if (idColIdx !== -1) {
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][idColIdx]) === String(targetId)) {
-          targetRowIndex = i + 1; // 1-based sheet row
+        if (String(rows[i]?.[idColIdx] ?? '') === String(targetId)) {
+          targetRowIndex = i + 1; // linha 1-based da planilha
           break;
         }
       }
+    }
 
-      if (targetRowIndex === -1) {
-        if (action === 'update') {
-          // If not found, append
-          return pushTableActionToGoogleSheets(accessToken, spreadsheetId, table, 'insert', data);
-        }
-        return true; // Already deleted
-      }
+    if (action === 'delete') {
+      if (targetRowIndex === -1) return true; // já não existe: objetivo atingido
 
-      if (action === 'update') {
-        const updateRange = `${table}!A${targetRowIndex}:${String.fromCharCode(64 + headers.length)}${targetRowIndex}`;
-        const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${updateRange}?valueInputOption=USER_ENTERED`;
-        const res = await fetch(updateUrl, {
-          method: 'PUT',
+      const sheetIds = await getSheetIds(accessToken, spreadsheetId);
+      const sheetId = sheetIds[table];
+      if (sheetId === undefined) return false;
+
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+        {
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            values: [rowValues]
+            requests: [
+              {
+                deleteDimension: {
+                  range: {
+                    sheetId,
+                    dimension: 'ROWS',
+                    startIndex: targetRowIndex - 1, // 0-based, inclusivo
+                    endIndex: targetRowIndex
+                  }
+                }
+              }
+            ]
           })
-        });
-        return res.ok;
-      }
-
-      if (action === 'delete') {
-        // Clear row values in Sheets
-        const clearRange = `${table}!A${targetRowIndex}:${String.fromCharCode(64 + headers.length)}${targetRowIndex}`;
-        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${clearRange}:clear`;
-        const res = await fetch(clearUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        });
-        return res.ok;
-      }
+        }
+      );
+      return res.ok;
     }
 
-    return false;
+    // insert e update seguem o mesmo caminho: existe -> sobrescreve, não existe -> anexa.
+    if (targetRowIndex !== -1) {
+      const range = `${table}!A${targetRowIndex}:${a1Col(schema.length)}${targetRowIndex}`;
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ values: [rowValues] })
+        }
+      );
+      return res.ok;
+    }
+
+    const appendRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(table + '!A1')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values: [rowValues] })
+      }
+    );
+    return appendRes.ok;
   } catch (err) {
     console.error(`Erro ao enviar ação [${table}/${action}] para Google Sheets API:`, err);
     return false;

@@ -81,7 +81,17 @@ class StorageService {
     this.initDefaultData();
   }
 
-  public async clearAllData(clearRemote = true): Promise<boolean> {
+  /**
+   * Zera os dados DESTE dispositivo. Não toca na planilha.
+   *
+   * O parâmetro `clearRemote` é aceito por compatibilidade mas ignorado: o
+   * Apps Script nunca teve um handler para a ação `clearAll`, então a chamada
+   * anterior só produzia um erro silencioso — dando a impressão de que a
+   * planilha havia sido limpa quando nada acontecia. Apagar o banco de todo
+   * mundo a partir de um endpoint público não é algo que deva existir.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async clearAllData(_clearRemote = true): Promise<boolean> {
     localStorage.setItem(KEYS.CONFIG, JSON.stringify([]));
     localStorage.setItem(KEYS.MUSICAS, JSON.stringify([]));
     localStorage.setItem(KEYS.VERSOES, JSON.stringify([]));
@@ -92,13 +102,11 @@ class StorageService {
     localStorage.setItem(KEYS.INTEGRANTES, JSON.stringify([]));
     localStorage.setItem(KEYS.HISTORICO, JSON.stringify([]));
     localStorage.setItem(KEYS.LOGS, JSON.stringify([]));
+    this.addLog('SYSTEM_CLEAR', 'Todos os dados locais foram zerados');
+    // A limpeza da fila vem DEPOIS do log: addLog enfileira, e limpar antes
+    // deixava a fila com uma pendência órfã logo após um "zerar tudo".
     this.clearSyncQueue();
     this.clearTombstones();
-    this.addLog('SYSTEM_CLEAR', 'Todos os dados locais foram zerados');
-
-    if (clearRemote) {
-      await this.sendToGas('', 'clearAll', {});
-    }
     return true;
   }
 
@@ -174,6 +182,7 @@ class StorageService {
     }
 
     localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify(queue));
+    this.scheduleFlush();
   }
 
   public removeFromSyncQueue(queueItemId: string) {
@@ -257,39 +266,124 @@ class StorageService {
   // BULLETPROOF BIDIRECTIONAL SYNC ENGINE
   // ==========================================
 
+  /**
+   * Envia uma mutação para a planilha e devolve se ela foi REALMENTE gravada.
+   *
+   * O valor de retorno é o que autoriza a remoção do item da fila, e a fila é
+   * a única coisa que impede o merge de apagar o registro do dispositivo.
+   * Por isso esta função só devolve true diante de confirmação lida do
+   * servidor — nunca por "a requisição saiu sem erro".
+   *
+   * A versão anterior usava `mode: 'no-cors'`, que devolve resposta opaca (sem
+   * status, sem corpo) e fazia `return true` incondicional. O endpoint do Apps
+   * Script responde com CORS válido, então dá para ler o corpo de verdade.
+   */
   public async sendToGas(table: string, action: string, data: any): Promise<boolean> {
     const token = getAccessToken();
     const spreadsheetId = this.getGasSpreadsheetId();
     const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
 
-    // 1. If user is authenticated via Google OAuth and has a valid Spreadsheet ID, use direct Sheets API v4
+    // 1. Logado no Google com planilha válida: API v4 direta.
     if (token && isRealSpreadsheetId) {
       const success = await pushTableActionToGoogleSheets(
-        token, 
-        spreadsheetId, 
-        table, 
-        action as 'insert' | 'update' | 'delete', 
+        token,
+        spreadsheetId,
+        table,
+        action as 'insert' | 'update' | 'delete',
         data
       );
       if (success) return true;
     }
 
-    // 2. Fallback to GAS Web App endpoint
+    // 2. Fallback: Web App do Apps Script.
     const endpoint = this.getGasEndpoint();
     if (!endpoint) return false;
 
     try {
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method: 'POST',
-        mode: 'no-cors',
+        // text/plain mantém a requisição "simples": sem preflight, e a resposta
+        // do Apps Script continua legível pelo navegador.
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action, table, data })
       });
-      return true;
+
+      if (!res.ok) {
+        console.warn(`Backend recusou [${table}/${action}]: HTTP ${res.status}`);
+        return false;
+      }
+
+      const json = await res.json();
+      if (json?.status === 'success') return true;
+
+      console.warn(`Backend reportou erro em [${table}/${action}]:`, json?.message);
+      return false;
     } catch (err) {
       console.warn(`Erro enviando para backend [${table}/${action}]:`, err);
       return false;
     }
+  }
+
+  // ==========================================
+  // FLUSH AUTOMÁTICO DA FILA
+  // ==========================================
+
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private isFlushing = false;
+
+  /**
+   * Agenda o envio da fila logo após uma mutação.
+   *
+   * Antes, cada mutação disparava um POST imediato E deixava o item na fila,
+   * o que fazia toda alteração ser gravada duas vezes. Agora existe um único
+   * caminho de escrita — a fila — e este agendador preserva a sensação de
+   * tempo real, juntando as mutações de uma mesma ação num lote só.
+   */
+  private scheduleFlush(delayMs = 1200) {
+    if (typeof setTimeout !== 'function') return;
+    if (this.flushTimer) clearTimeout(this.flushTimer);
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      void this.flushQueue();
+    }, delayMs);
+  }
+
+  /**
+   * Drena a fila. Um item só sai dela com confirmação do servidor; caso
+   * contrário permanece, com o contador de tentativas incrementado, para a
+   * próxima sincronização tentar de novo.
+   */
+  public async flushQueue(): Promise<{ pushed: number; failed: number }> {
+    if (this.isFlushing) return { pushed: 0, failed: 0 };
+    this.isFlushing = true;
+
+    let pushed = 0;
+    let failed = 0;
+
+    try {
+      for (const item of this.getSyncQueue()) {
+        const sent = await this.sendToGas(item.table, item.action, item.data);
+        if (sent) {
+          this.removeFromSyncQueue(item.id);
+          pushed++;
+        } else {
+          this.markQueueItemFailed(item.id);
+          failed++;
+        }
+      }
+    } finally {
+      this.isFlushing = false;
+    }
+
+    return { pushed, failed };
+  }
+
+  private markQueueItemFailed(queueItemId: string) {
+    const queue = this.getSyncQueue();
+    const item = queue.find((q) => q.id === queueItemId);
+    if (!item) return;
+    item.attempts = (item.attempts || 0) + 1;
+    localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify(queue));
   }
 
   /**
@@ -313,22 +407,9 @@ class StorageService {
     // PATH A: DIRECT GOOGLE SHEETS API V4 (WHEN LOGGED IN WITH GOOGLE WORKSPACE)
     if (token && isRealSpreadsheetId) {
       try {
-        const queue = this.getSyncQueue();
-        if (queue.length > 0) {
-          for (const item of queue) {
-            const sent = await pushTableActionToGoogleSheets(
-              token,
-              spreadsheetId,
-              item.table,
-              item.action,
-              item.data
-            );
-            if (sent) {
-              this.removeFromSyncQueue(item.id);
-              pushedCount++;
-            }
-          }
-        }
+        // Empurra a fila ANTES do pull. Se um item não confirmar, ele
+        // permanece na fila e o merge o preserva no dispositivo.
+        pushedCount = (await this.flushQueue()).pushed;
 
         // Pull direct from Sheets API
         const sheetsData = await readAllSpreadsheetData(token, spreadsheetId);
@@ -394,16 +475,7 @@ class StorageService {
     }
 
     try {
-      const queue = this.getSyncQueue();
-      if (queue.length > 0) {
-        for (const item of queue) {
-          const sent = await this.sendToGas(item.table, item.action, item.data);
-          if (sent) {
-            this.removeFromSyncQueue(item.id);
-            pushedCount++;
-          }
-        }
-      }
+      pushedCount = (await this.flushQueue()).pushed;
 
       const res = await fetch(`${endpoint}?action=getAll`);
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
@@ -525,6 +597,27 @@ class StorageService {
     queue: SyncQueueItem[],
     table: string
   ): T[] {
+    // TRAVA ANTI-APAGÃO
+    //
+    // O merge trata o remoto como autoridade: o que é local, não está no
+    // remoto e não está na fila é descartado — é assim que a exclusão feita
+    // por outro integrante chega até este aparelho.
+    //
+    // Só que "o remoto voltou vazio" quase nunca significa "a equipe apagou
+    // tudo". Significa aba errada, planilha nova, permissão negada, resposta
+    // truncada. Nesses casos o comportamento correto é preservar o local e
+    // deixar o usuário resolver, não zerar a biblioteca de cifras.
+    if (remoteList.length === 0 && localList.length > 0) {
+      console.warn(
+        `[sync] "${table}": remoto vazio com ${localList.length} registro(s) locais. Merge ignorado por segurança.`
+      );
+      this.addLog(
+        'SYNC_MERGE_SKIPPED',
+        `Tabela ${table}: planilha retornou vazia, dados locais preservados`
+      );
+      return localList;
+    }
+
     const tombstones = this.getTombstones();
     const tablePending = queue.filter((q) => q.table === table);
     const pendingDeleteIds = new Set(
@@ -627,6 +720,20 @@ class StorageService {
     localStorage.setItem(key, JSON.stringify(data));
   }
 
+  /**
+   * Ações que descrevem a própria mecânica de sincronização. Ficam só no
+   * dispositivo: registrar sincronização na planilha fazia o app escrever um
+   * log para cada sync, e cada abertura do app gerava sync. Na auditoria, 73
+   * de 105 linhas da aba Logs em produção eram exatamente esse ruído.
+   */
+  private static readonly LOCAL_ONLY_LOG_ACTIONS = new Set([
+    'GAS_SYNC_SUCCESS',
+    'GAS_SYNC_FETCH',
+    'GOOGLE_SHEETS_SYNC',
+    'SYNC_MERGE_SKIPPED',
+    'MEMBER_LOGIN'
+  ]);
+
   public addLog(action: string, detail: string, user?: string) {
     const active = this.getActiveMember();
     const effectiveUser = user || (active ? `${active.Nome} (${active.Funcao})` : 'Usuário Portal');
@@ -641,8 +748,10 @@ class StorageService {
     };
     logs.unshift(newLog);
     this.set(KEYS.LOGS, logs.slice(0, 50));
-    this.addToSyncQueue('Logs', 'insert', newLog);
-    this.sendToGas('Logs', 'insert', newLog);
+
+    if (!StorageService.LOCAL_ONLY_LOG_ACTIONS.has(action)) {
+      this.addToSyncQueue('Logs', 'insert', newLog);
+    }
   }
 
   // ==========================================
@@ -694,7 +803,6 @@ class StorageService {
         };
         notas.push(newNota);
         this.addToSyncQueue('Notas', 'insert', newNota);
-        this.sendToGas('Notas', 'insert', newNota);
         this.removeTombstone(newNota.ID);
       });
       this.set(KEYS.NOTAS, notas);
@@ -709,14 +817,11 @@ class StorageService {
         };
         arquivos.push(newArquivo);
         this.addToSyncQueue('Arquivos', 'insert', newArquivo);
-        this.sendToGas('Arquivos', 'insert', newArquivo);
         this.removeTombstone(newArquivo.ID);
       });
       this.set(KEYS.ARQUIVOS, arquivos);
     }
 
-    this.sendToGas('Musicas', 'insert', newMusica);
-    this.sendToGas('Versoes', 'insert', newVersao);
 
     this.removeTombstone(newMusica.ID);
     this.removeTombstone(newVersao.ID);
@@ -734,7 +839,6 @@ class StorageService {
     versoes.push(newVersao);
     this.set(KEYS.VERSOES, versoes);
     this.addToSyncQueue('Versoes', 'insert', newVersao);
-    this.sendToGas('Versoes', 'insert', newVersao);
     this.removeTombstone(newVersao.ID);
     this.addLog('INSERT_VERSAO', `Nova versão "${newVersao.Nome_Versao}" adicionada`);
     return newVersao;
@@ -746,14 +850,12 @@ class StorageService {
     versoes = versoes.filter((v) => v.ID !== id);
     this.set(KEYS.VERSOES, versoes);
     this.addToSyncQueue('Versoes', 'delete', { ID: id });
-    this.sendToGas('Versoes', 'delete', { ID: id });
 
     let notas = this.getNotas();
     const removedNotas = notas.filter((n) => n.ID_Versao === id);
     removedNotas.forEach((n) => {
       this.addTombstone(n.ID);
       this.addToSyncQueue('Notas', 'delete', { ID: n.ID });
-      this.sendToGas('Notas', 'delete', { ID: n.ID });
     });
     notas = notas.filter((n) => n.ID_Versao !== id);
     this.set(KEYS.NOTAS, notas);
@@ -763,7 +865,6 @@ class StorageService {
     removedArquivos.forEach((a) => {
       this.addTombstone(a.ID);
       this.addToSyncQueue('Arquivos', 'delete', { ID: a.ID });
-      this.sendToGas('Arquivos', 'delete', { ID: a.ID });
     });
     arquivos = arquivos.filter((a) => a.ID_Versao !== id);
     this.set(KEYS.ARQUIVOS, arquivos);
@@ -773,7 +874,6 @@ class StorageService {
     removedRepertorio.forEach((r) => {
       this.addTombstone(r.ID);
       this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
-      this.sendToGas('Repertorio', 'delete', { ID: r.ID });
     });
     repertorio = repertorio.filter((r) => r.ID_Versao !== id);
     this.set(KEYS.REPERTORIO, repertorio);
@@ -790,7 +890,6 @@ class StorageService {
     notas.push(newNota);
     this.set(KEYS.NOTAS, notas);
     this.addToSyncQueue('Notas', 'insert', newNota);
-    this.sendToGas('Notas', 'insert', newNota);
     this.removeTombstone(newNota.ID);
     this.addLog('INSERT_NOTA', `Nota para ${newNota.Instrumento} inserida`);
     return newNota;
@@ -805,7 +904,6 @@ class StorageService {
     arquivos.push(newArquivo);
     this.set(KEYS.ARQUIVOS, arquivos);
     this.addToSyncQueue('Arquivos', 'insert', newArquivo);
-    this.sendToGas('Arquivos', 'insert', newArquivo);
     this.removeTombstone(newArquivo.ID);
     this.addLog('INSERT_ARQUIVO', `Anexo ${newArquivo.Tipo} adicionado`);
     return newArquivo;
@@ -817,7 +915,6 @@ class StorageService {
     musicas = musicas.filter((m) => m.ID !== id);
     this.set(KEYS.MUSICAS, musicas);
     this.addToSyncQueue('Musicas', 'delete', { ID: id });
-    this.sendToGas('Musicas', 'delete', { ID: id });
 
     let versoes = this.getVersoes();
     const removedVersoes = versoes.filter((v) => v.ID_Musica === id);
@@ -825,7 +922,6 @@ class StorageService {
     removedVersaoIds.forEach((vId) => {
       this.addTombstone(vId);
       this.addToSyncQueue('Versoes', 'delete', { ID: vId });
-      this.sendToGas('Versoes', 'delete', { ID: vId });
     });
     versoes = versoes.filter((v) => v.ID_Musica !== id);
     this.set(KEYS.VERSOES, versoes);
@@ -835,7 +931,6 @@ class StorageService {
     removedNotas.forEach((n) => {
       this.addTombstone(n.ID);
       this.addToSyncQueue('Notas', 'delete', { ID: n.ID });
-      this.sendToGas('Notas', 'delete', { ID: n.ID });
     });
     notas = notas.filter((n) => !removedVersaoIds.includes(n.ID_Versao));
     this.set(KEYS.NOTAS, notas);
@@ -845,7 +940,6 @@ class StorageService {
     removedArquivos.forEach((a) => {
       this.addTombstone(a.ID);
       this.addToSyncQueue('Arquivos', 'delete', { ID: a.ID });
-      this.sendToGas('Arquivos', 'delete', { ID: a.ID });
     });
     arquivos = arquivos.filter((a) => !removedVersaoIds.includes(a.ID_Versao));
     this.set(KEYS.ARQUIVOS, arquivos);
@@ -855,7 +949,6 @@ class StorageService {
     removedRepertorio.forEach((r) => {
       this.addTombstone(r.ID);
       this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
-      this.sendToGas('Repertorio', 'delete', { ID: r.ID });
     });
     repertorio = repertorio.filter((r) => !removedVersaoIds.includes(r.ID_Versao));
     this.set(KEYS.REPERTORIO, repertorio);
@@ -870,7 +963,6 @@ class StorageService {
       musicas[index] = { ...musicas[index], ...data };
       this.set(KEYS.MUSICAS, musicas);
       this.addToSyncQueue('Musicas', 'update', musicas[index]);
-      this.sendToGas('Musicas', 'update', musicas[index]);
       this.addLog('UPDATE_MUSICA', `Música "${musicas[index].Nome}" atualizada`);
     }
   }
@@ -882,7 +974,6 @@ class StorageService {
       versoes[index] = { ...versoes[index], ...data };
       this.set(KEYS.VERSOES, versoes);
       this.addToSyncQueue('Versoes', 'update', versoes[index]);
-      this.sendToGas('Versoes', 'update', versoes[index]);
       this.addLog('UPDATE_VERSAO', `Versão "${versoes[index].Nome_Versao}" atualizada`);
     }
   }
@@ -894,7 +985,6 @@ class StorageService {
       notas[index] = { ...notas[index], ...data };
       this.set(KEYS.NOTAS, notas);
       this.addToSyncQueue('Notas', 'update', notas[index]);
-      this.sendToGas('Notas', 'update', notas[index]);
       this.addLog('UPDATE_NOTA', `Nota/Cifra para ${notas[index].Instrumento} atualizada`);
     }
   }
@@ -905,7 +995,6 @@ class StorageService {
     notas = notas.filter((n) => n.ID !== id);
     this.set(KEYS.NOTAS, notas);
     this.addToSyncQueue('Notas', 'delete', { ID: id });
-    this.sendToGas('Notas', 'delete', { ID: id });
     this.addLog('DELETE_NOTA', `Nota removida`);
   }
 
@@ -915,7 +1004,6 @@ class StorageService {
     arquivos = arquivos.filter((a) => a.ID !== id);
     this.set(KEYS.ARQUIVOS, arquivos);
     this.addToSyncQueue('Arquivos', 'delete', { ID: id });
-    this.sendToGas('Arquivos', 'delete', { ID: id });
     this.addLog('DELETE_ARQUIVO', `Anexo removido`);
   }
 
@@ -935,7 +1023,6 @@ class StorageService {
     cultos.unshift(newCulto);
     this.set(KEYS.CULTOS, cultos);
     this.addToSyncQueue('Cultos', 'insert', newCulto);
-    this.sendToGas('Cultos', 'insert', newCulto);
     this.removeTombstone(newCulto.ID);
     this.addLog('INSERT_CULTO', `Culto "${newCulto.Nome_Evento}" agendado`);
     return newCulto;
@@ -948,7 +1035,6 @@ class StorageService {
       cultos[index] = { ...cultos[index], ...data };
       this.set(KEYS.CULTOS, cultos);
       this.addToSyncQueue('Cultos', 'update', cultos[index]);
-      this.sendToGas('Cultos', 'update', cultos[index]);
       this.addLog('UPDATE_CULTO', `Culto "${cultos[index].Nome_Evento}" atualizado`);
     }
   }
@@ -959,14 +1045,12 @@ class StorageService {
     cultos = cultos.filter((c) => c.ID !== id);
     this.set(KEYS.CULTOS, cultos);
     this.addToSyncQueue('Cultos', 'delete', { ID: id });
-    this.sendToGas('Cultos', 'delete', { ID: id });
 
     let repertorio = this.getRepertorio();
     const removedRepertorio = repertorio.filter((r) => r.ID_Culto === id);
     removedRepertorio.forEach((r) => {
       this.addTombstone(r.ID);
       this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
-      this.sendToGas('Repertorio', 'delete', { ID: r.ID });
     });
     repertorio = repertorio.filter((r) => r.ID_Culto !== id);
     this.set(KEYS.REPERTORIO, repertorio);
@@ -991,7 +1075,6 @@ class StorageService {
     repertorio.push(newItem);
     this.set(KEYS.REPERTORIO, repertorio);
     this.addToSyncQueue('Repertorio', 'insert', newItem);
-    this.sendToGas('Repertorio', 'insert', newItem);
     this.removeTombstone(newItem.ID);
     this.addLog('INSERT_REPERTORIO', `Música adicionada ao culto ID ${cultoId}`);
     return newItem;
@@ -1003,7 +1086,6 @@ class StorageService {
     repertorio = repertorio.filter((r) => r.ID !== repertorioId);
     this.set(KEYS.REPERTORIO, repertorio);
     this.addToSyncQueue('Repertorio', 'delete', { ID: repertorioId });
-    this.sendToGas('Repertorio', 'delete', { ID: repertorioId });
     this.addLog('DELETE_REPERTORIO', `Música removida do repertório`);
   }
 
@@ -1014,7 +1096,6 @@ class StorageService {
       if (item) {
         item.Ordem = index + 1;
         this.addToSyncQueue('Repertorio', 'update', item);
-        this.sendToGas('Repertorio', 'update', item);
       }
     });
     this.set(KEYS.REPERTORIO, repertorio);
@@ -1036,7 +1117,6 @@ class StorageService {
     integrantes.push(newMember);
     this.set(KEYS.INTEGRANTES, integrantes);
     this.addToSyncQueue('Integrantes', 'insert', newMember);
-    this.sendToGas('Integrantes', 'insert', newMember);
     this.removeTombstone(newMember.ID);
     this.addLog('INSERT_INTEGRANTE', `Integrante ${newMember.Nome} cadastrado`);
     return newMember;
@@ -1048,7 +1128,6 @@ class StorageService {
     integrantes = integrantes.filter((i) => i.ID !== id);
     this.set(KEYS.INTEGRANTES, integrantes);
     this.addToSyncQueue('Integrantes', 'delete', { ID: id });
-    this.sendToGas('Integrantes', 'delete', { ID: id });
     this.addLog('DELETE_INTEGRANTE', `Integrante ID ${id} removido`);
   }
 
@@ -1059,7 +1138,6 @@ class StorageService {
       integrantes[index] = { ...integrantes[index], ...data };
       this.set(KEYS.INTEGRANTES, integrantes);
       this.addToSyncQueue('Integrantes', 'update', integrantes[index]);
-      this.sendToGas('Integrantes', 'update', integrantes[index]);
       this.addLog('UPDATE_INTEGRANTE', `Integrante ${integrantes[index].Nome} atualizado`);
     }
   }
@@ -1080,7 +1158,6 @@ class StorageService {
     historico.unshift(newHist);
     this.set(KEYS.HISTORICO, historico);
     this.addToSyncQueue('Historico', 'insert', newHist);
-    this.sendToGas('Historico', 'insert', newHist);
     this.removeTombstone(newHist.ID);
     this.addLog('INSERT_HISTORICO', `Histórico registrado`);
     return newHist;
@@ -1092,7 +1169,6 @@ class StorageService {
     historico = historico.filter((h) => h.ID !== id);
     this.set(KEYS.HISTORICO, historico);
     this.addToSyncQueue('Historico', 'delete', { ID: id });
-    this.sendToGas('Historico', 'delete', { ID: id });
     this.addLog('DELETE_HISTORICO', `Item de histórico removido`);
   }
 }

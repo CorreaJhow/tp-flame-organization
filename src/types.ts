@@ -89,6 +89,8 @@ export interface SyncQueueItem {
   action: 'insert' | 'update' | 'delete';
   data: any;
   timestamp: number;
+  /** Tentativas de envio que falharam. O item permanece na fila ate confirmar. */
+  attempts?: number;
 }
 
 export type ViewTab = 'inicio' | 'biblioteca' | 'cultos' | 'mais' | 'integrantes' | 'historico' | 'admin';
