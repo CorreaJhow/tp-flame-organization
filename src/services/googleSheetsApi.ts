@@ -282,6 +282,9 @@ async function getSheetIds(
   return map;
 }
 
+/** Resultado de uma escrita: sucesso, recusada por versão mais nova já existente, ou falha de rede/API. */
+export type PushResult = 'ok' | 'conflict' | 'error';
+
 /**
  * Aplica uma operação de uma tabela direto na Google Sheets API v4.
  *
@@ -296,6 +299,12 @@ async function getSheetIds(
  *    numérico virava number.
  * 3. `delete` remove a linha de verdade. O `values:clear` anterior deixava
  *    uma linha vazia no meio da aba, divergindo do caminho Apps Script.
+ * 4. `insert`/`update` recusam a escrita (devolvem 'conflict') se a linha já
+ *    tiver um `Atualizado_Em` mais novo que o do payload — a Sheets API não
+ *    tem esse conceito nativamente, então a comparação é feita aqui, no
+ *    cliente, com o mesmo critério usado no Apps Script (ver gasScript.ts).
+ *    Sem isso, dois dispositivos editando offline e sincronizando fora de
+ *    ordem fariam o último a sincronizar vencer, não o último a editar.
  */
 export async function pushTableActionToGoogleSheets(
   accessToken: string,
@@ -303,7 +312,7 @@ export async function pushTableActionToGoogleSheets(
   table: string,
   action: 'insert' | 'update' | 'delete',
   data: any
-): Promise<boolean> {
+): Promise<PushResult> {
   try {
     const schema = SHEET_SCHEMAS[table] || Object.keys(data);
     const rowValues = schema.map((h) => (data[h] !== undefined && data[h] !== null ? data[h] : ''));
@@ -311,7 +320,7 @@ export async function pushTableActionToGoogleSheets(
 
     if (!targetId) {
       console.error(`Ação [${table}/${action}] sem ID; ignorada para não corromper a planilha.`);
-      return false;
+      return 'error';
     }
 
     // Lê a aba inteira (sem range fixo) para localizar a linha pelo ID.
@@ -319,11 +328,12 @@ export async function pushTableActionToGoogleSheets(
     const readRes = await fetch(readUrl, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
-    if (!readRes.ok) return false;
+    if (!readRes.ok) return 'error';
 
     const rows: any[][] = (await readRes.json()).values || [];
     const headerRow: string[] = (rows[0] || []).map((h: any) => String(h).trim());
     const idColIdx = headerRow.indexOf('ID');
+    const updatedAtColIdx = headerRow.indexOf('Atualizado_Em');
 
     let targetRowIndex = -1;
     if (idColIdx !== -1) {
@@ -336,11 +346,11 @@ export async function pushTableActionToGoogleSheets(
     }
 
     if (action === 'delete') {
-      if (targetRowIndex === -1) return true; // já não existe: objetivo atingido
+      if (targetRowIndex === -1) return 'ok'; // já não existe: objetivo atingido
 
       const sheetIds = await getSheetIds(accessToken, spreadsheetId);
       const sheetId = sheetIds[table];
-      if (sheetId === undefined) return false;
+      if (sheetId === undefined) return 'error';
 
       const res = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
@@ -366,11 +376,21 @@ export async function pushTableActionToGoogleSheets(
           })
         }
       );
-      return res.ok;
+      return res.ok ? 'ok' : 'error';
     }
 
     // insert e update seguem o mesmo caminho: existe -> sobrescreve, não existe -> anexa.
     if (targetRowIndex !== -1) {
+      if (updatedAtColIdx !== -1) {
+        const remoteTs = rows[targetRowIndex - 1]?.[updatedAtColIdx];
+        const incomingTs = data['Atualizado_Em'];
+        const remoteTime = remoteTs ? new Date(remoteTs).getTime() : NaN;
+        const incomingTime = incomingTs ? new Date(incomingTs).getTime() : NaN;
+        if (!Number.isNaN(remoteTime) && !Number.isNaN(incomingTime) && remoteTime > incomingTime) {
+          return 'conflict';
+        }
+      }
+
       const range = `${table}!A${targetRowIndex}:${a1Col(schema.length)}${targetRowIndex}`;
       const res = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
@@ -383,7 +403,7 @@ export async function pushTableActionToGoogleSheets(
           body: JSON.stringify({ values: [rowValues] })
         }
       );
-      return res.ok;
+      return res.ok ? 'ok' : 'error';
     }
 
     const appendRes = await fetch(
@@ -397,9 +417,9 @@ export async function pushTableActionToGoogleSheets(
         body: JSON.stringify({ values: [rowValues] })
       }
     );
-    return appendRes.ok;
+    return appendRes.ok ? 'ok' : 'error';
   } catch (err) {
     console.error(`Erro ao enviar ação [${table}/${action}] para Google Sheets API:`, err);
-    return false;
+    return 'error';
   }
 }

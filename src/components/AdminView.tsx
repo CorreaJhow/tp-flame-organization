@@ -339,6 +339,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   showToast('Sincronizando com a planilha...', 'info');
                   const res = await storage.syncWithGas();
                   setIsSyncing(false);
+                  if (res.conflictCount > 0) {
+                    showToast(
+                      res.conflictCount === 1
+                        ? 'Uma edição foi descartada: já existia uma versão mais recente na planilha.'
+                        : `${res.conflictCount} edições foram descartadas: já existiam versões mais recentes na planilha.`,
+                      'warning',
+                      6000
+                    );
+                  }
                   if (res.success) {
                     showToast('Sincronização concluída com sucesso!', 'success');
                   } else {

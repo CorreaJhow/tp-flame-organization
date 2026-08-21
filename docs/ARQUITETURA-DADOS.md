@@ -145,8 +145,9 @@ Duas travas evitam que isso vire perda de dado: um item só sai da fila com conf
 real do servidor, e o merge é **abortado** para qualquer tabela cujo remoto volte vazio
 enquanto existe dado local (registrado como `SYNC_MERGE_SKIPPED` nos logs locais).
 
-`Historico` e `Logs` **não passam pelo merge** — são substituídos direto pelo remoto
-(`setDirect`), ignorando a fila. Qualquer histórico ainda não sincronizado é perdido.
+`Historico` passa pelo merge desde a Fase 2, como as demais tabelas de dados. `Logs`
+continua fora **de propósito** — é um registro de auditoria somente-leitura na UI, não
+algo que o usuário edita; overwrite direto pelo remoto é aceitável ali.
 
 ### Invariantes que precisam valer
 
@@ -155,8 +156,9 @@ enquanto existe dado local (registrado como `SYNC_MERGE_SKIPPED` nos logs locais
 3. Um pull que devolve tabela vazia enquanto existe dado local **não pode** ser tratado como "o outro apagou tudo".
 4. O que é gravado na planilha precisa voltar idêntico na leitura (sem coerção de tipo).
 5. Toda escrita concorrente no Apps Script precisa de `LockService`.
+6. Quem editou por **último por horário real** vence um conflito — não quem sincronizou por último.
 
-As cinco passaram a valer na Fase 1, e cada uma tem teste correspondente em
+As seis passaram a valer (a sexta na Fase 2), e cada uma tem teste correspondente em
 `src/__tests__/storage.test.ts`, bloco *"3. Invariantes do motor de sincronização"*.
 Se um desses testes falhar, a regressão é de perda de cifra — trate como tal.
 
@@ -311,7 +313,76 @@ sucesso, para nao virar ruido quando a Fase 2 trouxer sync periodico.
 
 ---
 
-## 9. Comandos
+## 9. Fase 2, item 1 — resolução de conflito por timestamp (21/08/2026)
+
+### O problema que a Fase 1 não resolvia
+
+A Fase 1 garantiu que uma escrita só é considerada bem-sucedida com confirmação real do
+servidor, e que o merge nunca apaga dado local sem critério. Mas não resolvia isto:
+
+> Duas pessoas editam a **mesma música**, offline, em celulares diferentes. Uma sincroniza
+> primeiro. Quando a segunda sincroniza — mesmo que tenha editado **antes** — sua versão
+> teria sobrescrito a da primeira, porque `insert`/`update` sempre aceitavam a escrita.
+
+Quem sincroniza por último vencia, não quem editou por último. Numa banda com vários
+celulares mexendo na mesma cifra durante o ensaio, esse é o cenário mais provável de
+acontecer — mais provável, inclusive, do que a planilha ficar indisponível.
+
+### A solução: o servidor arbitra por `Atualizado_Em`
+
+Antes de aceitar um `insert` (upsert) ou `update`, tanto o Apps Script quanto o caminho
+OAuth direto comparam o `Atualizado_Em` do payload recebido com o que já está gravado na
+linha. Se o que já está lá for **mais novo**, a escrita é recusada com
+`status: 'conflict'` em vez de `success` — a edição perde, mas nunca em silêncio.
+
+```
+push chega → existe linha com este ID?
+              │
+              ├─ não → grava (insert normal)
+              │
+              └─ sim → Atualizado_Em da linha é mais novo que o do payload?
+                          │
+                          ├─ sim → recusa: { status: 'conflict' }
+                          └─ não → sobrescreve normalmente
+```
+
+Implementado em dois lugares, com a mesma regra:
+
+- **Apps Script** (`gasScript.ts` → `processOperation` → `isPayloadStale()`) — usado pelo
+  link público, o caminho que a banda inteira usa.
+- **Sheets API direta** (`googleSheetsApi.ts` → `pushTableActionToGoogleSheets`) — aqui a
+  comparação é feita **no cliente**, lendo a linha atual antes do `PUT`, porque a Sheets
+  API não tem esse conceito nativamente.
+
+`delete` fica **de fora** dessa checagem, de propósito — um conflito edição-vs-exclusão é
+harmonizado melhor pela lixeira reversível planejada para a Fase 3 (`Excluido_Em`), não por
+comparação de timestamp. Até lá, exclusão continua vencendo incondicionalmente.
+
+### O que acontece no dispositivo que perdeu
+
+`sendToGas()` devolve um dos três desfechos — `'ok' | 'conflict' | 'error'`
+(`PushResult`, em `googleSheetsApi.ts`) — e `flushQueue()` trata os dois primeiros como
+**resolvidos**: o item sai da fila em ambos os casos. Só `'error'` (falha de rede/API)
+permanece na fila para nova tentativa.
+
+Ao sair da fila por conflito, o item deixa de ser "pendente" aos olhos do
+`mergeCollections()` — e como `syncWithGas()` sempre faz um pull logo depois do flush, a
+versão vencedora da planilha chega e substitui a tentativa local na mesma rodada de
+sincronização, automaticamente.
+
+O conflito é registrado com `addLog('SYNC_CONFLICT', ...)` (sincroniza para a planilha,
+diferente dos logs internos de sincronização) e **sempre** aparece como toast na tela,
+mesmo fora de uma sincronização manual — perder uma edição em silêncio não é aceitável.
+
+### Onde isso é testado
+
+- `storage.test.ts` → `3.6` (conflito sai da fila, não fica preso tentando de novo) e
+  `3.7` (fim a fim: a versão vencedora do remoto substitui a tentativa local perdedora)
+- `googleSheetsApi.test.ts` (novo arquivo) → a comparação de timestamp no caminho OAuth
+  direto, isolada do resto do motor de sync — esse arquivo não tinha nenhuma cobertura
+  antes, e é onde a lógica de comparação é escrita manualmente (não delegada ao Apps Script)
+
+## 10. Comandos
 
 ```bash
 npm test        # Vitest — suíte completa

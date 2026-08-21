@@ -106,6 +106,21 @@ function AppContent() {
     hasSyncedOnceRef.current = true;
     setIsInitialSync(false);
 
+    // Conflito avisa sempre, mesmo fora do primeiro sync ou de um sync manual:
+    // significa que uma edição feita NESTE aparelho foi descartada porque
+    // alguém já tinha salvo uma versão mais recente do mesmo registro. Quem
+    // editou precisa saber que o que digitou não "colou", para conferir e
+    // refazer se for o caso.
+    if (res.conflictCount > 0) {
+      showToast(
+        res.conflictCount === 1
+          ? 'Uma edição sua foi descartada: alguém já havia salvo uma versão mais recente do mesmo registro.'
+          : `${res.conflictCount} edições suas foram descartadas: alguém já havia salvo versões mais recentes.`,
+        'warning',
+        6000
+      );
+    }
+
     if (isManual || isFirstSyncOfSession) {
       if (res.success) {
         if (res.pushedCount && res.pushedCount > 0) {
