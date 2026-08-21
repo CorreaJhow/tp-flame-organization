@@ -38,6 +38,14 @@ describe('2. Local Storage & Sync Engine Tests', () => {
     expect(storage.getSpreadsheetName()).toBe('TP Flame - Banco de Dados');
   });
 
+  it('2.1d Nao existe API publica para setar o Spreadsheet ID direto', () => {
+    // GoogleWorkspaceModal tinha 3 call sites que faziam isso via OAuth/Drive,
+    // desconectado do endpoint -- foi a causa de tres planilhas simultaneas em
+    // producao. O metodo publico foi removido para tornar isso impossivel de
+    // reintroduzir por acidente numa tela nova.
+    expect((storage as any).setGasSpreadsheetId).toBeUndefined();
+  });
+
   it('2.1c Configuracao antiga em cache e descartada na migracao', () => {
     localStorage.clear();
     localStorage.setItem('tp_flame_gas_endpoint_v1', 'https://script.google.com/macros/s/ENDPOINT_ANTIGO/exec');

@@ -225,6 +225,30 @@ Testes: `2.1` (sem config, opera local), `2.1b` (ID vem do endpoint), `2.1c`
 
 ---
 
+## 8b. Segunda porta encontrada e fechada (21/08/2026)
+
+Horas depois de fechar a divergencia entre endpoint e Spreadsheet ID
+(secao 7), a mesma classe de bug reapareceu por outra tela:
+`GoogleWorkspaceModal.tsx` deixava escolher uma planilha via OAuth/Google
+Drive Picker e gravava o ID dela direto no `localStorage`, **totalmente
+desconectado do endpoint configurado**. Resultado: era possivel, de novo, o
+app escrever numa planilha pelo caminho OAuth e noutra pelo Apps Script.
+
+A causa raiz dessa vez nao foi corrigida so no ponto onde apareceu — o
+metodo publico `storage.setGasSpreadsheetId()` foi **removido por completo**.
+Sem ele, nao ha como uma tela nova reintroduzir esse bug: o unico jeito de
+mudar de planilha e apontar o endpoint para outra implantacao, e o ID e
+sempre resolvido a partir dai por `refreshBackendIdentity()`.
+
+`GoogleWorkspaceModal` continua deixando criar/explorar planilhas no Drive,
+mas essas acoes agora **orientam** os proximos passos manuais (colar o
+script, publicar, apontar o endpoint) em vez de trocar o alvo de escrita
+silenciosamente.
+
+Teste `2.1d` garante que o metodo nao volte a existir.
+
+---
+
 ## 8. Reinstalacao (21/08/2026)
 
 As planilhas anteriores continham apenas dados de teste e foram descartadas.

@@ -99,6 +99,20 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
     onDataChanged();
   };
 
+  /**
+   * IMPORTANTE: nenhuma função aqui embaixo troca a planilha ativa do app.
+   *
+   * Isso é proposital. O ID da planilha é sempre resolvido a partir do
+   * endpoint configurado (ver storage.refreshBackendIdentity()) — nunca
+   * escolhido à mão via OAuth. Deixar essa tela apontar para uma planilha
+   * arbitrária do Drive foi exatamente o bug que fez o app gravar em três
+   * planilhas diferentes ao mesmo tempo, corrigido na Fase 1.
+   *
+   * "Criar" e "Selecionar" abaixo só preparam uma planilha nova com o
+   * esquema correto; conectar de fato é sempre feito apontando o ENDPOINT
+   * (aba "Endpoint GAS"), que é o único lugar onde a planilha ativa muda.
+   */
+
   const handleCreateInDrive = async () => {
     const token = getAccessToken();
     if (!token) {
@@ -112,15 +126,11 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
 
     try {
       const result = await createTPFlameSpreadsheet(token);
-      storage.setGasSpreadsheetId(result.id);
-      storage.setSpreadsheetName(result.name);
-      setSpreadsheetIdInput(result.id);
-      setSpreadsheetName(result.name);
-      setCreationSuccessMsg(`Planilha "${result.name}" criada com sucesso no seu Google Drive!`);
-      
-      // Sync initial data right away
-      await storage.syncWithGas();
-      onDataChanged();
+      setCreationSuccessMsg(
+        `Planilha "${result.name}" criada. Próximo passo: abra ${result.url}, vá em ` +
+        `Extensões > Apps Script, cole o código da aba "Scripts", publique como App da Web ` +
+        `e cole a URL /exec na aba "Endpoint GAS" — é isso que conecta de verdade.`
+      );
     } catch (err: any) {
       console.error('Erro criando planilha:', err);
       setAuthError(err?.message || 'Erro ao criar planilha no Google Drive');
@@ -147,23 +157,18 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
     }
   };
 
-  const handleSelectSpreadsheet = (file: DriveSpreadsheetFile) => {
-    storage.setGasSpreadsheetId(file.id);
-    storage.setSpreadsheetName(file.name);
-    setSpreadsheetIdInput(file.id);
-    setSpreadsheetName(file.name);
-    setCreationSuccessMsg(`Planilha "${file.name}" conectada com sucesso!`);
-    onDataChanged();
-    setActiveTab('google_oauth');
-  };
-
   const handleSaveConnection = (e: React.FormEvent) => {
     e.preventDefault();
     storage.setGasEndpoint(endpointInput);
-    storage.setGasSpreadsheetId(spreadsheetIdInput);
     setSaveSuccess(true);
+    storage.refreshBackendIdentity().then((info) => {
+      if (info) {
+        setSpreadsheetIdInput(info.spreadsheetId);
+        setSpreadsheetName(info.spreadsheetName);
+      }
+      onDataChanged();
+    });
     setTimeout(() => setSaveSuccess(false), 3000);
-    onDataChanged();
   };
 
   const currentGasCode = GAS_UNIFIED_PRODUCTION_CODE;
@@ -444,7 +449,7 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
                     Planilhas Encontradas no Seu Google Drive
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Selecione uma planilha para vincular à plataforma TP Flame
+                    Para usar uma destas, publique o Apps Script nela e conecte pela URL do endpoint
                   </p>
                 </div>
 
@@ -507,15 +512,17 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
                       <div className="flex items-center gap-2">
                         {file.id === currentSpreadsheetId ? (
                           <span className="px-3 py-1.5 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-400 text-xs font-bold">
-                            Vinculada
+                            Ativa agora
                           </span>
                         ) : (
-                          <button
-                            onClick={() => handleSelectSpreadsheet(file)}
-                            className="px-3 py-1.5 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs transition-all active:scale-95 shadow-sm"
+                          <a
+                            href={`https://docs.google.com/spreadsheets/d/${file.id}/edit`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-[#1f1f1f] hover:bg-[#282828] border border-slate-700 text-white text-xs font-bold transition-all active:scale-95"
                           >
-                            Conectar
-                          </button>
+                            Abrir e configurar
+                          </a>
                         )}
                       </div>
                     </div>
@@ -544,22 +551,22 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
                   </button>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Caso utilize um Web App central do Google Apps Script para toda a equipe, configure a URL e o Spreadsheet ID aqui.
+                  Cole a URL do Web App central do Google Apps Script. A planilha é detectada
+                  automaticamente a partir dela — não existe um segundo campo para configurar,
+                  de propósito, para nunca mais divergir do endpoint.
                 </p>
               </div>
 
               <form onSubmit={handleSaveConnection} className="space-y-3 bg-[#141414] p-4 rounded-2xl border border-slate-800">
                 <div>
                   <label className="text-xs font-bold text-slate-300 block mb-1">
-                    ID da Planilha Google (Spreadsheet ID)
+                    Planilha conectada
                   </label>
-                  <input
-                    type={showSensitive ? 'text' : 'password'}
-                    value={spreadsheetIdInput}
-                    onChange={(e) => setSpreadsheetIdInput(e.target.value)}
-                    placeholder="ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-                    className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-[#FF4D00]"
-                  />
+                  <div className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-slate-300 break-all">
+                    {spreadsheetIdInput
+                      ? (showSensitive ? spreadsheetIdInput : '•'.repeat(24))
+                      : 'aguardando primeira sincronização…'}
+                  </div>
                 </div>
 
                 <div>

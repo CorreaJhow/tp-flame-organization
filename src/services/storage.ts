@@ -371,15 +371,18 @@ class StorageService {
     return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || '';
   }
 
-  public setGasSpreadsheetId(id: string) {
-    let cleanId = id.trim();
-    const match = cleanId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-    if (match && match[1]) {
-      cleanId = match[1];
-    }
-    localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, cleanId);
-    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
-  }
+  // NÃO EXISTE setGasSpreadsheetId() PÚBLICO — DE PROPÓSITO.
+  //
+  // Esse método existiu até aqui e permitia que uma tela (GoogleWorkspaceModal)
+  // apontasse o app para uma planilha escolhida via Google Drive, totalmente
+  // independente do endpoint do Apps Script. É exatamente a divisão que a
+  // Fase 1 fechou por outro caminho: o app voltava a gravar em duas planilhas
+  // diferentes, uma pelo OAuth direto e outra pelo endpoint.
+  //
+  // O único jeito de mudar de planilha agora é apontar o ENDPOINT para uma
+  // implantação diferente (ver docs/INSTALAR-PLANILHA.md); o ID é sempre
+  // resolvido a partir dele, via refreshBackendIdentity(). Escrever direto em
+  // KEYS.GAS_SPREADSHEET_ID sem passar por ali reabre o bug.
 
   public getSpreadsheetName(): string {
     return localStorage.getItem(KEYS.SPREADSHEET_NAME) || 'TP Flame - Banco de Dados';
