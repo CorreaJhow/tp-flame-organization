@@ -12,7 +12,7 @@ import {
   INITIAL_LOGS 
 } from '../data/initialData';
 import { getAccessToken } from './googleAuth';
-import { readAllSpreadsheetData, pushTableActionToGoogleSheets, SCHEMA_VERSION } from './googleSheetsApi';
+import { readAllSpreadsheetData, pushTableActionToGoogleSheets, SCHEMA_VERSION, PushResult } from './googleSheetsApi';
 
 const KEYS = {
   CONFIG: 'tp_flame_config_v1',
@@ -481,26 +481,29 @@ class StorageService {
    * status, sem corpo) e fazia `return true` incondicional. O endpoint do Apps
    * Script responde com CORS válido, então dá para ler o corpo de verdade.
    */
-  public async sendToGas(table: string, action: string, data: any): Promise<boolean> {
+  public async sendToGas(table: string, action: string, data: any): Promise<PushResult> {
     const token = getAccessToken();
     const spreadsheetId = this.getGasSpreadsheetId();
     const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
 
     // 1. Logado no Google com planilha válida: API v4 direta.
     if (token && isRealSpreadsheetId) {
-      const success = await pushTableActionToGoogleSheets(
+      const result = await pushTableActionToGoogleSheets(
         token,
         spreadsheetId,
         table,
         action as 'insert' | 'update' | 'delete',
         data
       );
-      if (success) return true;
+      // 'ok' e 'conflict' são desfechos definitivos do protocolo de
+      // sincronização — não faz sentido tentar de novo pelo caminho GAS.
+      // Só um 'error' de rede/API cai para o fallback.
+      if (result === 'ok' || result === 'conflict') return result;
     }
 
     // 2. Fallback: Web App do Apps Script.
     const endpoint = this.getGasEndpoint();
-    if (!endpoint) return false;
+    if (!endpoint) return 'error';
 
     try {
       const res = await fetch(endpoint, {
@@ -513,17 +516,22 @@ class StorageService {
 
       if (!res.ok) {
         console.warn(`Backend recusou [${table}/${action}]: HTTP ${res.status}`);
-        return false;
+        return 'error';
       }
 
       const json = await res.json();
-      if (json?.status === 'success') return true;
+      if (json?.status === 'success') return 'ok';
+
+      if (json?.status === 'conflict') {
+        console.info(`[sync] Conflito em [${table}/${action}]: ${json?.message || 'versão mais recente já existe na planilha'}`);
+        return 'conflict';
+      }
 
       console.warn(`Backend reportou erro em [${table}/${action}]:`, json?.message);
-      return false;
+      return 'error';
     } catch (err) {
       console.warn(`Erro enviando para backend [${table}/${action}]:`, err);
-      return false;
+      return 'error';
     }
   }
 
@@ -556,19 +564,33 @@ class StorageService {
    * contrário permanece, com o contador de tentativas incrementado, para a
    * próxima sincronização tentar de novo.
    */
-  public async flushQueue(): Promise<{ pushed: number; failed: number }> {
-    if (this.isFlushing) return { pushed: 0, failed: 0 };
+  public async flushQueue(): Promise<{ pushed: number; failed: number; conflicts: number }> {
+    if (this.isFlushing) return { pushed: 0, failed: 0, conflicts: 0 };
     this.isFlushing = true;
 
     let pushed = 0;
     let failed = 0;
+    let conflicts = 0;
 
     try {
       for (const item of this.getSyncQueue()) {
-        const sent = await this.sendToGas(item.table, item.action, item.data);
-        if (sent) {
+        const result = await this.sendToGas(item.table, item.action, item.data);
+
+        if (result === 'ok') {
           this.removeFromSyncQueue(item.id);
           pushed++;
+        } else if (result === 'conflict') {
+          // A planilha já tem uma versão mais nova deste registro (editada
+          // por outra pessoa). A edição local perde — mas NUNCA fica presa
+          // tentando de novo pra sempre: sai da fila, e o pull que acontece
+          // logo em seguida em syncWithGas() traz a versão vencedora para
+          // este aparelho. Registrado como log local para dar visibilidade.
+          this.removeFromSyncQueue(item.id);
+          conflicts++;
+          this.addLog(
+            'SYNC_CONFLICT',
+            `Edição em ${item.table} descartada: alguém já havia salvo uma versão mais recente`
+          );
         } else {
           this.markQueueItemFailed(item.id);
           failed++;
@@ -578,7 +600,7 @@ class StorageService {
       this.isFlushing = false;
     }
 
-    return { pushed, failed };
+    return { pushed, failed, conflicts };
   }
 
   private markQueueItemFailed(queueItemId: string) {
@@ -594,11 +616,12 @@ class StorageService {
    * 1. Direct Google Sheets API v4 (if signed in with Google Workspace OAuth and valid sheet ID)
    * 2. GAS Web App endpoint (public web app)
    */
-  public async syncWithGas(): Promise<{ 
-    success: boolean; 
-    message?: string; 
-    pushedCount: number; 
+  public async syncWithGas(): Promise<{
+    success: boolean;
+    message?: string;
+    pushedCount: number;
     pulledCount: number;
+    conflictCount: number;
     mode?: string;
   }> {
     // Descobre a planilha a partir do endpoint antes de qualquer coisa. Sem
@@ -613,13 +636,18 @@ class StorageService {
     const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
     let pushedCount = 0;
     let pulledCount = 0;
+    let conflictCount = 0;
 
     // PATH A: DIRECT GOOGLE SHEETS API V4 (WHEN LOGGED IN WITH GOOGLE WORKSPACE)
     if (token && isRealSpreadsheetId) {
       try {
-        // Empurra a fila ANTES do pull. Se um item não confirmar, ele
-        // permanece na fila e o merge o preserva no dispositivo.
-        pushedCount = (await this.flushQueue()).pushed;
+        // Empurra a fila ANTES do pull. Se um item não confirmar (erro) ele
+        // permanece na fila e o merge o preserva no dispositivo. Se for
+        // recusado por conflito, sai da fila e o pull abaixo traz a versão
+        // vencedora da planilha para este aparelho.
+        const flushRes = await this.flushQueue();
+        pushedCount = flushRes.pushed;
+        conflictCount = flushRes.conflicts;
 
         // Pull direct from Sheets API
         const sheetsData = await readAllSpreadsheetData(token, spreadsheetId);
@@ -662,17 +690,24 @@ class StorageService {
           this.setDirect(KEYS.ARQUIVOS, merged);
         }
 
+        // Historico entra no merge de tres vias como as demais tabelas: um
+        // registro criado offline e ainda nao confirmado nao pode ser
+        // apagado so porque o pull chegou primeiro.
         if (Array.isArray(sheetsData.historico)) {
-          this.setDirect(KEYS.HISTORICO, sheetsData.historico);
+          const merged = this.mergeCollections(this.getHistorico(), sheetsData.historico, currentQueue, 'Historico');
+          this.setDirect(KEYS.HISTORICO, merged);
         }
 
+        // Logs fica de fora do merge de proposito: e um registro de auditoria
+        // somente-leitura na UI, nao algo que o usuario edita. Overwrite
+        // direto e aceitavel aqui.
         if (Array.isArray(sheetsData.logs)) {
           this.setDirect(KEYS.LOGS, sheetsData.logs.slice(0, 50));
         }
 
         localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
         this.addLog('GOOGLE_SHEETS_SYNC', `Sincronização direta com Google Sheets API v4 (${pushedCount} enviados, ${pulledCount} recebidos)`);
-        return { success: true, pushedCount, pulledCount, mode: 'Google Sheets API v4' };
+        return { success: true, pushedCount, pulledCount, conflictCount, mode: 'Google Sheets API v4' };
       } catch (err: any) {
         console.warn('Erro na sincronização direta do Sheets API, tentando via GAS Web App:', err);
       }
@@ -685,12 +720,15 @@ class StorageService {
         success: false,
         message: 'Backend nao configurado. Cole a URL /exec do Apps Script no painel de administracao.',
         pushedCount: 0,
-        pulledCount: 0
+        pulledCount: 0,
+        conflictCount: 0
       };
     }
 
     try {
-      pushedCount = (await this.flushQueue()).pushed;
+      const flushRes = await this.flushQueue();
+      pushedCount = flushRes.pushed;
+      conflictCount = flushRes.conflicts;
 
       const res = await fetch(`${endpoint}?action=getAll`);
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
@@ -738,7 +776,8 @@ class StorageService {
         }
 
         if (Array.isArray(d.historico)) {
-          this.setDirect(KEYS.HISTORICO, d.historico);
+          const merged = this.mergeCollections(this.getHistorico(), d.historico, currentQueue, 'Historico');
+          this.setDirect(KEYS.HISTORICO, merged);
         }
 
         if (Array.isArray(d.logs)) {
@@ -747,9 +786,9 @@ class StorageService {
 
         localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
         this.addLog('GAS_SYNC_SUCCESS', `Sincronização concluída via GAS (${pushedCount} enviados, ${pulledCount} recebidos)`);
-        return { success: true, pushedCount, pulledCount, mode: 'Google Apps Script' };
+        return { success: true, pushedCount, pulledCount, conflictCount, mode: 'Google Apps Script' };
       } else {
-        return { success: false, message: json.message || 'Erro retornado pela planilha Google', pushedCount, pulledCount };
+        return { success: false, message: json.message || 'Erro retornado pela planilha Google', pushedCount, pulledCount, conflictCount };
       }
     } catch (err: any) {
       console.warn('Sincronização offline/falhou:', err);
@@ -757,7 +796,7 @@ class StorageService {
       const errorMsg = isCorsOrAuth
         ? 'Não foi possível conectar ao Web App. Verifique se na implantação do Apps Script o campo "Quem tem acesso" foi definido como "Qualquer pessoa" (Anyone).'
         : (err?.message || 'Falha de conexão com a planilha');
-      return { success: false, message: errorMsg, pushedCount, pulledCount };
+      return { success: false, message: errorMsg, pushedCount, pulledCount, conflictCount };
     }
   }
 

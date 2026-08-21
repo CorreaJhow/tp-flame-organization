@@ -313,4 +313,70 @@ describe('3. Invariantes do motor de sincronização', () => {
     // Continua visível localmente nos dois casos.
     expect(storage.getLogs().some((l) => l.Acao === 'GAS_SYNC_SUCCESS')).toBe(true);
   });
+
+  it('3.6 Conflito reportado pelo backend sai da fila e não fica tentando de novo para sempre', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ status: 'conflict', message: 'Já existe uma versão mais recente' })
+    }) as any;
+
+    storage.updateCulto(
+      storage.addCulto({ Data: '2026-09-03T19:00', Nome_Evento: 'Culto Conflito', Status: 'Agendado' }).ID,
+      { Nome_Evento: 'Culto Conflito (editado offline)' }
+    );
+
+    // IDs de antes do flush: o proprio addLog('SYNC_CONFLICT', ...) enfileira
+    // um novo log DURANTE o flush (comportamento normal de qualquer log), o
+    // que mantém a contagem agregada parecida -- por isso a asserção certa é
+    // "nenhum destes IDs originais sobrou", não "a fila diminuiu".
+    const originalIds = storage.getSyncQueue().map((q) => q.id);
+    const res = await storage.flushQueue();
+
+    // Conflito é um desfecho DEFINITIVO do protocolo: sai da fila (como
+    // sucesso), mas não conta como pushed -- e fica registrado no log local.
+    expect(res.conflicts).toBeGreaterThan(0);
+    expect(res.failed).toBe(0);
+    const remainingIds = storage.getSyncQueue().map((q) => q.id);
+    expect(originalIds.some((id) => remainingIds.includes(id))).toBe(false);
+    expect(storage.getLogs().some((l) => l.Acao === 'SYNC_CONFLICT')).toBe(true);
+  });
+
+  it('3.7 syncWithGas reconcilia para a versão vencedora quando há conflito', async () => {
+    const musica = storage.addMusicaWithVersao(
+      { Nome: 'Cifra Disputada', Artista: 'Banda', Categoria: 'Adoração' },
+      { Nome_Versao: 'V1', Tom: 'C', Letra: '[C] original', Estrutura: 'V1', Obs: '' }
+    ).musica;
+
+    // Edição local que, por horário real, é mais antiga que a que já está na
+    // planilha -- simula um dispositivo que editou offline e só sincronizou
+    // bem depois. clearSyncQueue isola essa edição do insert original.
+    storage.clearSyncQueue();
+    storage.updateMusica(musica.ID, { Nome: 'Cifra Disputada (minha edição atrasada)' });
+
+    const versaoVencedora = { ...musica, Nome: 'Cifra Disputada (versão de outra pessoa, mais recente)' };
+
+    global.fetch = vi.fn().mockImplementation((url: string, opts?: any) => {
+      if (typeof url === 'string' && url.includes('action=getAll')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            status: 'success',
+            data: { musicas: [versaoVencedora], versoes: [], integrantes: [], cultos: [] }
+          })
+        });
+      }
+      // Qualquer POST de escrita para esta música é um conflito.
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ status: 'conflict', message: 'Versão mais recente já existe' })
+      });
+    }) as any;
+
+    const res = await storage.syncWithGas();
+
+    expect(res.conflictCount).toBeGreaterThan(0);
+    const musicasFinal = storage.getMusicas();
+    const finalItem = musicasFinal.find((m) => m.ID === musica.ID);
+    expect(finalItem?.Nome).toBe('Cifra Disputada (versão de outra pessoa, mais recente)');
+  });
 });

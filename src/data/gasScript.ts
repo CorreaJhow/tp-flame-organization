@@ -402,6 +402,32 @@ function processOperation(ss, table, action, payload) {
   var headers = values[0];
   var idIndex = headers.indexOf("ID");
   if (idIndex === -1) idIndex = 0;
+  var updatedAtIndex = headers.indexOf("Atualizado_Em");
+
+  /**
+   * RESOLUÇÃO DE CONFLITO POR TIMESTAMP (Fase 2)
+   *
+   * Duas pessoas podem editar o mesmo registro offline e sincronizar em
+   * ordem diferente da que editaram. Sem isso, quem sincroniza por último
+   * sempre vence — mesmo que sua edição seja mais antiga. Com isso, quem
+   * editou por último (por horário real, não por ordem de chegada) vence.
+   *
+   * Se a linha na planilha já tem um Atualizado_Em mais novo que o payload
+   * recebido, a escrita é recusada com status 'conflict' em vez de
+   * sobrescrever. O cliente descarta a tentativa local e adota a versão da
+   * planilha no próximo pull — perde a edição, mas nunca perde silenciosamente
+   * a de outra pessoa.
+   */
+  function isPayloadStale(existingRow) {
+    if (updatedAtIndex === -1) return false; // tabela sem auditoria (Config/Logs)
+    var remoteTs = existingRow[updatedAtIndex];
+    var incomingTs = payload['Atualizado_Em'];
+    if (!remoteTs || !incomingTs) return false;
+    var remoteTime = new Date(remoteTs).getTime();
+    var incomingTime = new Date(incomingTs).getTime();
+    if (isNaN(remoteTime) || isNaN(incomingTime)) return false;
+    return remoteTime > incomingTime;
+  }
 
   if (action === 'insert') {
     if (!payload.ID) payload.ID = generateUUID();
@@ -420,6 +446,9 @@ function processOperation(ss, table, action, payload) {
     });
 
     if (existingRow !== -1) {
+      if (isPayloadStale(values[existingRow - 1])) {
+        return { status: 'conflict', id: payload.ID, message: 'Já existe uma versão mais recente deste registro na planilha' };
+      }
       sheet.getRange(existingRow, 1, 1, headers.length).setValues([row]);
     } else {
       sheet.appendRow(row);
@@ -431,6 +460,9 @@ function processOperation(ss, table, action, payload) {
     var targetId = payload.ID || payload.id;
     for (var j = 1; j < values.length; j++) {
       if (values[j][idIndex] == targetId) {
+        if (isPayloadStale(values[j])) {
+          return { status: 'conflict', id: targetId, message: 'Já existe uma versão mais recente deste registro na planilha' };
+        }
         var rowData = values[j];
         headers.forEach(function(h, colIdx) {
           if (payload[h] !== undefined) {
