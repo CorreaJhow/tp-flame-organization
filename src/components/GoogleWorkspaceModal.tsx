@@ -159,7 +159,13 @@ export const GoogleWorkspaceModal: React.FC<GoogleWorkspaceModalProps> = ({ onCl
 
   const handleSaveConnection = (e: React.FormEvent) => {
     e.preventDefault();
-    storage.setGasEndpoint(endpointInput);
+    const saved = storage.setGasEndpoint(endpointInput);
+    if (!saved) {
+      setAuthError('URL inválida. Copie exatamente a URL /exec do Apps Script, sem cortar nem editar.');
+      return;
+    }
+
+    setAuthError(null);
     setSaveSuccess(true);
     storage.refreshBackendIdentity().then((info) => {
       if (info) {

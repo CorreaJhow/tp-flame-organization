@@ -38,6 +38,38 @@ describe('2. Local Storage & Sync Engine Tests', () => {
     expect(storage.getSpreadsheetName()).toBe('TP Flame - Banco de Dados');
   });
 
+  it('2.1e URL com reticencias (o bug real de producao) e rejeitada, nao aceita silenciosamente', () => {
+    // Reproduz exatamente o que apareceu no bundle publicado em 21/08/2026:
+    // a URL certa, mas com um caractere de reticencias "…" no meio, cortando
+    // o ID de implantacao. Antes desta validacao, isso era salvo sem aviso e
+    // toda sincronizacao falhava silenciosamente (erro de rede local, nem
+    // chega a CORS) ate alguem abrir o DevTools.
+    const antes = storage.getGasEndpoint();
+    const salvou = storage.setGasEndpoint('https://script.google.com/macros/s/AKfycbzXHtLDcy3p…/exec');
+
+    expect(salvou).toBe(false);
+    expect(storage.getGasEndpoint()).toBe(antes);
+  });
+
+  it('2.1f Endpoint corrompido ja salvo em cache e ignorado na leitura', () => {
+    // Cobre o caso em que a corrupcao entrou por uma variavel de ambiente
+    // (fora do controle do setGasEndpoint) e foi parar no localStorage antes
+    // desta validacao existir. getGasEndpoint() precisa sanitizar tambem na
+    // leitura, ou o aparelho fica preso na URL quebrada para sempre.
+    localStorage.setItem('tp_flame_gas_endpoint_v1', 'https://script.google.com/macros/s/AKfycbzXHtLDcy3p…/exec');
+    localStorage.setItem('tp_flame_backend_config_version_v1', '999');
+
+    const endpoint = storage.getGasEndpoint();
+    expect(endpoint).not.toContain('…');
+    expect(endpoint.length).toBeGreaterThan(0);
+  });
+
+  it('2.1g Endpoint valido sobrevive a sanitizacao sem alteracao', () => {
+    const url = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7jPlO1a4twVVxpWigeiio8paO2VWbEu0hzcFiLp60E3kPqbIcu6/exec';
+    expect(storage.setGasEndpoint(url)).toBe(true);
+    expect(storage.getGasEndpoint()).toBe(url);
+  });
+
   it('2.1d Nao existe API publica para setar o Spreadsheet ID direto', () => {
     // GoogleWorkspaceModal tinha 3 call sites que faziam isso via OAuth/Drive,
     // desconectado do endpoint -- foi a causa de tres planilhas simultaneas em
