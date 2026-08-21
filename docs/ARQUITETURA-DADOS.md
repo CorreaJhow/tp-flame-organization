@@ -176,10 +176,36 @@ tombstone vai filtrá-lo permanentemente e ninguém vai entender por quê.
 
 ---
 
-## 7. Passos manuais pendentes (Fase 1)
+## 7. Um backend, nunca dois
 
-Duas correções da Fase 1 estão no código mas **não têm efeito até serem aplicadas
-na conta Google** — não dá para fazer isso a partir do repositório:
+`DEFAULT_GAS_ENDPOINT` e `DEFAULT_GAS_SPREADSHEET_ID`, em `storage.ts`, precisam
+apontar para a **mesma planilha**. O endpoint atende quem não está logado; o ID
+atende o caminho OAuth. Enquanto divergirem, o app grava em bancos diferentes
+conforme o estado de login do usuário.
+
+Isso aconteceu de verdade: em 21/08/2026 havia **três destinos de escrita**
+simultâneos — o endpoint publicado apontava para uma planilha, o
+`DEFAULT_GAS_SPREADSHEET_ID` para outra, e uma terceira recebia a implantação
+mais recente do script. Dado que "sumia" estava, na verdade, em outra planilha.
+
+Planilha oficial desde então: `1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI`.
+
+**Ao trocar de planilha ou republicar o script com URL nova**, altere as duas
+constantes *e* incremente `CONFIG_VERSION`. Sem isso, cada aparelho da equipe
+continua usando o valor em cache no `localStorage`, que sempre vence o default.
+Um endpoint definido à mão pelo usuário no painel admin marca a config como
+atual e não é sobrescrito pela migração.
+
+Há teste para as duas coisas: `2.1b` (defaults coerentes entre si) e `2.1c`
+(cache antigo é migrado).
+
+---
+
+## 8. Passos manuais pendentes (Fase 1)
+
+✅ Ambos concluídos em 21/08/2026 na planilha
+`1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI`, que passou a ser a oficial.
+O procedimento fica registrado para as próximas vezes:
 
 **1. Republicar o Apps Script.** A trava de concorrência (`LockService`) e a função
 `repairDatabase()` vivem em `src/data/gasScript.ts`. Copie o conteúdo para o editor
@@ -197,7 +223,7 @@ se atropelar. As demais correções da Fase 1 são do lado do app e já valem.
 
 ---
 
-## 8. Comandos
+## 9. Comandos
 
 ```bash
 npm test        # Vitest — suíte completa
