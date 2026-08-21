@@ -111,10 +111,124 @@ describe('2. Local Storage & Sync Engine Tests', () => {
 
   it('2.7 Should clear all data when clearAllData is executed', () => {
     storage.clearAllData();
-    
+
     const songs = storage.getMusicas();
     expect(songs.length).toBe(0);
     expect(storage.getGasEndpoint()).toContain('script.google.com');
     expect(storage.hasPendingSync()).toBe(false);
+  });
+});
+
+/**
+ * Invariantes da Fase 1. Cada teste aqui corresponde a um bug que chegou a
+ * produção e causou duplicação ou perda de dado. Se algum voltar a falhar,
+ * a regressão é de perda de cifra — não é flakiness.
+ */
+describe('3. Invariantes do motor de sincronização', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    storage.resetToDefaults();
+    storage.clearSyncQueue();
+    vi.restoreAllMocks();
+  });
+
+  it('3.1 Uma mutação enfileira uma vez só e não escreve por fora da fila', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ status: 'success' }) });
+    global.fetch = fetchSpy as any;
+
+    storage.addCulto({
+      Data: '2026-09-01T19:00',
+      Nome_Evento: 'Culto Teste',
+      Status: 'Agendado'
+    });
+
+    // O envio é agendado (debounce), nunca disparado de dentro da mutação.
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    const cultoItems = storage.getSyncQueue().filter((q) => q.table === 'Cultos');
+    expect(cultoItems.length).toBe(1);
+    expect(cultoItems[0].action).toBe('insert');
+  });
+
+  it('3.2 Escrita não confirmada mantém o item na fila e conta a tentativa', async () => {
+    // Servidor responde 200 mas com status de erro no corpo — exatamente o
+    // caso que o modo no-cors tratava como sucesso.
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ status: 'error', message: 'Planilha ocupada' })
+    }) as any;
+
+    storage.addIntegrante({
+      Nome: 'Teste Falha',
+      Funcao: 'Baixo',
+      Email: 'teste@tpflame.org',
+      Ativo: true
+    });
+
+    const before = storage.getPendingCount();
+    expect(before).toBeGreaterThan(0);
+
+    const res = await storage.flushQueue();
+
+    expect(res.pushed).toBe(0);
+    expect(res.failed).toBe(before);
+    expect(storage.getPendingCount()).toBe(before);
+    expect(storage.getSyncQueue().every((q) => (q.attempts || 0) >= 1)).toBe(true);
+    expect(storage.getIntegrantes().some((i) => i.Nome === 'Teste Falha')).toBe(true);
+  });
+
+  it('3.3 Escrita confirmada remove o item da fila', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ status: 'success' })
+    }) as any;
+
+    storage.addCulto({ Data: '2026-09-02T19:00', Nome_Evento: 'Culto OK', Status: 'Agendado' });
+    const before = storage.getPendingCount();
+
+    const res = await storage.flushQueue();
+
+    expect(res.pushed).toBe(before);
+    expect(res.failed).toBe(0);
+    expect(storage.getPendingCount()).toBe(0);
+  });
+
+  it('3.4 Planilha vazia não pode apagar a biblioteca local', async () => {
+    storage.addMusicaWithVersao(
+      { Nome: 'Cifra Importante', Artista: 'Banda', Categoria: 'Adoração' },
+      { Nome_Versao: 'Principal', Tom: 'G', Letra: '[G] teste', Estrutura: 'V1', Obs: '' }
+    );
+
+    // Fila drenada com sucesso: sem a trava, o merge não teria nada protegendo
+    // as músicas locais quando o pull voltasse vazio.
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('action=getAll')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            status: 'success',
+            data: { musicas: [], versoes: [], integrantes: [], cultos: [] }
+          })
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'success' }) });
+    }) as any;
+
+    await storage.syncWithGas();
+
+    expect(storage.getMusicas().some((m) => m.Nome === 'Cifra Importante')).toBe(true);
+  });
+
+  it('3.5 Logs de sincronização ficam só no dispositivo', () => {
+    storage.clearSyncQueue();
+
+    storage.addLog('GAS_SYNC_SUCCESS', 'sincronizado');
+    expect(storage.getSyncQueue().filter((q) => q.table === 'Logs').length).toBe(0);
+
+    storage.addLog('INSERT_MUSICA', 'música criada');
+    expect(storage.getSyncQueue().filter((q) => q.table === 'Logs').length).toBe(1);
+
+    // Continua visível localmente nos dois casos.
+    expect(storage.getLogs().some((l) => l.Acao === 'GAS_SYNC_SUCCESS')).toBe(true);
   });
 });
