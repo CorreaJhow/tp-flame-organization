@@ -4,7 +4,7 @@
 > Documento de referência para qualquer alteração em `src/services/storage.ts`,
 > `src/services/googleSheetsApi.ts` ou `src/data/gasScript.ts`.
 >
-> Última auditoria: 20/08/2026.
+> Última auditoria: 20/08/2026. Correções da Fase 1 aplicadas.
 
 ---
 
@@ -81,10 +81,11 @@ sobrevivem no celular de quem criou, mas **não chegam nos outros dispositivos**
 ### Caminho A — Google Sheets API v4 (direto)
 Ativo quando existe token OAuth em memória **e** um Spreadsheet ID válido.
 
-- `insert` → `values/{aba}!A1:append` (append puro, **não verifica se o ID já existe**)
-- `update` → lê a aba inteira, acha a linha pelo ID, faz `PUT` naquele range
-- `delete` → **`values:clear`** naquela linha — a linha continua existindo, vazia
-- leitura → `values:batchGet` com range fixo **`A1:Z500`**
+- `insert` → **upsert**: procura o ID; existe, sobrescreve; não existe, anexa
+- `update` → mesmo caminho do insert
+- `delete` → `batchUpdate` + `deleteDimension`, remove a linha de verdade
+- leitura → `values:batchGet` usando o nome da aba como range (sem teto de linhas)
+- escrita → `valueInputOption: RAW`, para a planilha não reinterpretar cifras
 
 Características: rápido, resposta legível, mas o token vem do
 `GoogleAuthProvider.credentialFromResult()` do Firebase, **vale 1 hora e nunca é
@@ -98,8 +99,8 @@ Endpoint fixo no bundle, sem login. É o caminho que a banda inteira usa hoje.
 - `insert` no GAS é **upsert** (procura o ID antes de inserir) — diferente do Caminho A
 - `delete` no GAS é `deleteRow()` de verdade — diferente do Caminho A
 
-⚠️ Os dois caminhos têm **semântica diferente** para `insert` e `delete`. O mesmo app
-produz resultados diferentes na planilha dependendo de estar logado ou não.
+Desde a Fase 1 os dois caminhos têm a **mesma semântica**: `insert` é upsert e `delete`
+remove a linha. O resultado na planilha não depende mais de o usuário estar logado.
 
 ⚠️ O script publicado **não é o mesmo** que está em `src/data/gasScript.ts`. Um `POST`
 sem corpo devolve `TypeError: Cannot read properties of undefined (reading 'contents')`,
@@ -111,8 +112,9 @@ produção, e não há processo de deploy versionado.
 ## 4. O ciclo de sincronização (`syncWithGas`)
 
 ```
-1. drena a SyncQueue     → para cada item pendente, envia para a planilha
-                           se "deu certo", REMOVE da fila
+1. drena a SyncQueue     → flushQueue(): envia cada item pendente e só o
+                           REMOVE mediante status: success lido do servidor.
+                           Falhou? Fica na fila, com attempts incrementado.
 2. pull                  → lê as 10 abas
 3. merge por tabela      → mergeCollections(local, remoto, fila)
 4. grava no localStorage
@@ -126,9 +128,12 @@ resultado = (registros remotos, exceto tombstones e deletes pendentes)
 ```
 
 Leia de novo: **tudo que é local mas não está no remoto e não está na fila é apagado.**
-Esse é o comportamento desejado (é assim que uma exclusão feita por outro integrante
-chega até você), mas ele transforma qualquer falha de escrita em perda de dado permanente
-naquele dispositivo.
+Esse é o comportamento desejado — é assim que uma exclusão feita por outro integrante
+chega até você.
+
+Duas travas evitam que isso vire perda de dado: um item só sai da fila com confirmação
+real do servidor, e o merge é **abortado** para qualquer tabela cujo remoto volte vazio
+enquanto existe dado local (registrado como `SYNC_MERGE_SKIPPED` nos logs locais).
 
 `Historico` e `Logs` **não passam pelo merge** — são substituídos direto pelo remoto
 (`setDirect`), ignorando a fila. Qualquer histórico ainda não sincronizado é perdido.
@@ -136,12 +141,14 @@ naquele dispositivo.
 ### Invariantes que precisam valer
 
 1. Um item só sai da fila com **confirmação lida do servidor**. Escrita cega nunca conta como sucesso.
-2. Uma mutação é enviada **uma única vez** — ou pela fila, ou imediatamente, nunca pelos dois.
+2. Uma mutação é enviada **uma única vez** — pela fila, e só por ela.
 3. Um pull que devolve tabela vazia enquanto existe dado local **não pode** ser tratado como "o outro apagou tudo".
 4. O que é gravado na planilha precisa voltar idêntico na leitura (sem coerção de tipo).
 5. Toda escrita concorrente no Apps Script precisa de `LockService`.
 
-Hoje **nenhuma das cinco vale**. Ver `docs/` do diagnóstico para detalhes e evidências.
+As cinco passaram a valer na Fase 1, e cada uma tem teste correspondente em
+`src/__tests__/storage.test.ts`, bloco *"3. Invariantes do motor de sincronização"*.
+Se um desses testes falhar, a regressão é de perda de cifra — trate como tal.
 
 ---
 
@@ -161,15 +168,36 @@ tombstone vai filtrá-lo permanentemente e ninguém vai entender por quê.
 | Arquivo | Cuidado |
 |---|---|
 | `storage.ts` → `mergeCollections` | qualquer mudança aqui pode apagar dados de todo mundo |
-| `storage.ts` → `sendToGas` | usa `no-cors`; o `return true` é mentira, não há como saber se funcionou |
-| `storage.ts` → `addLog` | é chamado por toda mutação e **ele mesmo** enfileira + envia; cuidado com efeito cascata |
-| `googleSheetsApi.ts` → `valueInputOption` | está `USER_ENTERED`; deve ser `RAW` para não corromper cifras |
-| `googleSheetsApi.ts` → `A1:Z500` | teto rígido de 500 linhas por aba no caminho OAuth |
+| `storage.ts` → `sendToGas` | o retorno autoriza remover da fila; só devolva `true` com confirmação lida |
+| `storage.ts` → `flushQueue` | único ponto de escrita; não reintroduza envio direto nas mutações |
+| `storage.ts` → `addLog` | é chamado por toda mutação; ações em `LOCAL_ONLY_LOG_ACTIONS` não vão para a planilha |
+| `googleSheetsApi.ts` → `valueInputOption` | mantenha `RAW`; `USER_ENTERED` corrompe cifras |
 | `gasScript.ts` | alterar aqui **não** altera produção; exige republicar a implantação |
 
 ---
 
-## 7. Comandos
+## 7. Passos manuais pendentes (Fase 1)
+
+Duas correções da Fase 1 estão no código mas **não têm efeito até serem aplicadas
+na conta Google** — não dá para fazer isso a partir do repositório:
+
+**1. Republicar o Apps Script.** A trava de concorrência (`LockService`) e a função
+`repairDatabase()` vivem em `src/data/gasScript.ts`. Copie o conteúdo para o editor
+do Apps Script da planilha e publique uma **nova versão** da implantação:
+*Implantar > Gerenciar implantações > editar (lápis) > Versão: Nova versão > Implantar*.
+Editar o código sem republicar mantém a versão antiga no ar.
+
+**2. Rodar `repairDatabase()` uma vez.** No editor do Apps Script, selecione a função
+`repairDatabase` e execute. Ela tira um backup antes de mexer em qualquer coisa, e então
+remove linhas com ID duplicado, linhas em branco e o excesso de logs. O resultado sai
+no *Registro de execução*.
+
+Enquanto o passo 1 não for feito, escritas simultâneas de dois integrantes ainda podem
+se atropelar. As demais correções da Fase 1 são do lado do app e já valem.
+
+---
+
+## 8. Comandos
 
 ```bash
 npm test        # Vitest — suíte completa
