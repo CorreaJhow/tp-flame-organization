@@ -12,8 +12,7 @@ import {
   ArrowLeft,
   FileSpreadsheet,
   ExternalLink,
-  RefreshCw,
-  AlertTriangle
+  RefreshCw
 } from 'lucide-react';
 import { storage } from '../services/storage';
 import { ViewTab } from '../types';
@@ -85,11 +84,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const handleSaveConnection = (e: React.FormEvent) => {
     e.preventDefault();
     storage.setGasEndpoint(endpointInput);
-    storage.setGasSpreadsheetId(spreadsheetIdInput);
     setSaveSuccess(true);
-    showToast('Configurações salvas com sucesso!', 'success');
+    showToast('Endpoint salvo. Detectando a planilha...', 'success');
+    // O ID vem do proprio endpoint; trocar de endpoint troca de planilha.
+    storage.refreshBackendIdentity().then((info) => {
+      if (info) {
+        setSpreadsheetIdInput(info.spreadsheetId);
+        showToast(`Conectado a "${info.spreadsheetName || info.spreadsheetId}"`, 'success');
+      } else {
+        showToast('Nao foi possivel falar com esse endpoint. Confira a URL /exec.', 'warning');
+      }
+      onDataChanged();
+    });
     setTimeout(() => setSaveSuccess(false), 3000);
-    onDataChanged();
   };
 
   // If not logged in, render Admin Login Card
@@ -287,34 +294,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs text-slate-400 block">
-                ID da Planilha Google (Spreadsheet ID)
+                Planilha conectada
               </label>
-              <span className="text-[10px] text-slate-500">Cole a URL da planilha ou o ID</span>
+              <span className="text-[10px] text-slate-500">Detectada pelo endpoint</span>
             </div>
-            <input
-              type={showSensitiveConfig ? 'text' : 'password'}
-              value={spreadsheetIdInput}
-              onChange={(e) => {
-                let val = e.target.value.trim();
-                const match = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-                if (match && match[1]) {
-                  val = match[1];
-                }
-                setSpreadsheetIdInput(val);
-              }}
-              placeholder="Ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-              className={`w-full bg-[#080808] border rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none font-mono ${
-                spreadsheetIdInput.trim().startsWith('AKfy') ? 'border-amber-500/80 focus:border-amber-400' : 'border-slate-800 focus:border-[#FF4D00]'
-              }`}
-            />
-            {spreadsheetIdInput.trim().startsWith('AKfy') && (
-              <div className="mt-1.5 p-2 bg-amber-950/50 border border-amber-500/30 rounded-lg text-[11px] text-amber-300 flex items-start gap-1.5 leading-relaxed">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                <span>
-                  <strong>Aviso:</strong> Você colou o ID da implantação do Script aqui. O <strong>ID da Planilha</strong> fica na barra do seu navegador ao abrir a planilha: <code className="text-white font-mono">docs.google.com/spreadsheets/d/<strong>[ID_AQUI]</strong>/edit</code>
-                </span>
-              </div>
-            )}
+            <div className="w-full bg-[#0a0a0a] border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-300 break-all">
+              {spreadsheetIdInput
+                ? (showSensitiveConfig ? spreadsheetIdInput : '•'.repeat(24))
+                : 'aguardando primeira sincronização…'}
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-500 leading-relaxed">
+              O app pergunta ao endpoint qual planilha ele serve, então não há
+              o que configurar aqui. Era justamente ter esse campo separado que
+              permitia o app gravar em duas planilhas diferentes.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

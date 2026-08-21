@@ -8,26 +8,44 @@ describe('2. Local Storage & Sync Engine Tests', () => {
     vi.restoreAllMocks();
   });
 
-  it('2.1 Should return default GAS endpoint URL correctly when no local custom value is stored', () => {
-    const endpoint = storage.getGasEndpoint();
-    expect(endpoint).toContain('script.google.com/macros/s/AKfycbyGB5nV1P6fATpYwgn5_Cz3oNW3bTYpOdbYBpj4EFapqsCzYY9DuJVvtDYtCTZnZsSX/exec');
+  it('2.1 Sem configuracao, o app nao inventa backend e opera 100% local', () => {
+    // Endpoint vazio e estado valido: melhor nao sincronizar do que
+    // sincronizar com a planilha errada.
+    expect(storage.getGasEndpoint()).toBe('');
+    expect(storage.getActiveSyncMode()).toBe('offline_local');
   });
 
-  it('2.1b Endpoint e Spreadsheet ID padrao devem apontar para a MESMA planilha', () => {
-    // Enquanto divergirem, o app grava em bancos diferentes conforme o
-    // usuario esteja logado no Google ou nao.
-    localStorage.clear();
-    expect(storage.getGasSpreadsheetId()).toBe('1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI');
-    expect(storage.getGasEndpoint()).toContain('AKfycbyGB5nV1P6f');
+  it('2.1b O Spreadsheet ID vem do endpoint, nunca de uma constante', async () => {
+    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
+    expect(storage.getGasSpreadsheetId()).toBe('');
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        status: 'success',
+        spreadsheetId: '1PLANILHA_DO_ENDPOINT',
+        spreadsheetName: 'TP Flame - Banco de Dados',
+        schemaVersion: 2
+      })
+    }) as any;
+
+    const info = await storage.refreshBackendIdentity();
+
+    expect(info?.spreadsheetId).toBe('1PLANILHA_DO_ENDPOINT');
+    // Os dois caminhos de escrita passam a mirar a mesma planilha.
+    expect(storage.getGasSpreadsheetId()).toBe('1PLANILHA_DO_ENDPOINT');
+    expect(storage.getSpreadsheetName()).toBe('TP Flame - Banco de Dados');
   });
 
-  it('2.1c Configuracao antiga em cache deve ser migrada para o backend atual', () => {
+  it('2.1c Configuracao antiga em cache e descartada na migracao', () => {
     localStorage.clear();
     localStorage.setItem('tp_flame_gas_endpoint_v1', 'https://script.google.com/macros/s/ENDPOINT_ANTIGO/exec');
     localStorage.setItem('tp_flame_gas_spreadsheet_id_v1', '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU');
 
-    expect(storage.getGasEndpoint()).toContain('AKfycbyGB5nV1P6f');
-    expect(storage.getGasSpreadsheetId()).toBe('1aqikM5RjvLZYJ2Hn22SK_wg-Dx8DL9Q19ApH1TJtHwI');
+    // Sem o descarte, o aparelho ficaria preso na planilha antiga para sempre,
+    // porque o localStorage sempre vence o default.
+    expect(storage.getGasEndpoint()).not.toContain('ENDPOINT_ANTIGO');
+    expect(storage.getGasSpreadsheetId()).toBe('');
   });
 
   it('2.2 Should allow updating and retrieving custom GAS Endpoint URL', () => {
@@ -68,6 +86,8 @@ describe('2. Local Storage & Sync Engine Tests', () => {
   });
 
   it('2.5 Should add a new member (Integrante) and preserve locally across sync pulls', async () => {
+    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
+
     // 1. Add new member
     const newMember = storage.addIntegrante({
       Nome: 'Gabriel Pastor',
@@ -127,6 +147,7 @@ describe('2. Local Storage & Sync Engine Tests', () => {
   });
 
   it('2.7 Should clear all data when clearAllData is executed', () => {
+    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
     storage.clearAllData();
 
     const songs = storage.getMusicas();
@@ -145,6 +166,7 @@ describe('3. Invariantes do motor de sincronização', () => {
   beforeEach(() => {
     localStorage.clear();
     storage.resetToDefaults();
+    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
     storage.clearSyncQueue();
     vi.restoreAllMocks();
   });

@@ -12,16 +12,37 @@ import {
   ConfigItem 
 } from '../types';
 
+/**
+ * Versão do esquema da planilha. Precisa bater com SCHEMA_VERSION no
+ * `gasScript.ts`; o app avisa no console quando a planilha está atrasada.
+ */
+export const SCHEMA_VERSION = 2;
+
+/**
+ * Colunas de auditoria, presentes em quase toda tabela:
+ *
+ *   Atualizado_Em  — ISO da última alteração. Gravado desde já; é o que vai
+ *                    permitir resolver conflito por timestamp na Fase 2.
+ *   Atualizado_Por — quem alterou, para a equipe saber a quem perguntar.
+ *   Excluido_Em    — reservado para a lixeira (exclusão reversível, Fase 3).
+ *
+ * Logs não recebe auditoria: log é imutável. Config é chave-valor e não tem ID.
+ *
+ * O PIN dos integrantes NÃO está aqui de propósito: a planilha é servida por
+ * um Web App público, e guardar PIN nela publicaria a senha de todo mundo.
+ */
+const AUDIT = ['Atualizado_Em', 'Atualizado_Por', 'Excluido_Em'];
+
 export const SHEET_SCHEMAS: Record<string, string[]> = {
   Config: ['Chave', 'Valor', 'Descricao'],
-  Musicas: ['ID', 'Nome', 'Artista', 'Categoria'],
-  Versoes: ['ID', 'ID_Musica', 'Nome_Versao', 'Tom', 'BPM', 'Compasso', 'Letra', 'Estrutura', 'Obs'],
-  Arquivos: ['ID', 'ID_Versao', 'Tipo', 'URL', 'Nome'],
-  Notas: ['ID', 'ID_Versao', 'Instrumento', 'Observacao'],
-  Cultos: ['ID', 'Data', 'Nome_Evento', 'Status', 'Observacoes'],
-  Repertorio: ['ID', 'ID_Culto', 'ID_Versao', 'Ordem', 'Dirigente', 'Observacao_Culto'],
-  Integrantes: ['ID', 'Nome', 'Funcao', 'Email', 'Telefone', 'Ativo'],
-  Historico: ['ID', 'ID_Versao', 'ID_Culto', 'Data_Execucao'],
+  Musicas: ['ID', 'Nome', 'Artista', 'Categoria', ...AUDIT],
+  Versoes: ['ID', 'ID_Musica', 'Nome_Versao', 'Tom', 'BPM', 'Compasso', 'Letra', 'Estrutura', 'Obs', ...AUDIT],
+  Arquivos: ['ID', 'ID_Versao', 'Tipo', 'URL', 'Nome', ...AUDIT],
+  Notas: ['ID', 'ID_Versao', 'Instrumento', 'Observacao', 'Autor', 'Titulo', 'TipoNota', ...AUDIT],
+  Cultos: ['ID', 'Data', 'Nome_Evento', 'Status', 'Observacoes', ...AUDIT],
+  Repertorio: ['ID', 'ID_Culto', 'ID_Versao', 'Ordem', 'Dirigente', 'Observacao_Culto', ...AUDIT],
+  Integrantes: ['ID', 'Nome', 'Funcao', 'Email', 'Telefone', 'Ativo', ...AUDIT],
+  Historico: ['ID', 'ID_Versao', 'ID_Culto', 'Data_Execucao', ...AUDIT],
   Logs: ['ID', 'Data', 'Usuario', 'Acao', 'Registro_Afetado']
 };
 
