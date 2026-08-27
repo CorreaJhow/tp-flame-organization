@@ -51,6 +51,20 @@ export function transposeChord(chord: string, semitones: number): string {
   return newRoot + extension;
 }
 
+/**
+ * Formata o tom para exibição, incluindo o "m" de menor quando aplicável.
+ *
+ * `Modo` é guardado separado da nota (nunca "Bm" como texto livre) porque a
+ * transposição e o futuro campo harmônico operam sobre a tônica — a
+ * qualidade (maior/menor) muda quais acordes são diatônicos naquele tom, não
+ * qual é a nota. Este helper é o único lugar que junta os dois de volta para
+ * mostrar na tela, para não haver dois jeitos diferentes de fazer isso.
+ */
+export function formatKeyDisplay(tom: string, modo: 'Maior' | 'Menor' | undefined, semitones: number = 0): string {
+  const root = getNextKey(tom, semitones);
+  return modo === 'Menor' ? `${root}m` : root;
+}
+
 export function transposeTextChords(text: string, semitones: number): string {
   if (!text || semitones === 0) return typeof text === 'string' ? text : String(text || '');
   const safeText = typeof text === 'string' ? text : String(text);

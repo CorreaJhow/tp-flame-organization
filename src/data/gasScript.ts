@@ -21,7 +21,7 @@ export const GAS_UNIFIED_PRODUCTION_CODE = `/**
 
 // Versão do esquema. Precisa bater com SCHEMA_VERSION em googleSheetsApi.ts;
 // o app avisa quando a planilha está atrás do código.
-var SCHEMA_VERSION = 2;
+var SCHEMA_VERSION = 3;
 
 /**
  * Esquema das 10 tabelas.
@@ -40,7 +40,7 @@ var SCHEMA_VERSION = 2;
 var DATABASE_SCHEMA = {
   "Config": ["Chave", "Valor", "Descricao"],
   "Musicas": ["ID", "Nome", "Artista", "Categoria", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
-  "Versoes": ["ID", "ID_Musica", "Nome_Versao", "Tom", "BPM", "Compasso", "Letra", "Estrutura", "Obs", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
+  "Versoes": ["ID", "ID_Musica", "Nome_Versao", "Tom", "BPM", "Compasso", "Letra", "Estrutura", "Obs", "Atualizado_Em", "Atualizado_Por", "Excluido_Em", "Modo"],
   "Arquivos": ["ID", "ID_Versao", "Tipo", "URL", "Nome", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
   "Notas": ["ID", "ID_Versao", "Instrumento", "Observacao", "Autor", "Titulo", "TipoNota", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
   "Cultos": ["ID", "Data", "Nome_Evento", "Status", "Observacoes", "Atualizado_Em", "Atualizado_Por", "Excluido_Em"],
@@ -351,7 +351,7 @@ function doPost(e) {
               });
             });
             if (rowsToAdd.length > 0) {
-              sh.getRange(2, 1, rowsToAdd.length, headers.length).setValues(rowsToAdd);
+              writeRowsAsText(sh, 2, headers.length, rowsToAdd);
             }
           }
         }
@@ -376,6 +376,26 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Grava uma ou mais linhas SEMPRE como texto puro.
+ *
+ * Sem isso, o Google Sheets aplica a mesma detecção automática de tipo que
+ * usa quando alguém digita direto na planilha: "4/4" (Compasso) virava uma
+ * data (4 de abril), e um Nome como "123" virava número. setValues() sozinho
+ * nunca protege contra isso — é preciso forçar o formato da célula para
+ * texto ("@") ANTES de escrever, porque reformatar depois só muda a exibição,
+ * o valor já corrompido continua salvo por baixo.
+ *
+ * Mesmo motivo do valueInputOption: RAW usado no caminho OAuth direto
+ * (googleSheetsApi.ts) — os dois caminhos de escrita precisam da mesma
+ * proteção, e por muito tempo só um deles tinha.
+ */
+function writeRowsAsText(sheet, startRow, numCols, rows) {
+  var range = sheet.getRange(startRow, 1, rows.length, numCols);
+  range.setNumberFormat('@');
+  range.setValues(rows);
 }
 
 /**
@@ -449,9 +469,9 @@ function processOperation(ss, table, action, payload) {
       if (isPayloadStale(values[existingRow - 1])) {
         return { status: 'conflict', id: payload.ID, message: 'Já existe uma versão mais recente deste registro na planilha' };
       }
-      sheet.getRange(existingRow, 1, 1, headers.length).setValues([row]);
+      writeRowsAsText(sheet, existingRow, headers.length, [row]);
     } else {
-      sheet.appendRow(row);
+      writeRowsAsText(sheet, sheet.getLastRow() + 1, headers.length, [row]);
     }
     return { status: 'success', id: payload.ID };
   }
@@ -469,13 +489,13 @@ function processOperation(ss, table, action, payload) {
             rowData[colIdx] = payload[h];
           }
         });
-        sheet.getRange(j + 1, 1, 1, headers.length).setValues([rowData]);
+        writeRowsAsText(sheet, j + 1, headers.length, [rowData]);
         return { status: 'success', id: targetId };
       }
     }
     // Caso não exista, realiza append
     var newRow = headers.map(function(h) { return payload[h] !== undefined ? payload[h] : ''; });
-    sheet.appendRow(newRow);
+    writeRowsAsText(sheet, sheet.getLastRow() + 1, headers.length, [newRow]);
     return { status: 'success', id: targetId };
   }
 

@@ -27,6 +27,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
   const [categoria, setCategoria] = useState('Adoração');
   const [nomeVersao, setNomeVersao] = useState('Versão Principal');
   const [tom, setTom] = useState('E');
+  const [modo, setModo] = useState<'Maior' | 'Menor'>('Maior');
   const [bpm, setBpm] = useState<string>('120');
   const [compasso, setCompasso] = useState<string>('4/4');
   const [estrutura, setEstrutura] = useState('INTRO - V1 - REFRÃO - V2 - REFRÃO - PONTE - OUTRO');
@@ -40,6 +41,9 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
       setCategoria(musicaToEdit.Categoria);
       setNomeVersao(versaoToEdit.Nome_Versao);
       setTom(versaoToEdit.Tom);
+      // Ausente = versão gravada antes do esquema v3 (ou fora do app) — trata
+      // como Maior, o mesmo comportamento que sempre existiu implicitamente.
+      setModo(versaoToEdit.Modo === 'Menor' ? 'Menor' : 'Maior');
       setBpm(versaoToEdit.BPM ? versaoToEdit.BPM.toString() : '');
       setCompasso(versaoToEdit.Compasso || '4/4');
       setEstrutura(versaoToEdit.Estrutura || '');
@@ -65,6 +69,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
       storage.updateVersao(versaoToEdit.ID, {
         Nome_Versao: nomeVersao.trim() || 'Versão Principal',
         Tom: tom,
+        Modo: modo,
         BPM: numericBpm,
         Compasso: compasso,
         Letra: letra,
@@ -83,6 +88,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
         {
           Nome_Versao: nomeVersao.trim() || 'Versão Principal',
           Tom: tom,
+          Modo: modo,
           BPM: numericBpm,
           Compasso: compasso,
           Letra: letra.trim() || '[INTRO]\n[E] [B] [C#m] [A]',
@@ -245,17 +251,43 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               <label className="text-xs font-bold text-slate-300 block mb-1">
                 Tom Original *
               </label>
-              <select
-                value={tom}
-                onChange={(e) => setTom(e.target.value)}
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-bold focus:outline-none focus:border-[#FF4D00]"
-              >
-                {ALL_KEYS.map((k) => (
-                  <option key={k} value={k}>
-                    Tom {k}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-1.5">
+                <select
+                  value={tom}
+                  onChange={(e) => setTom(e.target.value)}
+                  className="flex-1 min-w-0 bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-bold focus:outline-none focus:border-[#FF4D00]"
+                >
+                  {ALL_KEYS.map((k) => (
+                    <option key={k} value={k}>
+                      Tom {k}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Maior/Menor: guardado separado do Tom, nunca como "Bm" em
+                    texto livre — é o que permite a transposição e o futuro
+                    campo harmônico saberem a qualidade do tom, não só a nota. */}
+                <div className="flex bg-[#080808] border border-slate-800 rounded-xl p-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setModo('Maior')}
+                    className={`px-2.5 rounded-lg text-xs font-bold transition-all ${
+                      modo === 'Maior' ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Maior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModo('Menor')}
+                    className={`px-2.5 rounded-lg text-xs font-bold transition-all ${
+                      modo === 'Menor' ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Menor
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

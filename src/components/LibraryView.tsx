@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Music2, Filter, Layers, FileText, ChevronRight } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
+import { formatKeyDisplay } from '../utils/chordTransposer';
 
 interface LibraryViewProps {
   musicas: Musica[];
@@ -203,7 +204,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     </span>
                     {mainVersao && (
                       <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20">
-                        Tom {mainVersao.Tom}
+                        Tom {formatKeyDisplay(mainVersao.Tom, mainVersao.Modo)}
                       </span>
                     )}
                   </div>

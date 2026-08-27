@@ -420,6 +420,82 @@ carregou".
 
 ---
 
+## 9d. Google Sheets reinterpretando texto como data (27/08/2026)
+
+Reportado pelo usuario: metronomo do Modo Palco desenhando "milhares de
+bolinhas" numa musica cadastrada via Donna. Causa raiz encontrada nos dados
+de producao: `Compasso: "4/4"` foi gravado como `"2026-04-04T03:00:00.000Z"`
+-- uma data ISO completa. `beatsPerMeasure` fazia `parseInt(compasso.split('/')[0])`;
+numa string ISO (sem "/"), isso pega os 4 primeiros digitos: **2026** bolinhas.
+
+O motivo: `sheet.getRange().setValues()` no Apps Script aplica a MESMA
+deteccao automatica de tipo que o Google Sheets usa quando alguem digita
+direto na planilha. "4/4", "3/4", "6/8", "2/4", "12/8" -- todas as cinco
+opcoes do seletor de Compasso no formulario -- parecem datas em formato
+M/D para o Sheets. O `valueInputOption: RAW` da Fase 1 protegia so o
+caminho OAuth direto; o caminho Apps Script, que e o unico em uso hoje,
+nunca teve equivalente.
+
+Corrigido com `writeRowsAsText()` em gasScript.ts: toda escrita de linha
+(insert, update, append, replaceAll) primeiro forca `setNumberFormat('@')`
+no range e SO DEPOIS grava os valores -- formatar depois de escrever nao
+adianta, o valor ja foi interpretado e salvo errado por baixo.
+
+Defesa adicional no app: `beatsPerMeasure` em StageModeModal.tsx agora
+tem um teto (`MAX_BEATS = 16`) -- nenhum compasso real passa disso, entao
+qualquer valor fora da faixa cai no default de 4, independente da causa.
+Nunca confiar cegamente num campo de texto vindo de fora para decidir
+quantos elementos desenhar na tela.
+
+**Pendente de acao manual:** republicar a implantacao do Apps Script com
+o script atualizado (mesmo procedimento de sempre -- copiar, colar,
+Implantar > Nova Versao). O dado ja corrompido da musica de teste precisa
+ser reeditado e salvo de novo DEPOIS da republicacao, senao a proxima
+gravacao corrompe de novo.
+
+## 9e. Tom com qualidade (Maior/Menor) -- esquema v3 (27/08/2026)
+
+O campo `Tom` era so a nota (`ALL_KEYS`, sem variantes menores), entao
+`"Bm"` so podia ser anotado em `Obs` como texto livre -- invisivel para a
+transposicao e para um futuro campo harmonico (que precisa saber se o tom
+e maior ou menor para saber quais acordes sao diatonicos).
+
+Novo campo `Versao.Modo?: 'Maior' | 'Menor'`, guardado SEPARADO do Tom (nunca
+"Bm" como string) porque a transposicao opera sobre a tonica independente
+da qualidade. `formatKeyDisplay(tom, modo, semitones)` em chordTransposer.ts
+e o unico lugar que junta os dois de volta pra exibir -- usado em todo
+componente que mostra o tom (StageModeModal, SongDetailModal, CultosView,
+DashboardView, HistoricoLogsView, LibraryView). Ausente/vazio = trata como
+Maior, o comportamento implicito que sempre existiu.
+
+**Posicionamento da coluna importa.** `Modo` foi colocado no FINAL do
+esquema (depois de `Excluido_Em`), nunca no meio -- `setupDatabase()` so
+reescreve a LINHA de cabecalho quando roda de novo numa planilha existente,
+nunca desloca as celulas de dados ja gravadas para acompanhar uma coluna
+inserida no meio. Inserir no meio teria desalinhado toda versao ja
+cadastrada na proxima vez que o bootstrap() rodasse.
+
+SCHEMA_VERSION subiu para 3 nos dois arquivos (`googleSheetsApi.ts` e
+`gasScript.ts`). **Pendente de acao manual:** rodar `bootstrap()` de novo
+na planilha (adiciona a coluna Modo) e republicar a implantacao.
+
+Testes `1.7` e `1.8` em chordTransposer.test.ts cobrem formatKeyDisplay.
+
+## 9f. Observacoes de arranjo visiveis por padrao (27/08/2026)
+
+As notas por instrumento (`Nota.Instrumento`) sempre foram visiveis para
+qualquer pessoa -- nunca houve filtro por autor, um baixista sempre pode
+ver o que o tecladista anotou, tanto em SongDetailModal (aba "Notas
+Instrumentos") quanto no Modo Palco. O problema era descoberta: ficava
+atras de um botao (`showNotes`) que comecava desligado, entao quem nao
+soubesse da funcionalidade nunca clicava.
+
+StageModeModal agora liga `showNotes` sozinho ao trocar de musica, sempre
+que aquela versao tem pelo menos uma nota cadastrada. Continua possivel
+esconder de volta a qualquer momento -- so o estado inicial mudou.
+
+---
+
 ## 10. Comandos
 
 ```bash

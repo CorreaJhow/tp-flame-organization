@@ -22,7 +22,7 @@ import {
   Check
 } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
-import { getNextKey } from '../utils/chordTransposer';
+import { formatKeyDisplay } from '../utils/chordTransposer';
 import { storage } from '../services/storage';
 import { ChordViewer } from './ChordViewer';
 import { SongFormModal } from './SongFormModal';
@@ -89,7 +89,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   }, []);
 
   const currentKeyDisplay = currentVersao
-    ? getNextKey(currentVersao.Tom, semitones)
+    ? formatKeyDisplay(currentVersao.Tom, currentVersao.Modo, semitones)
     : 'C';
 
   const currentNotas = currentVersao
@@ -236,7 +236,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       : 'bg-[#080808] text-slate-400 border-slate-800 hover:text-white'
                   }`}
                 >
-                  {v.Nome_Versao} (Tom {v.Tom})
+                  {v.Nome_Versao} (Tom {formatKeyDisplay(v.Tom, v.Modo)})
                 </button>
               ))}
             </div>
@@ -257,7 +257,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       </span>
                       {semitones !== 0 && (
                         <span className="text-[10px] text-slate-400 font-medium">
-                          (Original: {currentVersao.Tom})
+                          (Original: {formatKeyDisplay(currentVersao.Tom, currentVersao.Modo)})
                         </span>
                       )}
                     </div>

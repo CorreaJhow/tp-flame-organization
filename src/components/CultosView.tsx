@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatKeyDisplay } from '../utils/chordTransposer';
 import { 
   Calendar, 
   Plus, 
@@ -538,7 +539,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                           </h4>
                           {versao && (
                             <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-[#080808] text-[#FF4D00] border border-slate-800">
-                              Tom {versao.Tom}
+                              Tom {formatKeyDisplay(versao.Tom, versao.Modo)}
                             </span>
                           )}
                           {versao?.BPM && (
@@ -868,7 +869,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                     const flag = lastPlayed.isRecent ? ' ⚠️ (Tocada Recentemente)' : '';
                     return (
                       <option key={v.ID} value={v.ID}>
-                        {m?.Nome} ({m?.Artista}) - {v.Nome_Versao} [Tom {v.Tom}]{flag}
+                        {m?.Nome} ({m?.Artista}) - {v.Nome_Versao} [Tom {formatKeyDisplay(v.Tom, v.Modo)}]{flag}
                       </option>
                     );
                   })}

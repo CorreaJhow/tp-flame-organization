@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { History, ArrowLeft } from 'lucide-react';
+import { formatKeyDisplay } from '../utils/chordTransposer';
 import { HistoricoItem, LogItem, Versao, Musica, Culto, ViewTab } from '../types';
 
 interface HistoricoLogsViewProps {
@@ -95,7 +96,7 @@ export const HistoricoLogsView: React.FC<HistoricoLogsViewProps> = ({
                       {musica?.Nome || 'Música'} ({musica?.Artista})
                     </span>
                     <span className="text-[11px] text-slate-400">
-                      {culto?.Nome_Evento || 'Culto'} • Versão {versao?.Nome_Versao} (Tom {versao?.Tom})
+                      {culto?.Nome_Evento || 'Culto'} • Versão {versao?.Nome_Versao} (Tom {versao ? formatKeyDisplay(versao.Tom, versao.Modo) : ''})
                     </span>
                   </div>
 
