@@ -408,6 +408,18 @@ continuam sempre visiveis, pelo mesmo motivo ja documentado na secao 8d.
 
 ---
 
+## 9c. Tela de espera na primeira sincronizacao (21/08/2026)
+
+A faixa inline da secao 8d virou uma tela de espera de verdade:
+`InitialSyncOverlay.tsx`, um overlay de tela cheia com fundo borrado
+(`backdrop-blur-md`) sobre o conteudo ja renderizado (o dado local do
+aparelho), enquanto `isInitialSync && isSyncing` forem verdadeiros -- mesma
+condicao de antes, só trocou o que e desenhado. Pedido explicito do usuario:
+"quero que faca um upload, quando abrir a pagina... borrado a pagina que ja
+carregou".
+
+---
+
 ## 10. Comandos
 
 ```bash

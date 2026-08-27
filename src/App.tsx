@@ -14,6 +14,7 @@ import { AdminView } from './components/AdminView';
 import { MaisView } from './components/MaisView';
 import { FeedbackModal } from './components/FeedbackModal';
 import { PwaInstallModal } from './components/PwaInstallModal';
+import { InitialSyncOverlay } from './components/InitialSyncOverlay';
 import { ToastProvider, useToast } from './context/ToastContext';
 
 import { storage } from './services/storage';
@@ -235,6 +236,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#080808] text-slate-100 font-sans selection:bg-[#FF4D00] selection:text-slate-950">
+      {/* Tela de espera da primeira sincronização: cobre a página inteira
+          (já renderizada com o dado local, por trás, borrado) até os dados
+          da planilha chegarem. */}
+      <InitialSyncOverlay isOpen={isInitialSync && isSyncing} />
+
       {/* Top Header */}
       <Header
         onOpenGasModal={() => setShowGasModal(true)}
@@ -245,16 +251,6 @@ function AppContent() {
 
       {/* Main Container */}
       <main className="max-w-2xl mx-auto px-4 pt-4">
-        {/* Aviso de primeira sincronização: o que aparece abaixo pode ser o
-            dado salvo neste aparelho, ainda não conferido com a planilha da
-            equipe. Some assim que a sincronização inicial terminar. */}
-        {isInitialSync && isSyncing && (
-          <div className="mb-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-[#141414] border border-slate-800 text-slate-300 text-xs font-semibold animate-in fade-in duration-200">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-600 border-t-[#FF4D00] animate-spin shrink-0" />
-            <span>Sincronizando com a planilha da equipe — o que você vê agora pode mudar em instantes.</span>
-          </div>
-        )}
-
         {currentTab === 'inicio' && (
           <DashboardView
             upcomingCulto={upcomingCulto}
