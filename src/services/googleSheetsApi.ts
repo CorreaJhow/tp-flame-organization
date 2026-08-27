@@ -16,7 +16,7 @@ import {
  * Versão do esquema da planilha. Precisa bater com SCHEMA_VERSION no
  * `gasScript.ts`; o app avisa no console quando a planilha está atrasada.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Colunas de auditoria, presentes em quase toda tabela:
@@ -36,7 +36,12 @@ const AUDIT = ['Atualizado_Em', 'Atualizado_Por', 'Excluido_Em'];
 export const SHEET_SCHEMAS: Record<string, string[]> = {
   Config: ['Chave', 'Valor', 'Descricao'],
   Musicas: ['ID', 'Nome', 'Artista', 'Categoria', ...AUDIT],
-  Versoes: ['ID', 'ID_Musica', 'Nome_Versao', 'Tom', 'BPM', 'Compasso', 'Letra', 'Estrutura', 'Obs', ...AUDIT],
+  // Modo fica no FINAL, depois das colunas de auditoria — nunca no meio.
+  // Uma coluna nova inserida entre campos existentes desalinha toda linha já
+  // gravada na próxima vez que a planilha for reconfigurada (bootstrap()):
+  // setupDatabase() só reescreve a LINHA de cabeçalho, nunca desloca as
+  // células de dados já existentes para acompanhar. Só o final é seguro.
+  Versoes: ['ID', 'ID_Musica', 'Nome_Versao', 'Tom', 'BPM', 'Compasso', 'Letra', 'Estrutura', 'Obs', ...AUDIT, 'Modo'],
   Arquivos: ['ID', 'ID_Versao', 'Tipo', 'URL', 'Nome', ...AUDIT],
   Notas: ['ID', 'ID_Versao', 'Instrumento', 'Observacao', 'Autor', 'Titulo', 'TipoNota', ...AUDIT],
   Cultos: ['ID', 'Data', 'Nome_Evento', 'Status', 'Observacoes', ...AUDIT],

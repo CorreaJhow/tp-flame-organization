@@ -23,10 +23,12 @@ import {
   Mic,
   Eye,
   Layers,
-  Sparkles
+  Sparkles,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
-import { getNextKey } from '../utils/chordTransposer';
+import { formatKeyDisplay } from '../utils/chordTransposer';
 import { ChordViewer } from './ChordViewer';
 import { storage } from '../services/storage';
 import { getVocalConfig } from '../utils/vocalColors';
@@ -74,6 +76,25 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const [currentBeat, setCurrentBeat] = useState<number>(1);
   const [isVisualFlash, setIsVisualFlash] = useState(false);
 
+  // Painel do metrônomo pode ser minimizado por quem não usa (ex: vocalistas
+  // sem instrumento). Preferência lembrada entre sessões, por aparelho.
+  const METRONOME_PANEL_KEY = 'tp_flame_stage_metronome_expanded_v1';
+  const [isMetronomePanelExpanded, setIsMetronomePanelExpanded] = useState<boolean>(() => {
+    const saved = localStorage.getItem(METRONOME_PANEL_KEY);
+    return saved === null ? true : saved === 'true';
+  });
+
+  const toggleMetronomePanel = () => {
+    setIsMetronomePanelExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem(METRONOME_PANEL_KEY, String(next));
+      // Minimizar desliga o metrônomo também — um clique/beep tocando fora
+      // de vista, sem o painel pra desligar, seria pior que não ter a opção.
+      if (!next) setIsMetronomeActive(false);
+      return next;
+    });
+  };
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -108,7 +129,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     return currentVersao.Letra;
   }, [currentVersao, selectedLayerId, currentNotas]);
 
-  const currentKeyDisplay = currentVersao ? getNextKey(currentVersao.Tom, semitones) : 'C';
+  const currentKeyDisplay = currentVersao ? formatKeyDisplay(currentVersao.Tom, currentVersao.Modo, semitones) : 'C';
 
   // Sync BPM when current version changes
   useEffect(() => {
@@ -120,11 +141,32 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     setCurrentBeat(1);
   }, [currentVersao?.ID]);
 
+  // Mostra as observações de arranjo sozinho quando a música tem alguma.
+  //
+  // A informação já era visível pra qualquer instrumento — não havia filtro
+  // por autor —, mas ficava atrás de um botão que só quem soubesse da
+  // funcionalidade clicaria. Um baixista abrindo o Modo Palco não tinha como
+  // adivinhar que o tecladista deixou uma nota ali. Continua possível
+  // esconder de volta a qualquer momento; isso só decide o estado inicial ao
+  // trocar de música.
+  useEffect(() => {
+    setShowNotes(currentNotas.length > 0);
+  }, [currentVersao?.ID]);
+
   // Determine beats per measure (e.g. 3/4 -> 3 beats, 6/8 -> 6 beats, default 4)
+  //
+  // MAX_BEATS existe porque o campo Compasso já veio corrompido da planilha
+  // (o Google Sheets reinterpretou "4/4" como uma data, e o número extraído
+  // virou o ano — 2026 bolinhas na tela). A causa foi corrigida na escrita
+  // (gasScript.ts força texto puro agora), mas o app nunca deveria desenhar
+  // uma quantidade de elementos vinda direto de um campo de texto sem
+  // validar contra um limite plausível — nenhum compasso real de música
+  // passa de 16 tempos.
   const beatsPerMeasure = React.useMemo(() => {
     if (!currentVersao?.Compasso) return 4;
     const num = parseInt(String(currentVersao.Compasso).split('/')[0], 10);
-    return isNaN(num) || num <= 0 ? 4 : num;
+    const MAX_BEATS = 16;
+    return isNaN(num) || num <= 0 || num > MAX_BEATS ? 4 : num;
   }, [currentVersao?.Compasso]);
 
   // Web Audio click generator
@@ -455,9 +497,30 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
           </div>
         </div>
 
-        {/* Visual Metronome Display Panel */}
+        {/* Visual Metronome Display Panel — colapsável para quem não usa */}
+        {!isMetronomePanelExpanded ? (
+          <button
+            onClick={toggleMetronomePanel}
+            className="w-full bg-[#121212] border border-slate-800/80 rounded-2xl px-3 py-1.5 flex items-center justify-between gap-2 text-slate-500 hover:text-slate-300 transition-colors shadow-sm"
+            title="Mostrar painel do metrônomo"
+          >
+            <span className="text-[11px] font-bold flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5" />
+              Metrônomo minimizado
+            </span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+        ) : (
         <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleMetronomePanel}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800/60 transition-colors"
+              title="Minimizar painel do metrônomo"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
+
             <button
               onClick={() => setIsMetronomeActive(!isMetronomeActive)}
               className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all shadow-md ${
@@ -539,6 +602,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             </button>
           </div>
         </div>
+        )}
 
         {/* Vocal Division & Voice Focus Mode Bar */}
         <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3 space-y-2 shadow-sm">

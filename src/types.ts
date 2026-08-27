@@ -26,7 +26,12 @@ export interface Versao extends Auditavel {
   ID: string;
   ID_Musica: string;
   Nome_Versao: string; // ex: "Original (Morada)", "Acústico", "Ao Vivo"
-  Tom: string; // C, Db, D, Eb, E, F, F#, G, Ab, A, Bb, B
+  Tom: string; // C, Db, D, Eb, E, F, F#, G, Ab, A, Bb, B — sempre a nota, sem "m"
+  // Ausente/'' em versões antigas (esquema v2 e anteriores) = tratar como Maior.
+  // Guardado separado do Tom (em vez de "Bm" como texto) porque a transposição
+  // e o futuro campo harmônico (I-ii-iii-IV-V-vi-vii°) operam sobre a tônica;
+  // a qualidade (maior/menor) muda quais acordes são diatônicos, não a nota.
+  Modo?: 'Maior' | 'Menor';
   BPM?: number; // e.g. 128
   Compasso?: string; // e.g. "4/4", "3/4", "6/8"
   Letra: string; // Letra com cifras ou estrutura em tags

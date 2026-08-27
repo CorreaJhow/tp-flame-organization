@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { transposeChord, transposeTextChords, getNextKey, ALL_KEYS } from '../utils/chordTransposer';
+import { transposeChord, transposeTextChords, getNextKey, ALL_KEYS, formatKeyDisplay } from '../utils/chordTransposer';
 
 describe('1. Chord Transposition Engine Tests (Music Core Logic)', () => {
 
@@ -43,5 +43,25 @@ describe('1. Chord Transposition Engine Tests (Music Core Logic)', () => {
     expect(ALL_KEYS).toContain('F#');
     expect(ALL_KEYS).toContain('Bb');
     expect(ALL_KEYS.length).toBe(17);
+  });
+
+  /**
+   * formatKeyDisplay junta a tônica (Tom) com a qualidade (Modo) só na hora
+   * de mostrar na tela. Guardar "Bm" como texto livre no campo Tom (o que o
+   * usuário precisava fazer antes desta função existir) faz a transposição
+   * tratar "Bm" inteiro como uma nota desconhecida.
+   */
+  it('1.7 formatKeyDisplay deve anexar "m" apenas quando Modo for Menor', () => {
+    expect(formatKeyDisplay('B', 'Menor')).toBe('Bm');
+    expect(formatKeyDisplay('B', 'Maior')).toBe('B');
+    // Versões gravadas antes do campo Modo existir (esquema v2 e anteriores)
+    // não têm o campo preenchido -- precisa continuar mostrando como maior,
+    // que era o comportamento implícito até aqui.
+    expect(formatKeyDisplay('B', undefined)).toBe('B');
+  });
+
+  it('1.8 formatKeyDisplay deve transpor a tônica e manter o Modo', () => {
+    expect(formatKeyDisplay('B', 'Menor', 1)).toBe('Cm');
+    expect(formatKeyDisplay('C', 'Menor', -1)).toBe('Bm');
   });
 });
