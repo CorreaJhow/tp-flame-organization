@@ -9,14 +9,20 @@ interface HeaderProps {
   isSyncing?: boolean;
   onOpenMemberProfile?: () => void;
   activeMember?: Integrante | null;
+  /** Alterações feitas neste aparelho que ainda não foram confirmadas pela
+   * planilha. Sem isso visível em algum lugar, "salvou mesmo?" não tem
+   * resposta quando a rede está ruim — o app já tenta sincronizar sozinho
+   * (Fase 2), mas nada na tela dizia se havia algo esperando. */
+  pendingCount?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
+export const Header: React.FC<HeaderProps> = ({
   onNavigateTab,
   onSync,
   isSyncing = false,
   onOpenMemberProfile,
-  activeMember
+  activeMember,
+  pendingCount = 0
 }) => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
@@ -111,16 +117,27 @@ export const Header: React.FC<HeaderProps> = ({
               id="header-sync-refresh-btn"
               onClick={onSync}
               disabled={isSyncing || !isOnline}
-              className={`p-2 rounded-xl transition-all border ${
+              className={`relative p-2 rounded-xl transition-all border ${
                 isSyncing
                   ? 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/40'
                   : !isOnline
                   ? 'bg-[#121212] text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
                   : 'text-slate-400 hover:text-white bg-[#121212] hover:bg-[#181818] border-slate-800'
               }`}
-              title={!isOnline ? "Indisponível sem internet" : "Atualizar repertório com a planilha"}
+              title={
+                !isOnline
+                  ? 'Indisponível sem internet'
+                  : pendingCount > 0
+                  ? `Atualizar repertório com a planilha — ${pendingCount} alteração(ões) aguardando envio`
+                  : 'Atualizar repertório com a planilha'
+              }
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF4D00] text-slate-950 text-[10px] font-black flex items-center justify-center border-2 border-[#0c0c0c] shadow-sm">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
             </button>
           )}
 

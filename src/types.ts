@@ -80,7 +80,6 @@ export interface Integrante extends Auditavel {
   Funcao: string; // Vocal, Guitarra, Violão, Teclado, Baixo, Bateria, Mídia, Som
   Email: string;
   Telefone?: string;
-  PIN?: string; // Simple 4-digit PIN for quick login
   Ativo?: boolean;
 }
 

@@ -126,9 +126,11 @@ Feito isso, o teste de verdade é salvar uma música no app e conferir se aparec
 
 ## O que **não** vai para a planilha
 
-O **PIN dos integrantes** fica só no dispositivo, de propósito. A planilha é
-servida por um Web App público: qualquer pessoa com a URL lê o conteúdo. Guardar
-PIN ali seria publicar a senha de todo mundo.
+Nada guarda senha ou PIN hoje — a tentativa de "perfil protegido por PIN" foi
+removida em 27/08/2026 por nunca ter tido uma tela que o definisse (era código
+morto). Se algo do tipo voltar a existir, continua valendo não colocar nesta
+planilha: ela é servida por um Web App público, e qualquer pessoa com a URL lê
+o conteúdo.
 
 E-mail e telefone dos integrantes **estão** na planilha, e portanto são
 igualmente públicos para quem tiver a URL. Fechar isso é assunto da Fase 3 —

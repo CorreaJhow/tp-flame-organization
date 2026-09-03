@@ -115,7 +115,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
               <Mic className="w-3.5 h-3.5 shrink-0 text-slate-300" />
             )}
 
-            <span className="text-slate-400 text-[11px] font-bold">
+            <span className="text-slate-400 text-[13px] font-bold">
               {isDuet ? 'Dueto / Vozes:' : 'Voz:'}
             </span>
 
@@ -133,7 +133,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
           </div>
 
           {focusVoice && isVoiceMatching(focusVoice, vocalInfo.singers) && (
-            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#FF4D00] text-slate-950 shadow-sm flex items-center gap-1">
+            <span className="text-[12px] font-black uppercase px-2 py-0.5 rounded-full bg-[#FF4D00] text-slate-950 shadow-sm flex items-center gap-1">
               ★ Sua Parte
             </span>
           )}
@@ -256,7 +256,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
         {vocalConfigs.map((cfg, cIdx) => (
           <span
             key={cIdx}
-            className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider border shadow-sm ${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText}`}
+            className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[12px] font-black uppercase tracking-wider border shadow-sm ${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText}`}
           >
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.hexColor }} />
             {cfg.name}

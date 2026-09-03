@@ -28,7 +28,10 @@ export const SCHEMA_VERSION = 3;
  *
  * Logs não recebe auditoria: log é imutável. Config é chave-valor e não tem ID.
  *
- * O PIN dos integrantes NÃO está aqui de propósito: a planilha é servida por
+ * Não existe PIN de integrante nesta tabela. Houve uma tentativa de PIN por
+ * perfil que nunca chegou a ter tela para defini-lo (dead code) e foi
+ * removida em 27/08/2026 — ver docs/ARQUITETURA-DADOS.md. Se voltar a
+ * existir, o motivo de antes continua valendo: esta planilha é servida por
  * um Web App público, e guardar PIN nela publicaria a senha de todo mundo.
  */
 const AUDIT = ['Atualizado_Em', 'Atualizado_Por', 'Excluido_Em'];
