@@ -78,9 +78,14 @@ O esquema está declarado em **três lugares que precisam ficar em sincronia**:
 descartados na sincronizacao, e as anotacoes vocais nao saiam do celular de quem
 as criou.
 
-`Integrante.PIN` continua **de fora, de proposito**: a planilha e servida por um
-Web App publico, e guardar PIN nela publicaria a senha de todo mundo. Ele vive
-apenas no dispositivo.
+`Integrante.PIN` **foi removido em 27/08/2026** (segunda auditoria). Existia no
+tipo e era checado em `MemberProfileModal`, mas nunca teve nenhuma tela para
+definir o valor -- toda a funcionalidade de "perfil protegido por PIN" era
+codigo morto que dava a falsa impressao de proteger algo. Se reconstruir no
+futuro, vale desenhar a identidade entre aparelhos desde o inicio (o PIN
+antigo so protegia o aparelho onde fosse definido, nao a pessoa), e o PIN em
+si continua sem lugar na planilha: ela e servida por um Web App publico, e
+guardar PIN ali publicaria a senha de todo mundo.
 
 ---
 
@@ -417,6 +422,50 @@ aparelho), enquanto `isInitialSync && isSyncing` forem verdadeiros -- mesma
 condicao de antes, só trocou o que e desenhado. Pedido explicito do usuario:
 "quero que faca um upload, quando abrir a pagina... borrado a pagina que ja
 carregou".
+
+---
+
+## 9c-bis. Cinco ganhos rapidos da segunda auditoria (27/08/2026)
+
+Aplicados no mesmo dia da auditoria, sem exigir decisao de arquitetura:
+
+1. **Dependencias mortas removidas**: `express`, `@types/express`, `dotenv`,
+   `@google/genai`, `motion` -- zero uso em qualquer linha de `src/`, resto do
+   scaffold original do AI Studio. Eliminou as 3 vulnerabilidades moderadas
+   do `npm audit` (todas vinham da cadeia `express -> body-parser -> qs`).
+   Tambem corrigido: `vite` estava duplicado em `dependencies` e
+   `devDependencies`.
+
+2. **`vercel.json` criado** com `X-Frame-Options: DENY`,
+   `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+   `Strict-Transport-Security` e `Permissions-Policy`. Nao existia nenhum
+   cabecalho de seguranca HTTP configurado antes.
+
+3. **PIN de integrante removido** (`Integrante.PIN`, `MemberProfileModal`).
+   Era uma funcionalidade fantasma: a tela de login sabia recusar PIN errado,
+   mas nenhum formulario em lugar nenhum permitia definir um PIN -- a
+   protecao nunca disparava de verdade. Decisao do usuario: remover agora,
+   reconstruir do zero (com identidade entre aparelhos, nao so por
+   dispositivo) se o login por integrante virar prioridade.
+
+4. **Badge de pendencias no Header**. `storage.getPendingCount()` ja existia
+   e nao era usado em lugar nenhum da UI. Agora aparece como numero sobre o
+   botao de sincronizar sempre que houver alteracao deste aparelho ainda nao
+   confirmada pela planilha. Atualiza a cada `refreshData()` (mutacao local
+   ou sync completo) -- pode ficar levemente atrasado por ate ~90s em
+   relacao a um flush automatico silencioso em segundo plano, nunca
+   subestima, apenas pode superestimar por uma janela curta.
+
+5. **Texto minimo de 12px no Modo Palco**. 17 ocorrencias de `text-[9|10|11px]`
+   em `StageModeModal.tsx` subiram para 12-13px; as bolinhas do metronomo
+   cresceram de 14px para 20px para caber o numero maior sem cortar. Mais
+   3 ocorrencias equivalentes em `ChordViewer.tsx` (compartilhado com
+   `SongDetailModal`) tambem corrigidas, por serem conteudo real da tela do
+   Modo Palco (rotulos "Voz:", badge "Sua Parte"). Confirmado via medicao
+   no DOM: 12px e o menor tamanho de fonte em toda a tela agora.
+
+Nao mexem em schema nem exigem republicar o Apps Script -- puramente
+frontend e dependencias.
 
 ---
 

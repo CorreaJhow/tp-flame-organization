@@ -46,6 +46,9 @@ function AppContent() {
   const [integrantes, setIntegrantes] = useState<Integrante[]>([]);
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [logs, setLogs] = useState<LogItem[]>([]);
+  // Quantas alterações deste aparelho ainda não foram confirmadas pela
+  // planilha — mostrado como badge no botão de sincronizar do Header.
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Modals & Active Selections
   const [showGasModal, setShowGasModal] = useState(false);
@@ -82,6 +85,7 @@ function AppContent() {
     setIntegrantes(storage.getIntegrantes());
     setHistorico(storage.getHistorico());
     setLogs(storage.getLogs());
+    setPendingCount(storage.getPendingCount());
   }, []);
 
   /**
@@ -247,6 +251,7 @@ function AppContent() {
         onNavigateTab={(tab) => setCurrentTab(tab)}
         onSync={() => handleSync(true)}
         isSyncing={isSyncing}
+        pendingCount={pendingCount}
       />
 
       {/* Main Container */}

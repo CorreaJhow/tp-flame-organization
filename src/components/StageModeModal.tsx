@@ -346,7 +346,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             </button>
 
             <div className="min-w-0">
-              <span className="text-[10px] font-black text-[#FF4D00] uppercase tracking-wider block">
+              <span className="text-[12px] font-black text-[#FF4D00] uppercase tracking-wider block">
                 {currentIndex + 1} DE {setlist.length}
               </span>
               <h2 className="text-xs sm:text-sm font-extrabold text-white leading-tight truncate">
@@ -404,7 +404,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[10px] font-bold text-slate-300 px-1">A</span>
+              <span className="text-[12px] font-bold text-slate-300 px-1">A</span>
               <button
                 onClick={() => setFontSizeStep((s) => Math.min(3, s + 1))}
                 disabled={fontSizeStep >= 3}
@@ -480,17 +480,17 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
           <div className="flex items-center gap-2">
             <div className="bg-[#080808] border border-slate-800 px-2.5 py-1 rounded-xl text-center">
-              <span className="text-[9px] text-slate-500 uppercase font-bold block">Tom</span>
+              <span className="text-[12px] text-slate-500 uppercase font-bold block">Tom</span>
               <span className="text-xs font-black text-[#FF4D00]">{currentKeyDisplay}</span>
             </div>
 
             <div className="bg-[#080808] border border-slate-800 px-2.5 py-1 rounded-xl text-center">
-              <span className="text-[9px] text-slate-500 uppercase font-bold block">Tempo</span>
+              <span className="text-[12px] text-slate-500 uppercase font-bold block">Tempo</span>
               <span className="text-xs font-black text-slate-200">{customBpm} BPM</span>
             </div>
 
             {currentVersao.Estrutura && (
-              <div className="text-[10px] text-slate-300 font-mono bg-[#080808] px-2.5 py-1 rounded-xl border border-slate-800">
+              <div className="text-[12px] text-slate-300 font-mono bg-[#080808] px-2.5 py-1 rounded-xl border border-slate-800">
                 {currentVersao.Estrutura}
               </div>
             )}
@@ -504,7 +504,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             className="w-full bg-[#121212] border border-slate-800/80 rounded-2xl px-3 py-1.5 flex items-center justify-between gap-2 text-slate-500 hover:text-slate-300 transition-colors shadow-sm"
             title="Mostrar painel do metrônomo"
           >
-            <span className="text-[11px] font-bold flex items-center gap-1.5">
+            <span className="text-[13px] font-bold flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5" />
               Metrônomo minimizado
             </span>
@@ -554,7 +554,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                 return (
                   <div
                     key={idx}
-                    className={`w-3.5 h-3.5 rounded-full transition-all duration-75 flex items-center justify-center text-[9px] font-black ${
+                    className={`w-5 h-5 rounded-full transition-all duration-75 flex items-center justify-center text-[12px] font-black leading-none ${
                       isActiveBeat
                         ? beatNumber === 1
                           ? 'bg-[#FF4D00] text-slate-950 scale-125 shadow-lg shadow-[#FF4D00]/50'
@@ -622,7 +622,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               </button>
 
               {focusVoice && (
-                <span className="text-[11px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[13px] font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
                   <Eye className="w-3 h-3" />
                   Foco: {focusVoice}
                 </span>
@@ -632,13 +632,13 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             {/* Custom Musician Chord Layer Selector (if any member has custom notes/cifras) */}
             {customChordLayers.length > 0 && (
               <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800 text-xs">
-                <span className="text-[10px] text-slate-400 font-bold px-1 flex items-center gap-1">
+                <span className="text-[12px] text-slate-400 font-bold px-1 flex items-center gap-1">
                   <Layers className="w-3 h-3 text-[#FF4D00]" />
                   Camada:
                 </span>
                 <button
                   onClick={() => setSelectedLayerId('oficial')}
-                  className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
+                  className={`px-2 py-0.5 rounded-lg text-[13px] font-bold transition-colors ${
                     selectedLayerId === 'oficial'
                       ? 'bg-[#FF4D00] text-slate-950'
                       : 'text-slate-400 hover:text-white'
@@ -650,7 +650,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                   <button
                     key={layer.ID}
                     onClick={() => setSelectedLayerId(layer.ID)}
-                    className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
+                    className={`px-2 py-0.5 rounded-lg text-[13px] font-bold transition-colors ${
                       selectedLayerId === layer.ID
                         ? 'bg-[#FF4D00] text-slate-950'
                         : 'text-slate-400 hover:text-white'
@@ -666,12 +666,12 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
           {/* Quick Voice Focus Filter Chips */}
           {showVocalHighlights && (
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-800/60">
-              <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
+              <span className="text-[12px] font-bold text-slate-500 uppercase shrink-0">
                 Filtrar Foco:
               </span>
               <button
                 onClick={() => setFocusVoice(null)}
-                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-all ${
+                className={`px-2.5 py-1 rounded-xl text-[13px] font-bold shrink-0 transition-all ${
                   focusVoice === null
                     ? 'bg-white text-slate-950 shadow-md font-extrabold scale-105'
                     : 'bg-[#181818] text-slate-400 hover:text-white border border-slate-800'
@@ -687,7 +687,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                   <button
                     key={vocal}
                     onClick={() => setFocusVoice(isSelected ? null : vocal)}
-                    className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold border shrink-0 transition-all ${
+                    className={`px-2.5 py-1 rounded-xl text-[13px] font-extrabold border shrink-0 transition-all ${
                       isSelected
                         ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105 shadow-md`
                         : 'bg-[#181818] border-slate-800 text-slate-400 hover:text-slate-200'
@@ -751,12 +751,12 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
           {/* Speed Selector Presets */}
           <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800 text-xs font-black">
-            <span className="text-[10px] text-slate-500 px-1 font-bold">VEL:</span>
+            <span className="text-[12px] text-slate-500 px-1 font-bold">VEL:</span>
             {[0.5, 1, 1.5, 2, 3, 4].map((speed) => (
               <button
                 key={speed}
                 onClick={() => setScrollSpeed(speed)}
-                className={`px-2 py-0.5 rounded-lg text-[11px] transition-colors ${
+                className={`px-2 py-0.5 rounded-lg text-[13px] transition-colors ${
                   scrollSpeed === speed ? 'bg-[#FF4D00] text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -768,7 +768,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
         {/* Shortcuts Hint & Exit */}
         <div className="flex items-center gap-2">
-          <span className="hidden lg:inline-block text-[10px] text-slate-500 font-mono bg-[#080808] px-2 py-1 rounded-lg border border-slate-800">
+          <span className="hidden lg:inline-block text-[12px] text-slate-500 font-mono bg-[#080808] px-2 py-1 rounded-lg border border-slate-800">
             Atalhos: <span className="text-slate-300">Espaço</span> (Play/Pause) | <span className="text-slate-300">L</span> (Letra/Cifra) | <span className="text-slate-300">Seta</span> (Músicas)
           </span>
 

@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# O projeto usa bun.lock (o lockfile que fica versionado). npm/pnpm/yarn
+# geram os seus proprios ao instalar localmente -- nunca comitar, ou o
+# Vercel pode ficar em duvida sobre qual gerenciador usar no build.
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

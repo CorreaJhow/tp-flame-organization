@@ -34,8 +34,12 @@ var SCHEMA_VERSION = 3;
  * Logs não tem auditoria: log é imutável por definição.
  * Config não tem ID nem auditoria: é chave-valor.
  *
- * O PIN dos integrantes NÃO fica aqui de propósito. Esta planilha é lida por
- * um Web App público; guardar PIN nela seria publicar a senha de todo mundo.
+ * Não existe PIN de integrante nesta tabela. Houve uma tentativa de PIN por
+ * perfil que nunca chegou a ter tela para defini-lo (dead code) e foi
+ * removida em 27/08/2026 — ver docs/ARQUITETURA-DADOS.md. Se voltar a
+ * existir, o mesmo motivo de antes continua valendo: esta planilha é lida
+ * por um Web App público, e guardar PIN nela seria publicar a senha de
+ * todo mundo.
  */
 var DATABASE_SCHEMA = {
   "Config": ["Chave", "Valor", "Descricao"],

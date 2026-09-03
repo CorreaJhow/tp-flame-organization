@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Shield, Check, X, LogOut, Lock, KeyRound, Sparkles, Music, Mic, Guitar } from 'lucide-react';
+import { User, Check, X, LogOut, Music, Mic, Guitar } from 'lucide-react';
 import { Integrante } from '../types';
 import { storage } from '../services/storage';
 import { useToast } from '../context/ToastContext';
@@ -20,32 +20,17 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
   const integrantes = storage.getIntegrantes();
 
   const [selectedId, setSelectedId] = useState<string>(activeMember?.ID || '');
-  const [pinAttempt, setPinAttempt] = useState<string>('');
-  const [showPinInput, setShowPinInput] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
   const handleSelectMember = (member: Integrante) => {
     setSelectedId(member.ID);
-    if (member.PIN && member.PIN.trim() !== '') {
-      setShowPinInput(true);
-      setPinAttempt('');
-    } else {
-      setShowPinInput(false);
-    }
   };
 
   const handleConfirmLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const target = integrantes.find(i => i.ID === selectedId);
     if (!target) return;
-
-    if (target.PIN && target.PIN.trim() !== '') {
-      if (pinAttempt.trim() !== target.PIN.trim()) {
-        showToast('PIN incorreto. Tente novamente!', 'error');
-        return;
-      }
-    }
 
     storage.setActiveMemberId(target.ID);
     showToast(`Bem-vindo(a), ${target.Nome}! Perfil conectado.`, 'success');
@@ -182,24 +167,6 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Optional PIN confirmation */}
-          {showPinInput && (
-            <div className="bg-[#0c0c0c] border border-slate-800 rounded-2xl p-3.5 space-y-2 animate-in fade-in">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                <Lock className="w-3.5 h-3.5" />
-                <span>Este perfil requer confirmação de PIN:</span>
-              </div>
-              <input
-                type="password"
-                maxLength={8}
-                value={pinAttempt}
-                onChange={(e) => setPinAttempt(e.target.value)}
-                placeholder="Digite seu PIN..."
-                className="w-full bg-[#181818] border border-slate-700 rounded-xl p-2 text-center text-sm font-mono text-white tracking-widest focus:outline-none focus:border-[#FF4D00]"
-                autoFocus
-              />
-            </div>
-          )}
         </div>
 
         {/* Footer */}
