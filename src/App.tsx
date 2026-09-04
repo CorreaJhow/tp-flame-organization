@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DashboardView } from './components/DashboardView';
@@ -8,9 +8,6 @@ import { SongFormModal } from './components/SongFormModal';
 import { CultosView } from './components/CultosView';
 import { StageModeModal } from './components/StageModeModal';
 import { IntegrantesView } from './components/IntegrantesView';
-import { HistoricoLogsView } from './components/HistoricoLogsView';
-import { GasSetupModal } from './components/GasSetupModal';
-import { AdminView } from './components/AdminView';
 import { MaisView } from './components/MaisView';
 import { FeedbackModal } from './components/FeedbackModal';
 import { PwaInstallModal } from './components/PwaInstallModal';
@@ -18,19 +15,46 @@ import { InitialSyncOverlay } from './components/InitialSyncOverlay';
 import { ToastProvider, useToast } from './context/ToastContext';
 
 import { storage } from './services/storage';
-import { 
-  Musica, 
-  Versao, 
-  Arquivo, 
-  Nota, 
-  Culto, 
-  RepertorioItem, 
-  Integrante, 
-  HistoricoItem, 
-  LogItem, 
-  ViewTab 
+import {
+  Musica,
+  Versao,
+  Arquivo,
+  Nota,
+  Culto,
+  RepertorioItem,
+  Integrante,
+  HistoricoItem,
+  LogItem,
+  ViewTab
 } from './types';
-import { Calendar, X } from 'lucide-react';
+import { Calendar, RefreshCw, X } from 'lucide-react';
+
+/**
+ * Code-splitting das telas de admin/config (backlog item 4 do
+ * ESTADO-ATUAL.md): quem só abre uma cifra no palco não precisa baixar o
+ * painel de administração, a configuração do Google Sheets (que carrega
+ * junto o texto inteiro do Apps Script, ~24KB) nem o histórico/logs — telas
+ * de uso esporádico, não do fluxo crítico de palco. Cada uma vira um chunk
+ * separado, baixado só quando a aba é aberta pela primeira vez.
+ */
+const HistoricoLogsView = lazy(() =>
+  import('./components/HistoricoLogsView').then((m) => ({ default: m.HistoricoLogsView }))
+);
+const GasSetupModal = lazy(() =>
+  import('./components/GasSetupModal').then((m) => ({ default: m.GasSetupModal }))
+);
+const AdminView = lazy(() =>
+  import('./components/AdminView').then((m) => ({ default: m.AdminView }))
+);
+
+/** Fallback do Suspense: mesmo padrão visual do spinner de sync do Header. */
+function LazyViewFallback() {
+  return (
+    <div className="flex items-center justify-center py-16 text-slate-500">
+      <RefreshCw className="w-5 h-5 animate-spin text-[#FF4D00]" />
+    </div>
+  );
+}
 
 function AppContent() {
   const { showToast } = useToast();
@@ -315,26 +339,30 @@ function AppContent() {
         )}
 
         {currentTab === 'historico' && (
-          <HistoricoLogsView
-            historico={historico}
-            logs={logs}
-            versoes={versoes}
-            musicas={musicas}
-            cultos={cultos}
-            onNavigate={(tab) => setCurrentTab(tab)}
-          />
+          <Suspense fallback={<LazyViewFallback />}>
+            <HistoricoLogsView
+              historico={historico}
+              logs={logs}
+              versoes={versoes}
+              musicas={musicas}
+              cultos={cultos}
+              onNavigate={(tab) => setCurrentTab(tab)}
+            />
+          </Suspense>
         )}
 
         {currentTab === 'admin' && (
-          <AdminView
-            onOpenGasModal={() => setShowGasModal(true)}
-            onDataChanged={refreshData}
-            totalMusicas={musicas.length}
-            totalVersoes={versoes.length}
-            totalCultos={cultos.length}
-            totalIntegrantes={integrantes.length}
-            onNavigate={(tab) => setCurrentTab(tab)}
-          />
+          <Suspense fallback={<LazyViewFallback />}>
+            <AdminView
+              onOpenGasModal={() => setShowGasModal(true)}
+              onDataChanged={refreshData}
+              totalMusicas={musicas.length}
+              totalVersoes={versoes.length}
+              totalCultos={cultos.length}
+              totalIntegrantes={integrantes.length}
+              onNavigate={(tab) => setCurrentTab(tab)}
+            />
+          </Suspense>
         )}
       </main>
 
@@ -381,10 +409,18 @@ function AppContent() {
 
       {/* GAS Setup Modal */}
       {showGasModal && (
-        <GasSetupModal
-          onClose={() => setShowGasModal(false)}
-          onDataChanged={refreshData}
-        />
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center">
+              <LazyViewFallback />
+            </div>
+          }
+        >
+          <GasSetupModal
+            onClose={() => setShowGasModal(false)}
+            onDataChanged={refreshData}
+          />
+        </Suspense>
       )}
 
       {/* Feedback & Bug Report Modal */}
