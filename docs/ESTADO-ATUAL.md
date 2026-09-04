@@ -140,6 +140,15 @@ Em ordem aproximada de impacto:
    (ex.: Vercel Function guardando a credencial do Google, cliente nunca
    vê segredo nenhum). Planejar com calma, **implementar e validar fora de
    janela de ensaio/culto**, nunca em cima da hora.
+
+   **Plano completo já escrito**, pronto pra executar depois do próximo
+   ensaio: [`PLANO-FASE3-SEGURANCA.md`](./PLANO-FASE3-SEGURANCA.md) — Vercel
+   Function como intermediário (`/api/gas-proxy`), token do Apps Script só
+   no servidor, `replaceAll`/`setup` travados atrás de uma frase-senha
+   separada (achado útil: `replaceAll` não está ligado a nenhum botão da
+   UI hoje, então travá-lo não muda nada do uso normal). Fase 4 (login real
+   por integrante) e migração de banco mapeadas como próximos passos
+   futuros, fora deste escopo.
 2. **OAuth token renewal** (Fase 2 item 3, adiado por decisão do usuário).
 3. **Consolidação de design tokens** — 11 valores hexadecimais de
    cinza/preto usados ad-hoc sem sistema de tokens.
