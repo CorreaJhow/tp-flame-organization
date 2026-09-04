@@ -107,15 +107,40 @@ vivo: os três chunks carregam sob demanda sem erro de console, `npm test`
 - **Bun é o gerenciador de pacotes canônico** — `bun.lock` é versionado;
   `package-lock.json`/`pnpm-lock.yaml`/`yarn.lock` estão no `.gitignore` e
   nunca devem ser commitados.
+- **Segurança do endpoint do Apps Script — decisão explícita (04/09/2026):**
+  o endpoint é pior do que o backlog registrava: não é só leitura de
+  e-mail/telefone, é **escrita e exclusão irrestritas** via `doPost`
+  (`replaceAll`, `batch`), sem autenticação nenhuma, e a URL é uma constante
+  pública no próprio código-fonte (`FALLBACK_GAS_ENDPOINT` em `storage.ts`).
+  Usuário escolheu conscientemente **mitigação barata agora + intermediário
+  server-side depois** (não "aceitar o risco" puro, não "arquitetura agora"):
+  - **Feito:** token secreto (`SHARED_SECRET` em `gasScript.ts`,
+    `getGasToken()`/`setGasToken()` em `storage.ts`, campo no Admin) exigido
+    em toda chamada a `doGet`/`doPost`. Fail-closed: com o placeholder, o
+    script rejeita 100% das chamadas. Retrocompatível: o cliente novo manda
+    o token, um script antigo (ainda sem o check) simplesmente ignora.
+  - **Limite reconhecido, não escondido:** o token viaja no bundle público e
+    aparece na aba Network pra quem inspecionar o tráfego enquanto o app
+    roda — não impede um atacante determinado. Só eleva o custo de "achar a
+    URL lendo o GitHub e chamar direto" pra "precisar abrir o app de
+    verdade". A correção real continua sendo o item 1 do backlog abaixo.
+  - **Pendente, ação manual do usuário:** o token só passa a valer depois
+    que alguém (a) gerar um valor (botão de dado 🎲 no campo do Admin), (b)
+    colar o mesmo valor na constante `SHARED_SECRET` do script (via "Ver
+    Código do Script"), e (c) reimplantar no editor do Apps Script
+    (Implantar → Gerenciar implantações → Editar → Nova versão). Sem isso, o
+    script em produção continua aceitando qualquer chamada sem token.
 
 ## 4. Backlog conhecido (não é urgente, mas está mapeado)
 
 Em ordem aproximada de impacto:
 
-1. **Segurança real (Fase 3)** — o endpoint do Apps Script é público e expõe
-   e-mail/telefone dos integrantes pra quem tiver o link; a senha de admin é
-   só client-side (fácil de contornar). Resolver de verdade exige um
-   intermediário server-side — mudança de arquitetura, não um ajuste rápido.
+1. **Segurança real (Fase 3)** — o token mitiga o vetor mais barato (ver
+   acima), mas não resolve de verdade: o endpoint continua aceitando
+   qualquer chamada de quem inspecionar o tráfego do app. Resolver de
+   verdade exige um intermediário server-side — mudança de arquitetura, não
+   um ajuste rápido. Decisão do usuário: planejar isso como próxima etapa,
+   depois da mitigação barata.
 2. **OAuth token renewal** (Fase 2 item 3, adiado por decisão do usuário).
 3. **Consolidação de design tokens** — 11 valores hexadecimais de
    cinza/preto usados ad-hoc sem sistema de tokens.
