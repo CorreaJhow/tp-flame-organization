@@ -24,32 +24,6 @@ export const GAS_UNIFIED_PRODUCTION_CODE = `/**
 var SCHEMA_VERSION = 3;
 
 /**
- * Token secreto exigido em toda chamada (query param \`token\` no GET, campo
- * \`token\` no corpo do POST). TROQUE este valor por algo único e imprevisível
- * antes de implantar — com o placeholder abaixo, isAuthorized() rejeita
- * TODAS as chamadas de propósito (falha fechado, não aberto).
- *
- * Depois de trocar, é preciso REIMPLANTAR (Implantar > Gerenciar
- * implantações > Editar > Nova versão) e colar o MESMO valor no campo
- * "Token Secreto" do Painel de Administração do app — os dois lados têm que
- * bater.
- *
- * NÃO é segurança forte: o token viaja embutido no app e aparece na aba
- * Network do navegador para quem inspecionar o tráfego enquanto o app roda.
- * O que ele bloqueia de verdade é o caminho mais barato de todos — achar a
- * URL só lendo o repositório público no GitHub e chamar o endpoint direto,
- * sem nunca abrir o app. Fechar o buraco de verdade exige um intermediário
- * no servidor (Fase 3 do backlog, ver docs/ESTADO-ATUAL.md).
- */
-var SHARED_SECRET = 'TROQUE-ESTE-TOKEN-ANTES-DE-IMPLANTAR';
-
-function isAuthorized(token) {
-  return !!token
-    && token === SHARED_SECRET
-    && SHARED_SECRET !== 'TROQUE-ESTE-TOKEN-ANTES-DE-IMPLANTAR';
-}
-
-/**
  * Esquema das 10 tabelas.
  *
  * As três últimas colunas de quase toda tabela são de auditoria:
@@ -259,11 +233,7 @@ function setupDailyBackupTrigger() {
  */
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
-
-  if (!isAuthorized(e && e.parameter && e.parameter.token)) {
-    return createJsonResponse({ status: 'error', message: 'Token de acesso invalido ou ausente.' });
-  }
-
+  
   try {
     var ss = getSpreadsheet();
 
@@ -328,24 +298,6 @@ function doGet(e) {
  * 5. API WEB APP: Endpoints POST (Escrita, Alterações e Sincronização em Tempo Real)
  */
 function doPost(e) {
-  // Checa payload e token ANTES de disputar a trava de concorrência — uma
-  // chamada não autorizada não deveria segurar (nem esperar) o lock que
-  // protege as gravações de verdade.
-  if (!e || !e.postData || !e.postData.contents) {
-    return createJsonResponse({ status: 'error', message: 'Nenhum payload recebido no POST' });
-  }
-
-  var body;
-  try {
-    body = JSON.parse(e.postData.contents);
-  } catch (parseErr) {
-    return createJsonResponse({ status: 'error', message: 'Payload invalido: nao e JSON.' });
-  }
-
-  if (!isAuthorized(body.token)) {
-    return createJsonResponse({ status: 'error', message: 'Token de acesso invalido ou ausente.' });
-  }
-
   // TRAVA DE CONCORRÊNCIA
   //
   // Toda operação aqui é ler-tudo -> alterar -> gravar. Sem trava, duas
@@ -364,6 +316,11 @@ function doPost(e) {
   }
 
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return createJsonResponse({ status: 'error', message: 'Nenhum payload recebido no POST' });
+    }
+
+    var body = JSON.parse(e.postData.contents);
     var action = body.action;
     var table = body.table;
     var payload = body.data;

@@ -26,7 +26,6 @@ const KEYS = {
   HISTORICO: 'tp_flame_historico_v1',
   LOGS: 'tp_flame_logs_v1',
   GAS_ENDPOINT: 'tp_flame_gas_endpoint_v1',
-  GAS_TOKEN: 'tp_flame_gas_token_v1',
   GAS_SPREADSHEET_ID: 'tp_flame_gas_spreadsheet_id_v1',
   SPREADSHEET_NAME: 'tp_flame_spreadsheet_name_v1',
   SYNC_QUEUE: 'tp_flame_sync_queue_v1',
@@ -382,7 +381,7 @@ class StorageService {
     if (!endpoint) return null;
 
     try {
-      const res = await fetch(`${endpoint}?action=whoami&token=${encodeURIComponent(this.getGasToken())}`);
+      const res = await fetch(`${endpoint}?action=whoami`);
       if (!res.ok) return null;
 
       const json = await res.json();
@@ -423,30 +422,6 @@ class StorageService {
     // Escolha deliberada do usuário: marca a config como atual para que a
     // migração não sobrescreva um endpoint customizado na próxima leitura.
     localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
-    return true;
-  }
-
-  /**
-   * Token secreto enviado em toda chamada ao Apps Script (query param no GET,
-   * campo `token` no corpo do POST). Precisa bater com `SHARED_SECRET` no
-   * script implantado (ver gasScript.ts) — o próprio endpoint rejeita a
-   * chamada se não bater.
-   *
-   * NÃO é segurança forte: assim como a URL do endpoint, o token embutido no
-   * app aparece na aba Network do navegador para quem inspecionar o tráfego.
-   * O que ele bloqueia de verdade é o caminho mais barato de todos — achar a
-   * URL só lendo o repositório público no GitHub e chamar o endpoint direto,
-   * sem nunca abrir o app. Fechar o buraco de verdade exige um intermediário
-   * no servidor (Fase 3, backlog em docs/ESTADO-ATUAL.md).
-   */
-  public getGasToken(): string {
-    return (localStorage.getItem(KEYS.GAS_TOKEN) || '').trim();
-  }
-
-  public setGasToken(token: string): boolean {
-    const clean = token.trim();
-    if (!clean) return false;
-    localStorage.setItem(KEYS.GAS_TOKEN, clean);
     return true;
   }
 
@@ -536,7 +511,7 @@ class StorageService {
         // text/plain mantém a requisição "simples": sem preflight, e a resposta
         // do Apps Script continua legível pelo navegador.
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, table, data, token: this.getGasToken() })
+        body: JSON.stringify({ action, table, data })
       });
 
       if (!res.ok) {
@@ -755,7 +730,7 @@ class StorageService {
       pushedCount = flushRes.pushed;
       conflictCount = flushRes.conflicts;
 
-      const res = await fetch(`${endpoint}?action=getAll&token=${encodeURIComponent(this.getGasToken())}`);
+      const res = await fetch(`${endpoint}?action=getAll`);
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       const json = await res.json();
 
@@ -854,7 +829,7 @@ class StorageService {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'replaceAll', data: payload, token: this.getGasToken() })
+        body: JSON.stringify({ action: 'replaceAll', data: payload })
       });
 
       this.clearSyncQueue();
