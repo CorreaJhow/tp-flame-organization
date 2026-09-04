@@ -2,6 +2,11 @@
 
 Este arquivo reúne todas as convenções, arquitetura, padrões de código e instruções de desenvolvimento para manter a consistência do projeto **TP Flame** durante a evolução por assistentes de IA e desenvolvedores.
 
+> 📍 **Antes de qualquer coisa, leia [`docs/ESTADO-ATUAL.md`](docs/ESTADO-ATUAL.md).**
+> É o resumo do que já foi feito, o que foi decidido de propósito (e não deve
+> ser reaberto sem perguntar) e o que ainda está em aberto. Evita reconstruir
+> o histórico do projeto do zero em cada conversa nova.
+
 ---
 
 ## 🎯 Propósito do Projeto
