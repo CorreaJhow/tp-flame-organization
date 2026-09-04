@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import {
-  Lock,
-  LogOut,
-  ShieldCheck,
-  HardDrive,
-  Code2,
-  CheckCircle2,
-  Eye,
-  EyeOff,
+import { 
+  Lock, 
+  LogOut, 
+  ShieldCheck, 
+  HardDrive, 
+  Code2, 
+  CheckCircle2, 
+  Eye, 
+  EyeOff, 
   ChevronRight,
   ArrowLeft,
   FileSpreadsheet,
   ExternalLink,
-  RefreshCw,
-  KeyRound,
-  Dices
+  RefreshCw
 } from 'lucide-react';
-import { storage, generateUUID } from '../services/storage';
+import { storage } from '../services/storage';
 import { ViewTab } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -47,7 +45,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   // Admin settings state
   const [endpointInput, setEndpointInput] = useState(storage.getGasEndpoint());
-  const [tokenInput, setTokenInput] = useState(storage.getGasToken());
   const [spreadsheetIdInput, setSpreadsheetIdInput] = useState(storage.getGasSpreadsheetId());
   const [showSensitiveConfig, setShowSensitiveConfig] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -93,13 +90,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
         'warning'
       );
       return;
-    }
-
-    // Token é opcional aqui (retrocompatível com um script ainda não
-    // atualizado), mas se o campo tiver algo, precisa ser salvo — senão o
-    // app segue mandando o valor antigo em cache.
-    if (tokenInput.trim()) {
-      storage.setGasToken(tokenInput);
     }
 
     setSaveSuccess(true);
@@ -307,39 +297,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
               placeholder="https://script.google.com/macros/s/.../exec"
               className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] font-mono"
             />
-          </div>
-
-          <div>
-            <label className="text-xs text-slate-400 flex items-center gap-1 mb-1">
-              <KeyRound className="w-3 h-3" />
-              Token Secreto do Apps Script
-            </label>
-            <div className="flex gap-1.5">
-              <input
-                type={showSensitiveConfig ? 'text' : 'password'}
-                value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value.trim())}
-                placeholder="mesmo valor de SHARED_SECRET no script"
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] font-mono"
-              />
-              <button
-                type="button"
-                onClick={() => setTokenInput(generateUUID())}
-                title="Gerar um token aleatório"
-                className="shrink-0 px-3 rounded-xl bg-[#181818] hover:bg-[#202020] border border-slate-700 text-slate-300 transition-all active:scale-95 cursor-pointer"
-              >
-                <Dices className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="mt-1.5 text-[11px] text-slate-500 leading-relaxed">
-              Precisa ser <strong className="text-slate-400">o mesmo valor</strong> colado na
-              constante <code className="text-slate-400">SHARED_SECRET</code> no script (veja
-              "Ver Código do Script" abaixo) — os dois lados têm que bater. Gere um valor
-              aleatório, cole nos dois lugares e reimplante o script (Implantar → Gerenciar
-              implantações → Editar → Nova versão). Não é segredo forte — quem inspecionar a
-              rede do app enquanto ele roda acha esse valor — mas bloqueia quem só encontrou a
-              URL lendo o repositório público, sem nunca abrir o app.
-            </p>
           </div>
 
           <div>
