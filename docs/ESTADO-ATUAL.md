@@ -107,6 +107,13 @@ vivo: os três chunks carregam sob demanda sem erro de console, `npm test`
 - **Bun é o gerenciador de pacotes canônico** — `bun.lock` é versionado;
   `package-lock.json`/`pnpm-lock.yaml`/`yarn.lock` estão no `.gitignore` e
   nunca devem ser commitados.
+- **Token secreto no endpoint — tentado e revertido em 04/09/2026.** Ver
+  detalhe completo no item 1 do backlog logo abaixo. Resumo: quebrou a
+  sincronização de todo mundo às vésperas de um ensaio porque a config
+  (URL + token) fica em `localStorage`, por aparelho — não existe hoje um
+  jeito de "empurrar" configuração pra todos os dispositivos da equipe de
+  uma vez. **Qualquer solução de segurança futura só entra em produção se
+  não exigir nenhuma configuração manual por aparelho.**
 
 ## 4. Backlog conhecido (não é urgente, mas está mapeado)
 
@@ -116,6 +123,23 @@ Em ordem aproximada de impacto:
    e-mail/telefone dos integrantes pra quem tiver o link; a senha de admin é
    só client-side (fácil de contornar). Resolver de verdade exige um
    intermediário server-side — mudança de arquitetura, não um ajuste rápido.
+
+   **Tentativa 04/09/2026 (revertida):** token secreto exigido pelo Apps
+   Script (`SHARED_SECRET` em `gasScript.ts` + campo no Admin). Funcionou
+   tecnicamente (`doGet`/`doPost` fail-closed, testado ao vivo), mas foi
+   revertido no mesmo dia: a config vive no `localStorage` de cada
+   navegador, então **cada celular da equipe pararia de sincronizar** até
+   alguém colar o token nele manualmente, um por um — inviável com ensaio
+   no dia seguinte. Commit da tentativa: `a78e315`; revertido em `303437d`.
+   Endpoint está de volta a exatamente como estava antes (sem token),
+   confirmado com `curl` contra a URL de produção.
+
+   **Restrição de design pra próxima tentativa:** a proteção tem que valer
+   pra todo mundo que abrir o site, automaticamente, sem passo manual em
+   cada aparelho — só um intermediário server-side de verdade cumpre isso
+   (ex.: Vercel Function guardando a credencial do Google, cliente nunca
+   vê segredo nenhum). Planejar com calma, **implementar e validar fora de
+   janela de ensaio/culto**, nunca em cima da hora.
 2. **OAuth token renewal** (Fase 2 item 3, adiado por decisão do usuário).
 3. **Consolidação de design tokens** — 11 valores hexadecimais de
    cinza/preto usados ad-hoc sem sistema de tokens.
