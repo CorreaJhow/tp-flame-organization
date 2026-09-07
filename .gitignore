@@ -7,6 +7,12 @@ coverage/
 .env*
 !.env.example
 
+# Contem e-mails pessoais da equipe (allowlist de acesso) -- repositorio e
+# publico, isso nunca pode ir pro commit. A lista real so existe aqui
+# localmente e colada direto no Firebase Console (Firestore > Regras).
+# Ver firestore.rules.example para o modelo sem dados reais.
+firestore.rules
+
 # O projeto usa bun.lock (o lockfile que fica versionado). npm/pnpm/yarn
 # geram os seus proprios ao instalar localmente -- nunca comitar, ou o
 # Vercel pode ficar em duvida sobre qual gerenciador usar no build.
