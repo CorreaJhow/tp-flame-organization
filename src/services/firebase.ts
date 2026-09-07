@@ -10,7 +10,11 @@
  * o navegador nunca conseguiria manter em segredo.
  */
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -25,6 +29,18 @@ const firebaseConfig = {
 // Evita reinicializar em hot-reload do Vite durante o desenvolvimento.
 export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const db = getFirestore(firebaseApp);
+/**
+ * Cache local persistente (IndexedDB) com suporte a múltiplas abas — é o
+ * que dá ao Firestore a mesma garantia offline que a `SyncQueue` manual faz
+ * hoje à mão: leitura instantânea do que já foi sincronizado antes, mesmo
+ * sem rede, e fila de escrita que sobe sozinha ao reconectar. Precisa vir
+ * de `initializeFirestore` (não `getFirestore`) pra poder configurar isso;
+ * por isso não dá pra chamar `initializeFirestore` mais de uma vez por app
+ * — daí o guard de hot-reload acima também proteger este módulo.
+ */
+export const db = initializeFirestore(firebaseApp, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+
 export const auth = getAuth(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();
