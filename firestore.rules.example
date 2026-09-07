@@ -10,12 +10,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // email_verified == true é obrigatório: sempre true no login por
+    // Google (o Google já garante a posse da conta); só vira true no login
+    // por e-mail+senha depois que a pessoa confirmar pelo link que o
+    // Firebase manda — sem isso, alguém poderia criar uma conta de senha
+    // usando o e-mail de outra pessoa da lista antes dela mesma criar a
+    // conta, e entrar se passando por ela.
     function isTeamMember() {
-      return request.auth != null && request.auth.token.email in [
-        'exemplo1@gmail.com',
-        'exemplo2@gmail.com'
-        // adicionar aqui o e-mail de cada integrante da equipe
-      ];
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'exemplo1@gmail.com',
+          'exemplo2@gmail.com'
+          // adicionar aqui o e-mail de cada integrante da equipe
+        ];
     }
 
     match /{collection}/{docId} {
