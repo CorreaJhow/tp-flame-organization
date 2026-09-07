@@ -84,18 +84,18 @@ Mantém os MESMOS nomes de campo das interfaces em `src/types.ts` — reduz
 o quanto de código de UI/transposição precisa mudar; só a camada de
 armazenamento é reescrita.
 
-| Tabela hoje (Sheets) | Coleção no Firestore | Observação |
-|---|---|---|
-| Musicas | `musicas/{id}` | igual |
-| Versoes | `versoes/{id}` | campo `ID_Musica` continua apontando pro doc de `musicas` |
-| Arquivos | `arquivos/{id}` | — |
-| Notas | `notas/{id}` | — |
-| Cultos | `cultos/{id}` | — |
-| Repertorio | `repertorio/{id}` | — |
-| Integrantes | `integrantes/{id}` | e-mail/telefone só legível por quem estiver logado (ver 2.3) |
-| Historico | `historico/{id}` | — |
-| Logs | `logs/{id}` | considerar um limite de retenção (hoje já corta em 50 no cliente) |
-| Config | documento único `config/geral` | chave-valor vira campos do doc |
+| Tabela hoje (Sheets) | Coleção no Firestore | Status | Observação |
+|---|---|---|---|
+| Musicas | `musicas/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreMusicas.ts` — CRUD + soft-delete confirmados |
+| Versoes | `versoes/{id}` | pendente | campo `ID_Musica` continua apontando pro doc de `musicas` |
+| Arquivos | `arquivos/{id}` | pendente | — |
+| Notas | `notas/{id}` | pendente | — |
+| Cultos | `cultos/{id}` | pendente | — |
+| Repertorio | `repertorio/{id}` | pendente | — |
+| Integrantes | `integrantes/{id}` | pendente | e-mail/telefone só legível por quem estiver logado (ver 2.3) |
+| Historico | `historico/{id}` | pendente | — |
+| Logs | `logs/{id}` | pendente | considerar um limite de retenção (hoje já corta em 50 no cliente) |
+| Config | documento único `config/geral` | pendente | chave-valor vira campos do doc |
 
 `ID` deixa de precisar ser gerado à mão (`generateUUID()`) — pode usar o
 próprio ID de documento do Firestore (`doc()` gera um ID único sozinho),
@@ -137,6 +137,14 @@ quem está autenticado com um e-mail da lista lê ou escreve qualquer coisa
 porque sem estar autenticado como alguém da lista, a regra barra a
 escrita antes de qualquer linha ser tocada. Sem essa trava dependender de
 nenhum segredo embutido no navegador.
+
+> ⚠️ **Estado atual das regras em produção no Firebase (05/09/2026):**
+> por decisão do usuário, temporariamente **sem** o check de
+> `email_verified` e com um e-mail de teste extra na lista — facilita
+> testar cada tabela nova sem atrito, aceitável porque este banco ainda
+> não tem dado real (o app de produção continua 100% no Google Sheets).
+> **Antes de migrar dado real pra cá (Fase D, seção 4)**, republicar a
+> versão final: `email_verified == true` de volta, e-mail de teste fora.
 
 ## 3. O que muda no código
 
