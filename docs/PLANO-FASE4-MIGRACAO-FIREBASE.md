@@ -89,13 +89,15 @@ armazenamento é reescrita.
 | Musicas | `musicas/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreMusicas.ts` — CRUD + soft-delete confirmados |
 | Versoes | `versoes/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreVersoes.ts` — inclui `stripUndefined()` (ver `firestoreUtils.ts`) pros campos opcionais Modo/BPM/Compasso |
 | Arquivos | `arquivos/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreArquivos.ts` — `Nome` opcional via `stripUndefined()` |
-| Notas | `notas/{id}` | pendente | — |
-| Cultos | `cultos/{id}` | pendente | — |
-| Repertorio | `repertorio/{id}` | pendente | — |
-| Integrantes | `integrantes/{id}` | pendente | e-mail/telefone só legível por quem estiver logado (ver 2.3) |
-| Historico | `historico/{id}` | pendente | — |
-| Logs | `logs/{id}` | pendente | considerar um limite de retenção (hoje já corta em 50 no cliente) |
-| Config | documento único `config/geral` | pendente | chave-valor vira campos do doc |
+| Notas | `notas/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreNotas.ts` — Autor/Titulo/TipoNota opcionais |
+| Cultos | `cultos/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreCultos.ts` — Observacoes opcional |
+| Repertorio | `repertorio/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreRepertorio.ts` — Dirigente/Observacao_Culto opcionais |
+| Integrantes | `integrantes/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreIntegrantes.ts` — testado `Ativo=false` (falsy, precisa sobreviver ao `stripUndefined`); e-mail/telefone só legível por quem estiver logado (ver 2.3) |
+| Historico | `historico/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreHistorico.ts` — sem update (só insert/delete, espelha storage.ts) |
+| Logs | `logs/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreLogs.ts` — leitura via `orderBy`+`limit(50)` nativo do Firestore; imutável (só insert) |
+| Config | documento único `config/geral` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreConfig.ts` — vestigial no app real hoje (nenhuma tela usa `ConfigItem`), implementado fiel ao desenho mesmo assim |
+
+**Todas as 10 tabelas têm camada Firestore isolada e testada (05/09/2026).** Nenhuma delas está ligada ao app real ainda — ver Fase C/D (seção 4) pro corte de verdade.
 
 `ID` deixa de precisar ser gerado à mão (`generateUUID()`) — pode usar o
 próprio ID de documento do Firestore (`doc()` gera um ID único sozinho),
