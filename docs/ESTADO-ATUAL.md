@@ -96,8 +96,14 @@ vivo: os três chunks carregam sob demanda sem erro de console, `npm test`
 
 ## 3. Decisões explícitas do usuário (não reabrir sem perguntar)
 
-- **Google Sheets fica como backend.** Não é para migrar para outro banco.
+- ~~**Google Sheets fica como backend.** Não é para migrar para outro banco.~~
+  **Reaberto e revertido em 05/09/2026:** decisão agora é migrar pra
+  Firebase (Firestore + Auth com Google) — ver item 1 do backlog. Motivo:
+  volume de uso baixíssimo torna mais barato migrar direto pro destino
+  final do que remendar o Apps Script duas vezes.
 - **OAuth renewal adiado** (Fase 2 item 3) — de propósito, não esquecido.
+  Fica sem efeito assim que a migração da Fase 4 substituir o caminho
+  OAuth direto ao Sheets por completo.
 - **PIN de perfil removido, não recriado** — era decorativo, nunca protegeu
   nada; se precisar de identidade real por integrante, é feature nova do
   zero (repensar do jeito certo), não reaproveitar aquele código.
@@ -141,14 +147,20 @@ Em ordem aproximada de impacto:
    vê segredo nenhum). Planejar com calma, **implementar e validar fora de
    janela de ensaio/culto**, nunca em cima da hora.
 
-   **Plano completo já escrito**, pronto pra executar depois do próximo
-   ensaio: [`PLANO-FASE3-SEGURANCA.md`](./PLANO-FASE3-SEGURANCA.md) — Vercel
-   Function como intermediário (`/api/gas-proxy`), token do Apps Script só
-   no servidor, `replaceAll`/`setup` travados atrás de uma frase-senha
-   separada (achado útil: `replaceAll` não está ligado a nenhum botão da
-   UI hoje, então travá-lo não muda nada do uso normal). Fase 4 (login real
-   por integrante) e migração de banco mapeadas como próximos passos
-   futuros, fora deste escopo.
+   **Mudança de rumo em 05/09/2026 — o remendo foi substituído pelo
+   definitivo.** [`PLANO-FASE3-SEGURANCA.md`](./PLANO-FASE3-SEGURANCA.md)
+   (Vercel Function como intermediário do Apps Script) fica registrado
+   como referência histórica, mas **não vai ser executado** — decisão do
+   usuário foi ir direto pro destino final em vez de remendar duas vezes,
+   já que o volume de uso é baixo o bastante pra tornar isso a opção mais
+   barata no total. Plano atual, em execução:
+   [`PLANO-FASE4-MIGRACAO-FIREBASE.md`](./PLANO-FASE4-MIGRACAO-FIREBASE.md)
+   — migrar pra Firestore (banco) + Firebase Authentication com login
+   Google por integrante (allowlist de e-mails nas Security Rules do
+   próprio Firestore, sem servidor intermediário nenhum). Escolhido no
+   lugar de Supabase porque o Supabase pausa o projeto sozinho depois de 7
+   dias sem consulta ao banco — risco real dado o padrão de uso
+   intermitente desta equipe.
 2. **OAuth token renewal** (Fase 2 item 3, adiado por decisão do usuário).
 3. **Consolidação de design tokens** — 11 valores hexadecimais de
    cinza/preto usados ad-hoc sem sistema de tokens.
