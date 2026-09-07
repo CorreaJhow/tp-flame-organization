@@ -1,0 +1,25 @@
+rules_version = '2';
+
+/**
+ * MODELO — sem e-mails reais (repositório é público, não vai dado pessoal
+ * aqui). A versão de verdade vive só em `firestore.rules` (git-ignorado,
+ * ver .gitignore) e é colada direto no Firebase Console — nunca commitada.
+ *
+ * Ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md para o contexto completo.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isTeamMember() {
+      return request.auth != null && request.auth.token.email in [
+        'exemplo1@gmail.com',
+        'exemplo2@gmail.com'
+        // adicionar aqui o e-mail de cada integrante da equipe
+      ];
+    }
+
+    match /{collection}/{docId} {
+      allow read, write: if isTeamMember();
+    }
+  }
+}
