@@ -87,7 +87,7 @@ armazenamento é reescrita.
 | Tabela hoje (Sheets) | Coleção no Firestore | Status | Observação |
 |---|---|---|---|
 | Musicas | `musicas/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreMusicas.ts` — CRUD + soft-delete confirmados |
-| Versoes | `versoes/{id}` | pendente | campo `ID_Musica` continua apontando pro doc de `musicas` |
+| Versoes | `versoes/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreVersoes.ts` — inclui `stripUndefined()` (ver `firestoreUtils.ts`) pros campos opcionais Modo/BPM/Compasso |
 | Arquivos | `arquivos/{id}` | pendente | — |
 | Notas | `notas/{id}` | pendente | — |
 | Cultos | `cultos/{id}` | pendente | — |
