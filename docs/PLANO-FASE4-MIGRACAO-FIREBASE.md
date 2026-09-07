@@ -88,7 +88,7 @@ armazenamento é reescrita.
 |---|---|---|---|
 | Musicas | `musicas/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreMusicas.ts` — CRUD + soft-delete confirmados |
 | Versoes | `versoes/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreVersoes.ts` — inclui `stripUndefined()` (ver `firestoreUtils.ts`) pros campos opcionais Modo/BPM/Compasso |
-| Arquivos | `arquivos/{id}` | pendente | — |
+| Arquivos | `arquivos/{id}` | ✅ feito, testado ao vivo (05/09) | `src/services/firestoreArquivos.ts` — `Nome` opcional via `stripUndefined()` |
 | Notas | `notas/{id}` | pendente | — |
 | Cultos | `cultos/{id}` | pendente | — |
 | Repertorio | `repertorio/{id}` | pendente | — |
