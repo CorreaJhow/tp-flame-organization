@@ -51,16 +51,32 @@ que cada usuário pode ler/escrever são as **Security Rules** do próprio
 Firestore, não código do app. Isso é mais simples que o plano da Fase 3
 (que ainda exigia manter uma função proxy rodando).
 
-### 2.1 Login: Firebase Authentication + Google Sign-In
+### 2.1 Login: dois métodos, decisão do usuário em 05/09/2026
 
-- Mesma conta Google que a equipe já usa (não é provedor novo).
-- Tela de login: botão único "Entrar com Google" — sem senha nova pra
-  ninguém memorizar.
+- **Entrar com Google** — sem senha nova pra ninguém memorizar, mesma
+  conta que a equipe já usa.
+- **E-mail + senha** — pra quem preferir não passar pelo fluxo do Google
+  (ex.: dispositivo compartilhado, ou simplesmente preferência pessoal).
+  E-mail é obrigatório como identificador (não tem "nome de usuário"
+  solto sem e-mail por trás) — é o mesmo e-mail que entra na lista das
+  Security Rules, então os dois métodos caem na mesma verificação.
+- Tela de login mostra os dois: botão "Entrar com Google" + formulário de
+  e-mail/senha (com opção de criar conta na primeira vez).
+- **Exigência de segurança obrigatória pro método de senha:** confirmação
+  de e-mail (Firebase Auth `sendEmailVerification`). Sem isso, alguém
+  poderia criar uma conta de senha usando o e-mail de outra pessoa da
+  lista antes dela mesma criar a conta, e entrar se passando por ela — a
+  lista de e-mail sozinha não detecta isso. As Security Rules (2.3) checam
+  `email_verified == true`, que já vem sempre verdadeiro no login por
+  Google e só fica verdadeiro no login por senha depois do clique no link
+  de confirmação.
 - Lista de quem pode entrar: e-mails da equipe direto nas Security Rules
   (ver 2.3) — editar essa lista é editar um arquivo e publicar, não
   precisa de painel de admin nem de Cloud Function pra essa escala (~9
   pessoas). Se crescer muito, dá pra evoluir pra uma coleção `allowlist`
   no próprio Firestore depois.
+- No Firebase Console, ativar os dois provedores em Authentication >
+  Sign-in method: **Google** (já feito) e **E-mail/senha**.
 
 ### 2.2 Coleções do Firestore (mapeamento direto das tabelas de hoje)
 
@@ -94,11 +110,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isTeamMember() {
-      return request.auth != null && request.auth.token.email in [
-        // TODO: preencher com os e-mails reais da equipe antes de publicar
-        'exemplo1@gmail.com',
-        'exemplo2@gmail.com'
-      ];
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          // TODO: preencher com os e-mails reais da equipe antes de publicar
+          'exemplo1@gmail.com',
+          'exemplo2@gmail.com'
+        ];
     }
 
     match /{collection}/{docId} {
@@ -107,6 +125,11 @@ service cloud.firestore {
   }
 }
 ```
+
+(Versão real, com o esboço já implementado, fica em `firestore.rules` na
+raiz do projeto — **git-ignorado de propósito**, porque contém e-mails
+pessoais da equipe e o repositório é público. `firestore.rules.example`,
+esse sim commitado, tem o mesmo modelo sem dado real.)
 
 Isso sozinho já resolve o que nem a Fase 3 resolvia por completo: só
 quem está autenticado com um e-mail da lista lê ou escreve qualquer coisa
