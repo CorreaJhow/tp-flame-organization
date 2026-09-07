@@ -19,23 +19,12 @@ import {
   setDoc,
   updateDoc
 } from 'firebase/firestore';
-import { db, auth } from './firebase';
+import { db } from './firebase';
 import { Musica } from '../types';
 import { generateUUID } from './storage';
+import { quemEstaEditando } from './firestoreUtils';
 
 const COLLECTION = 'musicas';
-
-/**
- * Identifica quem fez a alteração a partir do login de verdade (Firebase
- * Auth) — substitui o antigo `getActiveMember()` (um seletor manual, sem
- * garantia nenhuma de que era a pessoa real). Cai pro e-mail se não houver
- * nome de exibição (comum em contas de e-mail/senha recém-criadas).
- */
-function quemEstaEditando(): string {
-  const u = auth.currentUser;
-  if (!u) return 'Usuário desconhecido';
-  return u.displayName || u.email || u.uid;
-}
 
 export async function getMusicasFirestore(): Promise<Musica[]> {
   const snap = await getDocs(collection(db, COLLECTION));
