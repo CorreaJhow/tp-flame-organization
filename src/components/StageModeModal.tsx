@@ -14,18 +14,9 @@ import {
   FileText,
   Minus,
   Plus,
-  FastForward,
-  RotateCcw,
-  Activity,
-  Volume2,
-  VolumeX,
-  Clock,
   Mic,
   Eye,
-  Layers,
-  Sparkles,
-  ChevronUp,
-  ChevronDown
+  Layers
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
 import { formatKeyDisplay } from '../utils/chordTransposer';
@@ -69,34 +60,13 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const [showVocalHighlights, setShowVocalHighlights] = useState(true);
   const [selectedLayerId, setSelectedLayerId] = useState<string>('oficial');
 
-  // Metronome & Audio Click State
-  const [isMetronomeActive, setIsMetronomeActive] = useState(false);
-  const [isAudioClick, setIsAudioClick] = useState(false); // Audio click disabled by default
+  // Tempo (BPM) da versão atual — só leitura, mostrada no banner de
+  // informações. O metrônomo que existia aqui foi removido a pedido do
+  // usuário (simplifica a tela mais usada no palco; instrumentistas que
+  // precisam de metrônomo já têm um separado no pedal/afinador).
   const [customBpm, setCustomBpm] = useState<number>(120);
-  const [currentBeat, setCurrentBeat] = useState<number>(1);
-  const [isVisualFlash, setIsVisualFlash] = useState(false);
-
-  // Painel do metrônomo pode ser minimizado por quem não usa (ex: vocalistas
-  // sem instrumento). Preferência lembrada entre sessões, por aparelho.
-  const METRONOME_PANEL_KEY = 'tp_flame_stage_metronome_expanded_v1';
-  const [isMetronomePanelExpanded, setIsMetronomePanelExpanded] = useState<boolean>(() => {
-    const saved = localStorage.getItem(METRONOME_PANEL_KEY);
-    return saved === null ? true : saved === 'true';
-  });
-
-  const toggleMetronomePanel = () => {
-    setIsMetronomePanelExpanded((prev) => {
-      const next = !prev;
-      localStorage.setItem(METRONOME_PANEL_KEY, String(next));
-      // Minimizar desliga o metrônomo também — um clique/beep tocando fora
-      // de vista, sem o painel pra desligar, seria pior que não ter a opção.
-      if (!next) setIsMetronomeActive(false);
-      return next;
-    });
-  };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const currentRep = setlist[currentIndex];
   const currentVersao = currentRep ? versoes.find((v) => v.ID === currentRep.ID_Versao) : undefined;
@@ -138,7 +108,6 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     } else {
       setCustomBpm(120);
     }
-    setCurrentBeat(1);
   }, [currentVersao?.ID]);
 
   // Mostra as observações de arranjo sozinho quando a música tem alguma.
@@ -152,108 +121,6 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   useEffect(() => {
     setShowNotes(currentNotas.length > 0);
   }, [currentVersao?.ID]);
-
-  // Determine beats per measure (e.g. 3/4 -> 3 beats, 6/8 -> 6 beats, default 4)
-  //
-  // MAX_BEATS existe porque o campo Compasso já veio corrompido da planilha
-  // (o Google Sheets reinterpretou "4/4" como uma data, e o número extraído
-  // virou o ano — 2026 bolinhas na tela). A causa foi corrigida na escrita
-  // (gasScript.ts força texto puro agora), mas o app nunca deveria desenhar
-  // uma quantidade de elementos vinda direto de um campo de texto sem
-  // validar contra um limite plausível — nenhum compasso real de música
-  // passa de 16 tempos.
-  const beatsPerMeasure = React.useMemo(() => {
-    if (!currentVersao?.Compasso) return 4;
-    const num = parseInt(String(currentVersao.Compasso).split('/')[0], 10);
-    const MAX_BEATS = 16;
-    return isNaN(num) || num <= 0 || num > MAX_BEATS ? 4 : num;
-  }, [currentVersao?.Compasso]);
-
-  // Web Audio click generator
-  /**
-   * Cria (ou destrava) o AudioContext. TEM que ser chamado direto de dentro
-   * de um clique/toque de verdade — navegadores (principalmente iOS Safari)
-   * bloqueiam áudio que não começa num gesto do usuário. Era exatamente o
-   * bug do metrônomo "sem som": o context só era criado dentro do
-   * `setInterval` do loop de batida, nunca num clique direto, então ficava
-   * suspenso pra sempre e nenhum som saía — o flash visual funcionava
-   * (é só CSS/estado), dando a impressão de "quebrado" mesmo sem estar.
-   */
-  const ensureAudioContext = (): AudioContext | null => {
-    if (!audioCtxRef.current) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) audioCtxRef.current = new AudioCtx();
-    }
-    const ctx = audioCtxRef.current;
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume();
-    }
-    return ctx;
-  };
-
-  const handleToggleMetronome = () => {
-    if (!isMetronomeActive) {
-      // Destrava o audio AQUI, no clique direto -- não no timer do loop.
-      ensureAudioContext();
-    }
-    setIsMetronomeActive(!isMetronomeActive);
-  };
-
-  const playClick = (isBeatOne: boolean) => {
-    if (!isAudioClick) return;
-    try {
-      const ctx = ensureAudioContext();
-      if (ctx) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        // High pitch on beat 1 (1050Hz), lower on rest (800Hz)
-        osc.frequency.setValueAtTime(isBeatOne ? 1050 : 800, ctx.currentTime);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.05);
-      }
-    } catch (err) {
-      // AudioContext failed or blocked by browser policy
-    }
-  };
-
-  // Metronome Interval Loop
-  useEffect(() => {
-    let timerId: NodeJS.Timeout;
-
-    if (isMetronomeActive) {
-      const bpmToUse = customBpm > 0 ? customBpm : 120;
-      const intervalMs = (60 / bpmToUse) * 1000;
-
-      timerId = setInterval(() => {
-        setCurrentBeat((prev) => {
-          const nextBeat = prev >= beatsPerMeasure ? 1 : prev + 1;
-          const isBeatOne = nextBeat === 1;
-
-          // Flash visual effect
-          setIsVisualFlash(true);
-          setTimeout(() => setIsVisualFlash(false), 120);
-
-          // Audio click
-          playClick(isBeatOne);
-
-          return nextBeat;
-        });
-      }, intervalMs);
-    } else {
-      setCurrentBeat(1);
-    }
-
-    return () => {
-      if (timerId) clearInterval(timerId);
-    };
-  }, [isMetronomeActive, customBpm, beatsPerMeasure, isAudioClick]);
 
   // Sub-pixel accumulator for smooth fractional auto-scroll (e.g., 0.5x speed)
   const subPixelRef = useRef(0);
@@ -315,6 +182,45 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, setlist.length]);
+
+  // Mantém a tela acesa enquanto o Modo Palco está aberto.
+  //
+  // Quem está cantando não fica tocando a tela — lê a letra e usa o
+  // auto-scroll. Sem isso, o celular apaga sozinho no meio da música (o
+  // comportamento padrão de qualquer Android/iPhone) e a pessoa perde a
+  // letra bem na hora que mais precisa dela. Simplesmente não existia
+  // nenhum controle disso antes. Se o navegador não suportar a API (ainda
+  // existe algum Android antigo por aí), falha em silêncio — sem isso o
+  // app já funcionava do jeito que funcionava, não piora nada.
+  useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch {
+        // Não suportado, negado pelo usuário, ou aba em segundo plano --
+        // segue sem travar a tela.
+      }
+    };
+
+    requestWakeLock();
+
+    // O sistema solta o wake lock sozinho ao minimizar o app/trocar de
+    // aba; se a pessoa voltar pro Modo Palco (deu uma checada no WhatsApp
+    // e voltou, por exemplo), pede de novo.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wakeLock?.release?.().catch(() => {});
+    };
+  }, []);
 
   const handleNextSong = () => {
     if (currentIndex < setlist.length - 1) {
@@ -378,13 +284,16 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               </h2>
             </div>
 
+            {/* Próxima Música — a ação mais repetida no meio de um culto,
+                por isso ganha destaque visual (preenchida, maior) em vez de
+                dividir o mesmo estilo discreto da seta "Anterior". */}
             <button
               onClick={handleNextSong}
               disabled={currentIndex === setlist.length - 1}
-              className="p-2.5 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
+              className="p-3 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] disabled:opacity-20 disabled:bg-[#1a1a1a] transition-colors shrink-0 min-w-[48px] min-h-[48px] flex items-center justify-center shadow-lg shadow-[#FF4D00]/30 active:scale-95"
               title="Próxima Música (Seta Direita)"
             >
-              <ChevronRight className="w-5 h-5 text-[#FF4D00]" />
+              <ChevronRight className="w-6 h-6 text-slate-950" strokeWidth={3} />
             </button>
           </div>
 
@@ -493,9 +402,17 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
       </div>
 
       {/* Main Full-Width Reader with Ref for Smooth Scroll */}
-      <div 
+      <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-2 sm:px-6 py-4 space-y-4 scroll-smooth"
+        // SEM "scroll-smooth": essa classe CSS faz o navegador animar cada
+        // mudança de scrollTop — e o auto-scroll escreve um novo scrollTop
+        // a cada frame (~60x/s). As animações se acumulam e brigam entre
+        // si, e em navegadores mobile (que são mais rígidos com isso) o
+        // resultado prático era simplesmente não mover a tela. Desktop
+        // "disfarçava" o problema por ser mais tolerante. -webkit-overflow-
+        // scrolling garante rolagem com inércia normal no iOS.
+        className="flex-1 overflow-y-auto px-2 sm:px-6 py-4 space-y-4"
+        style={{ scrollBehavior: 'auto', WebkitOverflowScrolling: 'touch' }}
       >
         {/* Header Info Banner */}
         <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
@@ -526,113 +443,6 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             )}
           </div>
         </div>
-
-        {/* Visual Metronome Display Panel — colapsável para quem não usa */}
-        {!isMetronomePanelExpanded ? (
-          <button
-            onClick={toggleMetronomePanel}
-            className="w-full bg-[#121212] border border-slate-800/80 rounded-2xl px-3 py-1.5 flex items-center justify-between gap-2 text-slate-500 hover:text-slate-300 transition-colors shadow-sm"
-            title="Mostrar painel do metrônomo"
-          >
-            <span className="text-[13px] font-bold flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5" />
-              Metrônomo minimizado
-            </span>
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-        ) : (
-        <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleMetronomePanel}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800/60 transition-colors"
-              title="Minimizar painel do metrônomo"
-            >
-              <ChevronUp className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleToggleMetronome}
-              className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all shadow-md ${
-                isMetronomeActive
-                  ? 'bg-[#FF4D00] text-slate-950 ring-2 ring-[#FF4D00]/50'
-                  : 'bg-[#080808] text-slate-400 border border-slate-800 hover:text-white'
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              <span>Metrônomo {isMetronomeActive ? 'ON' : 'OFF'}</span>
-            </button>
-
-            {/* Audio Click Sound Toggle */}
-            <button
-              onClick={() => setIsAudioClick(!isAudioClick)}
-              className={`p-1.5 rounded-xl border transition-colors ${
-                isAudioClick
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                  : 'bg-[#080808] text-slate-500 border-slate-800 hover:text-slate-300'
-              }`}
-              title={isAudioClick ? 'Clique Áudio Ativado' : 'Ativar Clique de Áudio (Beep)'}
-            >
-              {isAudioClick ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
-
-            {/* Pulsing Visual Beat Dots */}
-            <div className="flex items-center gap-1.5 bg-[#080808] px-3 py-1.5 rounded-xl border border-slate-800">
-              {Array.from({ length: beatsPerMeasure }).map((_, idx) => {
-                const beatNumber = idx + 1;
-                const isActiveBeat = isMetronomeActive && currentBeat === beatNumber;
-                return (
-                  <div
-                    key={idx}
-                    className={`w-5 h-5 rounded-full transition-all duration-75 flex items-center justify-center text-[12px] font-black leading-none ${
-                      isActiveBeat
-                        ? beatNumber === 1
-                          ? 'bg-[#FF4D00] text-slate-950 scale-125 shadow-lg shadow-[#FF4D00]/50'
-                          : 'bg-amber-400 text-slate-950 scale-110'
-                        : 'bg-slate-800 text-slate-500'
-                    }`}
-                  >
-                    {beatNumber}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* BPM Adjust Controls */}
-          <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setCustomBpm((b) => Math.max(30, b - 5))}
-              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
-              title="Restar 5 BPM"
-            >
-              -5
-            </button>
-            <button
-              onClick={() => setCustomBpm((b) => Math.max(30, b - 1))}
-              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
-              title="Restar 1 BPM"
-            >
-              -1
-            </button>
-            <span className="text-xs font-black text-[#FF4D00] px-2">{customBpm} BPM</span>
-            <button
-              onClick={() => setCustomBpm((b) => Math.min(300, b + 1))}
-              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
-              title="Somar 1 BPM"
-            >
-              +1
-            </button>
-            <button
-              onClick={() => setCustomBpm((b) => Math.min(300, b + 5))}
-              className="px-1.5 py-0.5 text-xs font-black text-slate-400 hover:text-white hover:bg-slate-800 rounded"
-              title="Somar 5 BPM"
-            >
-              +5
-            </button>
-          </div>
-        </div>
-        )}
 
         {/* Vocal Division & Voice Focus Mode Bar */}
         <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3 space-y-2 shadow-sm">
