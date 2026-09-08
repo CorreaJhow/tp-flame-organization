@@ -160,6 +160,25 @@ nenhum segredo embutido no navegador.
 | `src/App.tsx` | Envolve a árvore com verificação de auth (`onAuthStateChanged`). |
 | `docs/ARQUITETURA-DADOS.md` | Reescrever a seção do motor de sync pra refletir a arquitetura nova (documento vivo, precisa acompanhar). |
 
+## 3.1 Consequências observadas na Fase B (08/09/2026)
+
+- **Bundle de produção cresceu de 558KB pra 1.168KB** (`npm run build`).
+  Esperado, não é regressão: o SDK do Firebase (Firestore + Auth) já estava
+  instalado desde a Fase A mas tree-shaken por não ser usado ainda — agora
+  é usado em todo o app (login é obrigatório pra abrir), então entra no
+  bundle principal de verdade. Vale revisitar depois (isolar Auth num chunk
+  próprio?), mas não bloqueia esta fase.
+- **`googleAuth.ts`, `googleSheetsApi.ts`, `gasScript.ts` ficaram órfãos**
+  (nada mais importa deles), mas foram **mantidos no repositório de
+  propósito** — servem de referência/rollback caso algo dê errado antes da
+  Fase D estar validada de verdade em produção. Limpar isso é tarefa pra
+  depois que o Firestore estiver estável há um tempo, não agora.
+- **Restrição pra Fase C:** a versão atual das Security Rules em produção
+  está temporariamente sem o `email_verified` e com um e-mail de teste
+  extra (ver seção 2.3) — precisa voltar pra versão final **antes** de
+  migrar dado real (Fase D), não antes da Fase C (que ainda usa dado de
+  teste).
+
 ## 4. Passo a passo de execução
 
 ### Fase A — Fundação (baixo risco, não toca no app em produção)
@@ -177,14 +196,32 @@ nenhum segredo embutido no navegador.
 Tudo isso roda em paralelo ao app atual, sem desligar nada.
 
 ### Fase B — Camada de dados nova, em paralelo
-7. Escrever `firebase.ts` + a nova versão de `storage.ts` (ou um arquivo
-   novo, trocado no final) implementando a mesma interface pública de hoje.
-8. Escrever um script de migração **uma vez só** (`scripts/migrar-dados.js`,
-   Node com `firebase-admin`): lê `?action=getAll` do Apps Script (fonte
-   atual, intacta) e escreve cada linha como documento no Firestore,
-   preservando IDs. **Não apaga nada do Sheets** — o Sheets continua vivo
-   como cópia de segurança durante toda a transição.
-9. Testar a suíte (`npm test`) adaptada pra a nova camada.
+7. ✅ **Feito (08/09/2026).** `storage.ts` reescrito por completo — mesma
+   interface pública que a UI já usava (`getMusicas()`, `addCulto()`,
+   `deleteMusica()`, ...), agora com cache em memória por tabela mantido
+   por listeners em tempo real (`onSnapshot`) e escrita otimista local +
+   Firestore em paralelo. Fila manual, tombstones e merge de três vias
+   foram removidos por completo (decisão já registrada: padrão do
+   Firestore resolve isso sozinho). `App.tsx` ganhou o gate de login de
+   verdade (`AuthGate`/`LoginScreen`), `AdminView` perdeu os campos de
+   endpoint/GAS (decisão do usuário), e três telas que ficaram órfãs nessa
+   troca foram removidas: `MemberProfileModal.tsx` (seletor manual "quem
+   sou eu", substituído pelo login real), `InitialSyncOverlay.tsx` e
+   `GoogleWorkspaceModal.tsx`/`GasSetupModal.tsx` (config de backend que
+   não existe mais). Testado ao vivo, ponta a ponta, contra o Firestore
+   real: Músicas, Cultos, Integrantes, Admin (conta conectada, verificar
+   conexão, logout) — tudo sem erro de console. Um bug real foi pego e
+   corrigido em revisão antes do teste (cascata de exclusão calculava os
+   IDs órfãos *depois* de já ter filtrado o array local, sempre voltando
+   vazio) — coberto agora por teste automatizado dedicado.
+8. **Pendente.** Script de migração **uma vez só** dos dados reais de
+   produção (Sheets → Firestore), preservando IDs. **Não apaga nada do
+   Sheets** — continua vivo como cópia de segurança durante a transição.
+   Só faz sentido rodar isso já perto da Fase D — o Firestore de produção
+   está vazio de propósito até lá.
+9. ✅ **Feito.** Suíte de testes adaptada pra nova camada (mocks do
+   Firestore, sem tocar rede real) — 27 testes, `npm run lint` e
+   `npm run build` limpos.
 
 ### Fase C — Validação isolada
 10. Testar em uma URL de Preview Deployment da Vercel (branch separada,

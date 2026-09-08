@@ -1,9 +1,6 @@
 /**
- * Camada de dados da tabela Logs via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão das tabelas anteriores — nada no app
- * real importa este arquivo ainda.
+ * Camada de dados da tabela Logs via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`.
  *
  * Log é imutável por definição (mesmo comentário em `DATABASE_SCHEMA` no
  * `gasScript.ts`): só insert, nunca update nem delete — nem soft-delete.
@@ -23,8 +20,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { LogItem } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando } from './firestoreUtils';
+import { generateUUID, quemEstaEditando } from './firestoreUtils';
 
 const COLLECTION = 'logs';
 const LIMITE_LOGS = 50;
@@ -35,8 +31,8 @@ export async function getLogsFirestore(): Promise<LogItem[]> {
   return snap.docs.map((d) => d.data() as LogItem);
 }
 
-export async function addLogFirestore(action: string, detail: string, usuario?: string): Promise<LogItem> {
-  const id = generateUUID();
+export async function addLogFirestore(action: string, detail: string, usuario?: string, idPreGerado?: string): Promise<LogItem> {
+  const id = idPreGerado || generateUUID();
   const log: LogItem = {
     ID: id,
     Data: new Date().toISOString(),

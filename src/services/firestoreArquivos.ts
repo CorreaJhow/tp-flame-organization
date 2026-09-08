@@ -1,9 +1,6 @@
 /**
- * Camada de dados da tabela Arquivos via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão de `firestoreMusicas.ts` /
- * `firestoreVersoes.ts` — nada no app real importa este arquivo ainda.
+ * Camada de dados da tabela Arquivos via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`.
  */
 import {
   collection,
@@ -14,8 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Arquivo } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando, stripUndefined } from './firestoreUtils';
+import { generateUUID, quemEstaEditando, stripUndefined } from './firestoreUtils';
 
 const COLLECTION = 'arquivos';
 
@@ -28,8 +24,8 @@ export async function getArquivosFirestore(): Promise<Arquivo[]> {
 
 type CamposEditaveisArquivo = Pick<Arquivo, 'ID_Versao' | 'Tipo' | 'URL' | 'Nome'>;
 
-export async function addArquivoFirestore(input: CamposEditaveisArquivo): Promise<Arquivo> {
-  const id = generateUUID();
+export async function addArquivoFirestore(input: CamposEditaveisArquivo, idPreGerado?: string): Promise<Arquivo> {
+  const id = idPreGerado || generateUUID();
   const arquivo: Arquivo = {
     ID: id,
     ...input,

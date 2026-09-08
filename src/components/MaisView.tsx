@@ -129,10 +129,10 @@ export const MaisView: React.FC<MaisViewProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors">
-                Painel de Administração (GAS)
+                Painel de Administração
               </h3>
               <p className="text-xs text-slate-400">
-                Integração Google Apps Script e manutenção de banco de dados
+                Configurações avançadas e status do banco de dados
               </p>
             </div>
           </div>

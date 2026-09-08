@@ -1,10 +1,8 @@
 /**
- * Camada de dados da tabela Historico via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão das tabelas anteriores — nada no app
- * real importa este arquivo ainda. Sem campos opcionais nesta tabela, então
- * sem necessidade de `stripUndefined`.
+ * Camada de dados da tabela Historico via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts` (só
+ * leitura — nenhuma tela do app cria/edita histórico ainda hoje). Sem
+ * campos opcionais nesta tabela, então sem necessidade de `stripUndefined`.
  */
 import {
   collection,
@@ -15,8 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { HistoricoItem } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando } from './firestoreUtils';
+import { generateUUID, quemEstaEditando } from './firestoreUtils';
 
 const COLLECTION = 'historico';
 
