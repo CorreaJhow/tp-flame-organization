@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Flame, Shield, RefreshCw, WifiOff } from 'lucide-react';
 import { ViewTab } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   onNavigateTab: (tab: ViewTab) => void;
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSyncing = false,
   pendingCount = 0
 }) => {
+  const { user } = useAuth();
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   useEffect(() => {
@@ -62,6 +64,32 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Quem está logado — foto (se tiver) + nome. Clicar leva pro
+              Admin, onde dá pra ver a conta completa e sair. */}
+          {user && (
+            <button
+              onClick={() => onNavigateTab('admin')}
+              className="flex items-center gap-1.5 pl-1 pr-2 py-1 min-h-[40px] rounded-full bg-[#121212] hover:bg-[#181818] border border-slate-800 transition-all active:scale-95"
+              title={user.displayName || user.email || 'Sua conta'}
+            >
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="w-7 h-7 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-[#FF4D00]/15 text-[#FF4D00] border border-[#FF4D00]/30 flex items-center justify-center text-[11px] font-black shrink-0">
+                  {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="hidden sm:inline text-[11px] font-bold text-slate-300 max-w-[110px] truncate">
+                {(user.displayName || user.email || '').split(' ')[0]}
+              </span>
+            </button>
+          )}
+
           {/* Offline Mode Indicator */}
           {!isOnline && (
             <div

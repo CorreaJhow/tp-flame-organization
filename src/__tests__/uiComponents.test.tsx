@@ -44,11 +44,13 @@ describe('4. Component & UI Interaction Tests', () => {
     const handleSync = vi.fn();
     render(
       <ToastProvider>
-        <Header
-          onNavigateTab={() => {}}
-          onSync={handleSync}
-          isSyncing={false}
-        />
+        <AuthProvider>
+          <Header
+            onNavigateTab={() => {}}
+            onSync={handleSync}
+            isSyncing={false}
+          />
+        </AuthProvider>
       </ToastProvider>
     );
 

@@ -170,18 +170,40 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   }, [currentVersao?.Compasso]);
 
   // Web Audio click generator
+  /**
+   * Cria (ou destrava) o AudioContext. TEM que ser chamado direto de dentro
+   * de um clique/toque de verdade — navegadores (principalmente iOS Safari)
+   * bloqueiam áudio que não começa num gesto do usuário. Era exatamente o
+   * bug do metrônomo "sem som": o context só era criado dentro do
+   * `setInterval` do loop de batida, nunca num clique direto, então ficava
+   * suspenso pra sempre e nenhum som saía — o flash visual funcionava
+   * (é só CSS/estado), dando a impressão de "quebrado" mesmo sem estar.
+   */
+  const ensureAudioContext = (): AudioContext | null => {
+    if (!audioCtxRef.current) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) audioCtxRef.current = new AudioCtx();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    return ctx;
+  };
+
+  const handleToggleMetronome = () => {
+    if (!isMetronomeActive) {
+      // Destrava o audio AQUI, no clique direto -- não no timer do loop.
+      ensureAudioContext();
+    }
+    setIsMetronomeActive(!isMetronomeActive);
+  };
+
   const playClick = (isBeatOne: boolean) => {
     if (!isAudioClick) return;
     try {
-      if (!audioCtxRef.current) {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx) audioCtxRef.current = new AudioCtx();
-      }
-      const ctx = audioCtxRef.current;
+      const ctx = ensureAudioContext();
       if (ctx) {
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -522,7 +544,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             </button>
 
             <button
-              onClick={() => setIsMetronomeActive(!isMetronomeActive)}
+              onClick={handleToggleMetronome}
               className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all shadow-md ${
                 isMetronomeActive
                   ? 'bg-[#FF4D00] text-slate-950 ring-2 ring-[#FF4D00]/50'
