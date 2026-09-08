@@ -7,6 +7,20 @@
 import { auth } from './firebase';
 
 /**
+ * Movido de `storage.ts` pra cá (05/09/2026) — evita dependência circular
+ * agora que `storage.ts` importa das camadas `firestoreXxx.ts`, que por sua
+ * vez precisam gerar ID de documento. `storage.ts` reexporta esta função
+ * (`export { generateUUID }`) pra quem ainda importa de lá continuar
+ * funcionando sem mudar nada.
+ */
+export function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0, v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
  * O Firestore REJEITA gravar um campo com valor `undefined` (erro em tempo
  * de execução, não um aviso) — diferente do Google Sheets, que só deixava
  * a célula em branco. Campos opcionais das interfaces em `types.ts` (ex.:

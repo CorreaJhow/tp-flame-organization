@@ -1,382 +1,227 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { storage } from '../services/storage';
 
-describe('2. Local Storage & Sync Engine Tests', () => {
+/**
+ * Mocks das camadas Firestore (Fase 4 — ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
+ *
+ * SEM ISSO, os testes chamariam o Firestore de PRODUÇÃO de verdade — o
+ * `storage.ts` dispara essas funções em segundo plano (fire-and-forget) a
+ * cada mutação. `storage.ts` importa `./firebase` (via os módulos
+ * `firestoreXxx.ts`), que precisa de `firebase/firestore` mockado também,
+ * senão `initializeFirestore` tentaria abrir conexão de verdade.
+ */
+vi.mock('firebase/firestore', () => ({
+  collection: vi.fn((_db: any, name: string) => ({ __name: name })),
+  doc: vi.fn((_db: any, name: string, id: string) => ({ __name: name, __id: id })),
+  onSnapshot: vi.fn((_ref: any, onNext: any) => {
+    onNext({ docs: [], metadata: { hasPendingWrites: false } });
+    return () => {};
+  }),
+  query: vi.fn((...args: any[]) => args),
+  orderBy: vi.fn(),
+  limit: vi.fn(),
+  getDocs: vi.fn().mockResolvedValue({ docs: [] }),
+  setDoc: vi.fn().mockResolvedValue(undefined),
+  updateDoc: vi.fn().mockResolvedValue(undefined),
+  getDoc: vi.fn().mockResolvedValue({ exists: () => false, data: () => ({}) }),
+  initializeFirestore: vi.fn(() => ({})),
+  persistentLocalCache: vi.fn(() => ({})),
+  persistentMultipleTabManager: vi.fn(() => ({}))
+}));
+
+vi.mock('../services/firebase', () => ({
+  db: {},
+  auth: { currentUser: { uid: 'test-uid', email: 'teste@tpflame.org', displayName: 'Teste' } },
+  googleProvider: {}
+}));
+
+vi.mock('../services/firestoreMusicas', () => ({
+  addMusicaFirestore: vi.fn().mockResolvedValue(undefined),
+  updateMusicaFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteMusicaFirestore: vi.fn().mockResolvedValue(undefined),
+  getMusicasFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreVersoes', () => ({
+  addVersaoFirestore: vi.fn().mockResolvedValue(undefined),
+  updateVersaoFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteVersaoFirestore: vi.fn().mockResolvedValue(undefined),
+  getVersoesFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreArquivos', () => ({
+  addArquivoFirestore: vi.fn().mockResolvedValue(undefined),
+  updateArquivoFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteArquivoFirestore: vi.fn().mockResolvedValue(undefined),
+  getArquivosFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreNotas', () => ({
+  addNotaFirestore: vi.fn().mockResolvedValue(undefined),
+  updateNotaFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteNotaFirestore: vi.fn().mockResolvedValue(undefined),
+  getNotasFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreCultos', () => ({
+  addCultoFirestore: vi.fn().mockResolvedValue(undefined),
+  updateCultoFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteCultoFirestore: vi.fn().mockResolvedValue(undefined),
+  getCultosFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreRepertorio', () => ({
+  addRepertorioItemFirestore: vi.fn().mockResolvedValue(undefined),
+  updateRepertorioItemFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteRepertorioItemFirestore: vi.fn().mockResolvedValue(undefined),
+  getRepertorioFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreIntegrantes', () => ({
+  addIntegranteFirestore: vi.fn().mockResolvedValue(undefined),
+  updateIntegranteFirestore: vi.fn().mockResolvedValue(undefined),
+  deleteIntegranteFirestore: vi.fn().mockResolvedValue(undefined),
+  getIntegrantesFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreHistorico', () => ({
+  getHistoricoFirestore: vi.fn().mockResolvedValue([])
+}));
+vi.mock('../services/firestoreLogs', () => ({
+  addLogFirestore: vi.fn().mockResolvedValue(undefined),
+  getLogsFirestore: vi.fn().mockResolvedValue([])
+}));
+
+import { storage } from '../services/storage';
+import * as fsMusicas from '../services/firestoreMusicas';
+import * as fsVersoes from '../services/firestoreVersoes';
+import * as fsNotas from '../services/firestoreNotas';
+import * as fsArquivos from '../services/firestoreArquivos';
+import * as fsCultos from '../services/firestoreCultos';
+import * as fsRepertorio from '../services/firestoreRepertorio';
+
+describe('2. Admin (senha local do painel)', () => {
   beforeEach(() => {
     localStorage.clear();
-    storage.resetToDefaults();
-    vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 
-  it('2.1 O app ja vem apontando para o backend de producao', () => {
-    // Endpoint e a unica configuracao que existe; o ID da planilha e derivado
-    // dele em runtime (ver 2.1b), entao nao ha um segundo valor para divergir.
-    const endpoint = storage.getGasEndpoint();
-    expect(endpoint).toContain('script.google.com/macros/s/');
-    expect(endpoint.endsWith('/exec')).toBe(true);
+  it('2.1 Senha padrão é "admin" até ser trocada', () => {
+    expect(storage.loginAdmin('admin')).toBe(true);
+    expect(storage.isAdminLoggedIn()).toBe(true);
   });
 
-  it('2.1b O Spreadsheet ID vem do endpoint, nunca de uma constante', async () => {
-    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
-    expect(storage.getGasSpreadsheetId()).toBe('');
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        status: 'success',
-        spreadsheetId: '1PLANILHA_DO_ENDPOINT',
-        spreadsheetName: 'TP Flame - Banco de Dados',
-        schemaVersion: 2
-      })
-    }) as any;
-
-    const info = await storage.refreshBackendIdentity();
-
-    expect(info?.spreadsheetId).toBe('1PLANILHA_DO_ENDPOINT');
-    // Os dois caminhos de escrita passam a mirar a mesma planilha.
-    expect(storage.getGasSpreadsheetId()).toBe('1PLANILHA_DO_ENDPOINT');
-    expect(storage.getSpreadsheetName()).toBe('TP Flame - Banco de Dados');
+  it('2.2 Senha errada não loga', () => {
+    expect(storage.loginAdmin('errada')).toBe(false);
+    expect(storage.isAdminLoggedIn()).toBe(false);
   });
 
-  it('2.1e URL com reticencias (o bug real de producao) e rejeitada, nao aceita silenciosamente', () => {
-    // Reproduz exatamente o que apareceu no bundle publicado em 21/08/2026:
-    // a URL certa, mas com um caractere de reticencias "…" no meio, cortando
-    // o ID de implantacao. Antes desta validacao, isso era salvo sem aviso e
-    // toda sincronizacao falhava silenciosamente (erro de rede local, nem
-    // chega a CORS) ate alguem abrir o DevTools.
-    const antes = storage.getGasEndpoint();
-    const salvou = storage.setGasEndpoint('https://script.google.com/macros/s/AKfycbzXHtLDcy3p…/exec');
-
-    expect(salvou).toBe(false);
-    expect(storage.getGasEndpoint()).toBe(antes);
+  it('2.3 Trocar a senha exige a nova senha, não mais a antiga', () => {
+    storage.setAdminPassword('nova123');
+    expect(storage.loginAdmin('admin')).toBe(false);
+    expect(storage.loginAdmin('nova123')).toBe(true);
   });
 
-  it('2.1f Endpoint corrompido ja salvo em cache e ignorado na leitura', () => {
-    // Cobre o caso em que a corrupcao entrou por uma variavel de ambiente
-    // (fora do controle do setGasEndpoint) e foi parar no localStorage antes
-    // desta validacao existir. getGasEndpoint() precisa sanitizar tambem na
-    // leitura, ou o aparelho fica preso na URL quebrada para sempre.
-    localStorage.setItem('tp_flame_gas_endpoint_v1', 'https://script.google.com/macros/s/AKfycbzXHtLDcy3p…/exec');
-    localStorage.setItem('tp_flame_backend_config_version_v1', '999');
-
-    const endpoint = storage.getGasEndpoint();
-    expect(endpoint).not.toContain('…');
-    expect(endpoint.length).toBeGreaterThan(0);
-  });
-
-  it('2.1g Endpoint valido sobrevive a sanitizacao sem alteracao', () => {
-    const url = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7jPlO1a4twVVxpWigeiio8paO2VWbEu0hzcFiLp60E3kPqbIcu6/exec';
-    expect(storage.setGasEndpoint(url)).toBe(true);
-    expect(storage.getGasEndpoint()).toBe(url);
-  });
-
-  it('2.1d Nao existe API publica para setar o Spreadsheet ID direto', () => {
-    // GoogleWorkspaceModal tinha 3 call sites que faziam isso via OAuth/Drive,
-    // desconectado do endpoint -- foi a causa de tres planilhas simultaneas em
-    // producao. O metodo publico foi removido para tornar isso impossivel de
-    // reintroduzir por acidente numa tela nova.
-    expect((storage as any).setGasSpreadsheetId).toBeUndefined();
-  });
-
-  it('2.1c Configuracao antiga em cache e descartada na migracao', () => {
-    localStorage.clear();
-    localStorage.setItem('tp_flame_gas_endpoint_v1', 'https://script.google.com/macros/s/ENDPOINT_ANTIGO/exec');
-    localStorage.setItem('tp_flame_gas_spreadsheet_id_v1', '1kTVwhWqVOBUwNGtgt76m6Z25UG6hvNbFkjGhbt9m8GU');
-
-    // Sem o descarte, o aparelho ficaria preso na planilha antiga para sempre,
-    // porque o localStorage sempre vence o default.
-    expect(storage.getGasEndpoint()).not.toContain('ENDPOINT_ANTIGO');
-    expect(storage.getGasSpreadsheetId()).toBe('');
-  });
-
-  it('2.2 Should allow updating and retrieving custom GAS Endpoint URL', () => {
-    const customUrl = 'https://script.google.com/macros/s/CUSTOM_DEPLOYMENT_ID/exec';
-    storage.setGasEndpoint(customUrl);
-    expect(storage.getGasEndpoint()).toBe(customUrl);
-  });
-
-  it('2.3 Um dispositivo novo comeca vazio, sem musicas de demonstracao', () => {
-    // Dados de exemplo nunca eram enviados para a planilha: sumiam na primeira
-    // sincronizacao e pareciam perda de dados. Agora o aparelho abre vazio e se
-    // preenche pela planilha, que e a unica fonte de verdade.
-    expect(storage.getMusicas()).toEqual([]);
-    expect(storage.getVersoes()).toEqual([]);
-    expect(storage.getCultos()).toEqual([]);
-    expect(storage.getIntegrantes()).toEqual([]);
-  });
-
-  it('2.4 Should add a new song with version and set pending sync flag to true', () => {
-    const result = storage.addMusicaWithVersao(
-      {
-        Nome: 'Vitorioso És',
-        Artista: 'Gabriel Guedes',
-        Categoria: 'Celebração'
-      },
-      {
-        Nome_Versao: 'Versão Principal',
-        Tom: 'G',
-        Letra: '[G] Vitorioso És [D] Sobre a morte [Em] Venceste [C]',
-        Estrutura: 'INTRO - V1 - REFRÃO',
-        Obs: 'Tocar forte'
-      }
-    );
-
-    expect(result.musica.ID).toBeDefined();
-    expect(result.musica.Nome).toBe('Vitorioso És');
-    expect(result.versao.ID).toBeDefined();
-    expect(storage.hasPendingSync()).toBe(true);
-    expect(storage.getPendingCount()).toBeGreaterThan(0);
-  });
-
-  it('2.5 Should add a new member (Integrante) and preserve locally across sync pulls', async () => {
-    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
-
-    // 1. Add new member
-    const newMember = storage.addIntegrante({
-      Nome: 'Gabriel Pastor',
-      Funcao: 'Ministro / Vocal',
-      Email: 'gabriel@tpflame.org',
-      Telefone: '(11) 99999-8888',
-      Ativo: true
-    });
-
-    expect(newMember.ID).toBeDefined();
-    expect(storage.hasPendingSync()).toBe(true);
-    expect(storage.getIntegrantes().some(i => i.Nome === 'Gabriel Pastor')).toBe(true);
-
-    // 2. Simulate GAS returning only initial remote members (simulating older remote sheet)
-    global.fetch = vi.fn().mockImplementation((url: string, opts?: any) => {
-      if (typeof url === 'string' && url.includes('action=getAll')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            status: 'success',
-            data: {
-              musicas: [],
-              versoes: [],
-              integrantes: [
-                { ID: 'remote-1', Nome: 'Davi Silva', Funcao: 'Vocal / Violão', Email: 'davi@tpflame.org' }
-              ]
-            }
-          })
-        });
-      }
-      return Promise.resolve({ ok: true, status: 200 });
-    });
-
-    // 3. Trigger sync
-    const syncRes = await storage.syncWithGas();
-    expect(syncRes.success).toBe(true);
-
-    // 4. Verify ZERO data loss: locally added member MUST still exist!
-    const membersAfterSync = storage.getIntegrantes();
-    expect(membersAfterSync.some(i => i.Nome === 'Gabriel Pastor')).toBe(true);
-    expect(membersAfterSync.some(i => i.Nome === 'Davi Silva')).toBe(true);
-  });
-
-  it('2.6 Should retrieve cultos and handle pending sync queue transitions', () => {
-    const cultos = storage.getCultos();
-    expect(Array.isArray(cultos)).toBe(true);
-
-    storage.clearSyncQueue();
-    expect(storage.hasPendingSync()).toBe(false);
-
-    storage.addCulto({
-      Data: '2026-08-15T19:00',
-      Nome_Evento: 'Culto Especial',
-      Status: 'Agendado'
-    });
-    expect(storage.hasPendingSync()).toBe(true);
-  });
-
-  it('2.7 Should clear all data when clearAllData is executed', () => {
-    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
-    storage.clearAllData();
-
-    const songs = storage.getMusicas();
-    expect(songs.length).toBe(0);
-    expect(storage.getGasEndpoint()).toContain('script.google.com');
-    expect(storage.hasPendingSync()).toBe(false);
+  it('2.4 Logout derruba a sessão', () => {
+    storage.loginAdmin('admin');
+    storage.logoutAdmin();
+    expect(storage.isAdminLoggedIn()).toBe(false);
   });
 });
 
 /**
- * Invariantes da Fase 1. Cada teste aqui corresponde a um bug que chegou a
- * produção e causou duplicação ou perda de dado. Se algum voltar a falhar,
- * a regressão é de perda de cifra — não é flakiness.
+ * O motor de sincronização mudou de arquitetura (Fase 4): não existe mais
+ * fila manual, tombstone nem merge de três vias — o Firestore resolve isso
+ * sozinho. O que precisa continuar garantido é o CONTRATO que a UI depende:
+ * toda mutação aparece instantaneamente no cache local (síncrono, sem
+ * esperar a rede) e a exclusão em cascata continua funcionando.
  */
-describe('3. Invariantes do motor de sincronização', () => {
+describe('3. Cache local otimista (contrato que a UI depende)', () => {
   beforeEach(() => {
-    localStorage.clear();
-    storage.resetToDefaults();
-    storage.setGasEndpoint('https://script.google.com/macros/s/TEST_DEPLOYMENT/exec');
-    storage.clearSyncQueue();
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    storage.stopRealtimeSync();
   });
 
-  it('3.1 Uma mutação enfileira uma vez só e não escreve por fora da fila', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ status: 'success' }) });
-    global.fetch = fetchSpy as any;
+  it('3.1 addMusicaWithVersao aparece em getMusicas()/getVersoes() na hora, sem esperar promessa', () => {
+    const antesQtdMusicas = storage.getMusicas().length;
+    const { musica, versao } = storage.addMusicaWithVersao(
+      { Nome: 'Vitorioso És', Artista: 'Gabriel Guedes', Categoria: 'Celebração' },
+      { Nome_Versao: 'Versão Principal', Tom: 'G', Letra: '[G] teste', Estrutura: 'V1', Obs: '' }
+    );
 
-    storage.addCulto({
-      Data: '2026-09-01T19:00',
-      Nome_Evento: 'Culto Teste',
-      Status: 'Agendado'
-    });
+    expect(storage.getMusicas().length).toBe(antesQtdMusicas + 1);
+    expect(storage.getMusicas().some((m) => m.ID === musica.ID)).toBe(true);
+    expect(storage.getVersoes().some((v) => v.ID === versao.ID && v.ID_Musica === musica.ID)).toBe(true);
 
-    // O envio é agendado (debounce), nunca disparado de dentro da mutação.
-    expect(fetchSpy).not.toHaveBeenCalled();
-
-    const cultoItems = storage.getSyncQueue().filter((q) => q.table === 'Cultos');
-    expect(cultoItems.length).toBe(1);
-    expect(cultoItems[0].action).toBe('insert');
+    // E a escrita real foi disparada com o MESMO ID gerado localmente —
+    // essencial pro listener em tempo real reconciliar sem duplicar.
+    expect(fsMusicas.addMusicaFirestore).toHaveBeenCalledWith(
+      expect.objectContaining({ Nome: 'Vitorioso És' }),
+      musica.ID
+    );
+    expect(fsVersoes.addVersaoFirestore).toHaveBeenCalledWith(
+      expect.objectContaining({ ID_Musica: musica.ID }),
+      versao.ID
+    );
   });
 
-  it('3.2 Escrita não confirmada mantém o item na fila e conta a tentativa', async () => {
-    // Servidor responde 200 mas com status de erro no corpo — exatamente o
-    // caso que o modo no-cors tratava como sucesso.
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ status: 'error', message: 'Planilha ocupada' })
-    }) as any;
+  it('3.2 updateMusica muda o cache local imediatamente', () => {
+    const { musica } = storage.addMusicaWithVersao(
+      { Nome: 'Original', Artista: 'Banda', Categoria: 'Adoração' },
+      { Nome_Versao: 'V1', Tom: 'C', Letra: '', Estrutura: '', Obs: '' }
+    );
 
-    storage.addIntegrante({
-      Nome: 'Teste Falha',
-      Funcao: 'Baixo',
-      Email: 'teste@tpflame.org',
-      Ativo: true
-    });
+    storage.updateMusica(musica.ID, { Nome: 'Editado' });
 
-    const before = storage.getPendingCount();
-    expect(before).toBeGreaterThan(0);
-
-    const res = await storage.flushQueue();
-
-    expect(res.pushed).toBe(0);
-    expect(res.failed).toBe(before);
-    expect(storage.getPendingCount()).toBe(before);
-    expect(storage.getSyncQueue().every((q) => (q.attempts || 0) >= 1)).toBe(true);
-    expect(storage.getIntegrantes().some((i) => i.Nome === 'Teste Falha')).toBe(true);
+    expect(storage.getMusicas().find((m) => m.ID === musica.ID)?.Nome).toBe('Editado');
+    expect(fsMusicas.updateMusicaFirestore).toHaveBeenCalledWith(musica.ID, { Nome: 'Editado' });
   });
 
-  it('3.3 Escrita confirmada remove o item da fila', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ status: 'success' })
-    }) as any;
+  it('3.3 deleteMusica remove a música em cascata (versões, notas, arquivos, repertório) do cache local', () => {
+    const { musica, versao } = storage.addMusicaWithVersao(
+      { Nome: 'Vai Ser Excluída', Artista: 'Banda', Categoria: 'Adoração' },
+      { Nome_Versao: 'V1', Tom: 'C', Letra: '', Estrutura: '', Obs: '' },
+      [{ Instrumento: 'Baixo', Observacao: 'nota de teste' }],
+      [{ Tipo: 'Cifra', URL: 'https://exemplo.com' }]
+    );
+    const culto = storage.addCulto({ Data: '2026-09-10T19:00', Nome_Evento: 'Culto Teste', Status: 'Agendado' });
+    const item = storage.addSongToRepertorio(culto.ID, versao.ID);
 
-    storage.addCulto({ Data: '2026-09-02T19:00', Nome_Evento: 'Culto OK', Status: 'Agendado' });
-    const before = storage.getPendingCount();
+    storage.deleteMusica(musica.ID);
 
-    const res = await storage.flushQueue();
+    expect(storage.getMusicas().some((m) => m.ID === musica.ID)).toBe(false);
+    expect(storage.getVersoes().some((v) => v.ID === versao.ID)).toBe(false);
+    expect(storage.getNotas().some((n) => n.ID_Versao === versao.ID)).toBe(false);
+    expect(storage.getArquivos().some((a) => a.ID_Versao === versao.ID)).toBe(false);
+    expect(storage.getRepertorio().some((r) => r.ID === item.ID)).toBe(false);
 
-    expect(res.pushed).toBe(before);
-    expect(res.failed).toBe(0);
+    // Regressão do bug pego em revisão: os IDs em cascata precisam ser
+    // capturados ANTES de filtrar os arrays locais, senão a exclusão real
+    // no Firestore nunca é disparada pra notas/arquivos/repertório.
+    expect(fsVersoes.deleteVersaoFirestore).toHaveBeenCalledWith(versao.ID);
+    expect(fsNotas.deleteNotaFirestore).toHaveBeenCalled();
+    expect(fsArquivos.deleteArquivoFirestore).toHaveBeenCalled();
+    expect(fsRepertorio.deleteRepertorioItemFirestore).toHaveBeenCalledWith(item.ID);
+  });
+
+  it('3.4 deleteCulto remove os itens de repertório daquele culto em cascata', () => {
+    const { versao } = storage.addMusicaWithVersao(
+      { Nome: 'Musica X', Artista: 'Banda', Categoria: 'Adoração' },
+      { Nome_Versao: 'V1', Tom: 'C', Letra: '', Estrutura: '', Obs: '' }
+    );
+    const culto = storage.addCulto({ Data: '2026-09-11T19:00', Nome_Evento: 'Culto a Excluir', Status: 'Agendado' });
+    const item = storage.addSongToRepertorio(culto.ID, versao.ID);
+
+    storage.deleteCulto(culto.ID);
+
+    expect(storage.getCultos().some((c) => c.ID === culto.ID)).toBe(false);
+    expect(storage.getRepertorio().some((r) => r.ID === item.ID)).toBe(false);
+    expect(fsRepertorio.deleteRepertorioItemFirestore).toHaveBeenCalledWith(item.ID);
+    expect(fsCultos.deleteCultoFirestore).toHaveBeenCalledWith(culto.ID);
+  });
+
+  it('3.5 addLog aparece na hora em getLogs() e limita a 50 itens', () => {
+    for (let i = 0; i < 55; i++) {
+      storage.addLog('TESTE_ACAO', `detalhe ${i}`);
+    }
+    expect(storage.getLogs().length).toBe(50);
+    // O mais recente fica primeiro.
+    expect(storage.getLogs()[0].Registro_Afetado).toBe('detalhe 54');
+  });
+
+  it('3.6 getPendingCount não quebra antes de startRealtimeSync ser chamado', () => {
     expect(storage.getPendingCount()).toBe(0);
-  });
-
-  it('3.4 Planilha vazia não pode apagar a biblioteca local', async () => {
-    storage.addMusicaWithVersao(
-      { Nome: 'Cifra Importante', Artista: 'Banda', Categoria: 'Adoração' },
-      { Nome_Versao: 'Principal', Tom: 'G', Letra: '[G] teste', Estrutura: 'V1', Obs: '' }
-    );
-
-    // Fila drenada com sucesso: sem a trava, o merge não teria nada protegendo
-    // as músicas locais quando o pull voltasse vazio.
-    global.fetch = vi.fn().mockImplementation((url: string) => {
-      if (typeof url === 'string' && url.includes('action=getAll')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            status: 'success',
-            data: { musicas: [], versoes: [], integrantes: [], cultos: [] }
-          })
-        });
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'success' }) });
-    }) as any;
-
-    await storage.syncWithGas();
-
-    expect(storage.getMusicas().some((m) => m.Nome === 'Cifra Importante')).toBe(true);
-  });
-
-  it('3.5 Logs de sincronização ficam só no dispositivo', () => {
-    storage.clearSyncQueue();
-
-    storage.addLog('GAS_SYNC_SUCCESS', 'sincronizado');
-    expect(storage.getSyncQueue().filter((q) => q.table === 'Logs').length).toBe(0);
-
-    storage.addLog('INSERT_MUSICA', 'música criada');
-    expect(storage.getSyncQueue().filter((q) => q.table === 'Logs').length).toBe(1);
-
-    // Continua visível localmente nos dois casos.
-    expect(storage.getLogs().some((l) => l.Acao === 'GAS_SYNC_SUCCESS')).toBe(true);
-  });
-
-  it('3.6 Conflito reportado pelo backend sai da fila e não fica tentando de novo para sempre', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ status: 'conflict', message: 'Já existe uma versão mais recente' })
-    }) as any;
-
-    storage.updateCulto(
-      storage.addCulto({ Data: '2026-09-03T19:00', Nome_Evento: 'Culto Conflito', Status: 'Agendado' }).ID,
-      { Nome_Evento: 'Culto Conflito (editado offline)' }
-    );
-
-    // IDs de antes do flush: o proprio addLog('SYNC_CONFLICT', ...) enfileira
-    // um novo log DURANTE o flush (comportamento normal de qualquer log), o
-    // que mantém a contagem agregada parecida -- por isso a asserção certa é
-    // "nenhum destes IDs originais sobrou", não "a fila diminuiu".
-    const originalIds = storage.getSyncQueue().map((q) => q.id);
-    const res = await storage.flushQueue();
-
-    // Conflito é um desfecho DEFINITIVO do protocolo: sai da fila (como
-    // sucesso), mas não conta como pushed -- e fica registrado no log local.
-    expect(res.conflicts).toBeGreaterThan(0);
-    expect(res.failed).toBe(0);
-    const remainingIds = storage.getSyncQueue().map((q) => q.id);
-    expect(originalIds.some((id) => remainingIds.includes(id))).toBe(false);
-    expect(storage.getLogs().some((l) => l.Acao === 'SYNC_CONFLICT')).toBe(true);
-  });
-
-  it('3.7 syncWithGas reconcilia para a versão vencedora quando há conflito', async () => {
-    const musica = storage.addMusicaWithVersao(
-      { Nome: 'Cifra Disputada', Artista: 'Banda', Categoria: 'Adoração' },
-      { Nome_Versao: 'V1', Tom: 'C', Letra: '[C] original', Estrutura: 'V1', Obs: '' }
-    ).musica;
-
-    // Edição local que, por horário real, é mais antiga que a que já está na
-    // planilha -- simula um dispositivo que editou offline e só sincronizou
-    // bem depois. clearSyncQueue isola essa edição do insert original.
-    storage.clearSyncQueue();
-    storage.updateMusica(musica.ID, { Nome: 'Cifra Disputada (minha edição atrasada)' });
-
-    const versaoVencedora = { ...musica, Nome: 'Cifra Disputada (versão de outra pessoa, mais recente)' };
-
-    global.fetch = vi.fn().mockImplementation((url: string, opts?: any) => {
-      if (typeof url === 'string' && url.includes('action=getAll')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            status: 'success',
-            data: { musicas: [versaoVencedora], versoes: [], integrantes: [], cultos: [] }
-          })
-        });
-      }
-      // Qualquer POST de escrita para esta música é um conflito.
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ status: 'conflict', message: 'Versão mais recente já existe' })
-      });
-    }) as any;
-
-    const res = await storage.syncWithGas();
-
-    expect(res.conflictCount).toBeGreaterThan(0);
-    const musicasFinal = storage.getMusicas();
-    const finalItem = musicasFinal.find((m) => m.ID === musica.ID);
-    expect(finalItem?.Nome).toBe('Cifra Disputada (versão de outra pessoa, mais recente)');
   });
 });

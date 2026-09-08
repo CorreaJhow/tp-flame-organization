@@ -1,9 +1,6 @@
 /**
- * Camada de dados da tabela Cultos via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão das tabelas anteriores — nada no app
- * real importa este arquivo ainda.
+ * Camada de dados da tabela Cultos via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`.
  */
 import {
   collection,
@@ -14,8 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Culto } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando, stripUndefined } from './firestoreUtils';
+import { generateUUID, quemEstaEditando, stripUndefined } from './firestoreUtils';
 
 const COLLECTION = 'cultos';
 
@@ -28,8 +24,8 @@ export async function getCultosFirestore(): Promise<Culto[]> {
 
 type CamposEditaveisCulto = Pick<Culto, 'Data' | 'Nome_Evento' | 'Status' | 'Observacoes'>;
 
-export async function addCultoFirestore(input: CamposEditaveisCulto): Promise<Culto> {
-  const id = generateUUID();
+export async function addCultoFirestore(input: CamposEditaveisCulto, idPreGerado?: string): Promise<Culto> {
+  const id = idPreGerado || generateUUID();
   const culto: Culto = {
     ID: id,
     ...input,

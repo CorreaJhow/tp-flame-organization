@@ -20,15 +20,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     if (!mensagem.trim()) return;
 
     const feedbackText = `[${type.toUpperCase()}] ${nome ? `De: ${nome} - ` : ''}${mensagem}`;
+    // addLog já grava no Firestore por baixo (ver storage.ts) — não existe
+    // mais um backend separado (GAS) pra mandar isso duas vezes.
     storage.addLog('FEEDBACK', feedbackText);
-
-    // Also send to GAS if configured
-    storage.sendToGas('Logs', 'insert', {
-      ID: Date.now().toString(),
-      Data_Hora: new Date().toISOString(),
-      Acao: 'FEEDBACK',
-      Detalhes: feedbackText
-    });
 
     setSubmitted(true);
     setTimeout(() => {

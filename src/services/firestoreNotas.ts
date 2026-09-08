@@ -1,9 +1,6 @@
 /**
- * Camada de dados da tabela Notas via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão das tabelas anteriores — nada no app
- * real importa este arquivo ainda.
+ * Camada de dados da tabela Notas via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`.
  */
 import {
   collection,
@@ -14,8 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Nota } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando, stripUndefined } from './firestoreUtils';
+import { generateUUID, quemEstaEditando, stripUndefined } from './firestoreUtils';
 
 const COLLECTION = 'notas';
 
@@ -31,8 +27,8 @@ type CamposEditaveisNota = Pick<
   'ID_Versao' | 'Instrumento' | 'Observacao' | 'Autor' | 'Titulo' | 'TipoNota'
 >;
 
-export async function addNotaFirestore(input: CamposEditaveisNota): Promise<Nota> {
-  const id = generateUUID();
+export async function addNotaFirestore(input: CamposEditaveisNota, idPreGerado?: string): Promise<Nota> {
+  const id = idPreGerado || generateUUID();
   const nota: Nota = {
     ID: id,
     ...input,

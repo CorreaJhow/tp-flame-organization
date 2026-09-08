@@ -1,620 +1,173 @@
-import { ConfigItem, Musica, Versao, Arquivo, Nota, Culto, RepertorioItem, Integrante, HistoricoItem, LogItem, SyncQueueItem } from '../types';
-import { 
-  INITIAL_CONFIG, 
-  INITIAL_MUSICAS, 
-  INITIAL_VERSOES, 
-  INITIAL_ARQUIVOS, 
-  INITIAL_NOTAS, 
-  INITIAL_CULTOS, 
-  INITIAL_REPERTORIO, 
-  INITIAL_INTEGRANTES, 
-  INITIAL_HISTORICO, 
-  INITIAL_LOGS 
-} from '../data/initialData';
-import { getAccessToken } from './googleAuth';
-import { readAllSpreadsheetData, pushTableActionToGoogleSheets, SCHEMA_VERSION, PushResult } from './googleSheetsApi';
-
-const KEYS = {
-  CONFIG: 'tp_flame_config_v1',
-  MUSICAS: 'tp_flame_musicas_v1',
-  VERSOES: 'tp_flame_versoes_v1',
-  ARQUIVOS: 'tp_flame_arquivos_v1',
-  NOTAS: 'tp_flame_notas_v1',
-  CULTOS: 'tp_flame_cultos_v1',
-  REPERTORIO: 'tp_flame_repertorio_v1',
-  INTEGRANTES: 'tp_flame_integrantes_v1',
-  HISTORICO: 'tp_flame_historico_v1',
-  LOGS: 'tp_flame_logs_v1',
-  GAS_ENDPOINT: 'tp_flame_gas_endpoint_v1',
-  GAS_SPREADSHEET_ID: 'tp_flame_gas_spreadsheet_id_v1',
-  SPREADSHEET_NAME: 'tp_flame_spreadsheet_name_v1',
-  SYNC_QUEUE: 'tp_flame_sync_queue_v1',
-  LAST_SYNC: 'tp_flame_last_sync_v1',
-  TOMBSTONES: 'tp_flame_tombstones_v1',
-  ACTIVE_MEMBER: 'tp_flame_active_member_id_v1'
-};
-
-export function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
 /**
- * BACKEND ÚNICO — UMA CONFIGURAÇÃO, NÃO DUAS
+ * Camada de dados unificada do TP Flame (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
  *
- * O endpoint do Apps Script é a ÚNICA coisa configurável. O ID da planilha,
- * usado pelo caminho OAuth direto, não é mais uma constante: o app pergunta
- * ao próprio endpoint qual planilha ele serve (`?action=whoami`) e guarda a
- * resposta em cache.
+ * Reescrita em 08/09/2026: o backend deixou de ser Google Sheets/Apps
+ * Script e passou a ser Firestore. Decisões explícitas do usuário nessa
+ * migração (registradas no plano):
+ *   - Conflito de edição: padrão do Firestore (última escrita vence), sem
+ *     a lógica customizada de comparar `Atualizado_Em` que existia antes.
+ *   - Identidade de quem editou: vem do login real (Firebase Auth), não
+ *     mais de um seletor manual "quem sou eu" (MemberProfileModal, removido
+ *     por estar órfão e por essa razão).
+ *   - Fila de sincronização manual, tombstones e merge de três vias: TODOS
+ *     removidos. O Firestore já resolve isso sozinho, com cache offline
+ *     nativo (ver `persistentLocalCache` em `firebase.ts`) — manter a
+ *     lógica antiga por cima seria duplicar o que o SDK já faz.
  *
- * O motivo é concreto. Enquanto o ID era configurado separadamente, ele
- * divergiu do endpoint e o app passou a gravar numa planilha estando logado
- * no Google e em outra estando deslogado. Chegaram a existir três destinos
- * de escrita ao mesmo tempo, e o dado que "sumia" estava, na verdade, em
- * outra planilha. Derivar o ID do endpoint torna essa divergência impossível
- * por construção, não apenas improvável.
+ * ARQUITETURA: cada tabela (`getMusicas()`, `getCultos()`, ...) continua
+ * síncrona, exatamente como os componentes de UI já esperam — nenhum deles
+ * precisou mudar. Por baixo, um cache em memória por tabela é mantido
+ * atualizado por listeners em tempo real do Firestore (`onSnapshot`,
+ * chamado uma vez via `startRealtimeSync()` depois do login). Toda mutação
+ * (`addCulto`, `updateMusica`, ...) atualiza o cache local OTIMISTICAMENTE
+ * (resposta instantânea na tela, igual ao comportamento de sempre) e dispara
+ * a escrita real no Firestore em paralelo — que, quando confirmada pelo
+ * listener, apenas reconcilia o mesmo registro (mesmo ID gerado no
+ * cliente), sem duplicar nada.
  */
-/**
- * Endpoint do backend. Pode vir da Vercel (`VITE_GAS_ENDPOINT`) ou do valor
- * abaixo, que serve de fallback para desenvolvimento local.
- *
- * ⚠️ ISTO NÃO É UM SEGREDO, e a variável de ambiente não o torna um.
- *
- * O TP Flame roda inteiro no navegador. Qualquer `VITE_*` é embutida no bundle
- * durante o build — abrir o DevTools e procurar por "script.google.com" acha a
- * URL em segundos, esteja ela na Vercel ou aqui. Não existe "esconder" um
- * endereço que o próprio navegador precisa chamar.
- *
- * O que a variável de ambiente resolve de verdade:
- *   - trocar de planilha sem alterar código e sem novo commit
- *   - manter produção e testes em planilhas diferentes
- *   - girar a URL rapidamente se ela vazar
- *
- * O que ela NÃO resolve: qualquer pessoa com a URL continua podendo ler e
- * escrever no banco. Fechar isso exige um intermediário no servidor — está
- * registrado como Fase 3 no diagnóstico.
- */
-/**
- * Valida o formato de uma URL de Web App do Apps Script e remove lixo comum
- * de colagem (reticências "…", aspas curvas, espaços invisíveis).
- *
- * Existe porque um valor corrompido já vazou para produção uma vez através da
- * variável de ambiente da Vercel — provavelmente colado com reticências no
- * meio, sinal de que veio de algum lugar que exibia a URL truncada. O
- * `fetch` para uma URL assim nunca chega a sair (erro de rede local, não
- * nem CORS), então a falha ficava invisível para quem não abrisse o
- * DevTools. Esta função garante que uma URL malformada nunca seja usada —
- * ela cai para o fallback confiável em vez de tentar sincronizar com lixo.
- */
-function sanitizeGasEndpoint(raw: string): string {
-  if (!raw) return '';
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  limit,
+  Unsubscribe
+} from 'firebase/firestore';
+import { db } from './firebase';
+import { generateUUID } from './firestoreUtils';
+import {
+  Musica, Versao, Arquivo, Nota, Culto, RepertorioItem, Integrante, HistoricoItem, LogItem
+} from '../types';
 
-  const cleaned = raw.trim();
+import * as fsMusicas from './firestoreMusicas';
+import * as fsVersoes from './firestoreVersoes';
+import * as fsArquivos from './firestoreArquivos';
+import * as fsNotas from './firestoreNotas';
+import * as fsCultos from './firestoreCultos';
+import * as fsRepertorio from './firestoreRepertorio';
+import * as fsIntegrantes from './firestoreIntegrantes';
+import * as fsHistorico from './firestoreHistorico';
+import * as fsLogs from './firestoreLogs';
 
-  // Caracteres invisíveis/decorativos comuns em colagem malformada:
-  // reticências, aspas curvas, marcador de lista, espaços e junções de
-  // largura zero, BOM. Escritos por code point para não depender de
-  // caracteres literais não-ASCII no arquivo-fonte.
-  const JUNK = ['…', '•', '‘', '’', '“', '”', '​', '‌', '‍', '﻿'];
-
-  // Deliberado: ao encontrar lixo, REJEITA a string inteira em vez de
-  // remover o caractere e validar o que sobrou. Remover primeiro é o que
-  // causou o bug de verdade: "AKfycbzXHtLDcy3p…/exec" vira, depois de tirar
-  // a reticência, "AKfycbzXHtLDcy3p/exec" — um ID TRUNCADO que ainda bate
-  // com o formato esperado (letras/números/traço), e portanto passaria
-  // como "válido" apontando para uma implantação que não existe. Só a URL
-  // que já chega limpa, sem qualquer sinal de colagem malformada, é aceita.
-  if (JUNK.some((ch) => cleaned.includes(ch))) {
-    console.warn(
-      `[config] URL de endpoint contém caractere de colagem inválido, rejeitada: "${raw}"`
-    );
-    return '';
-  }
-
-  const isValid = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(cleaned);
-  if (!isValid) {
-    if (cleaned) {
-      console.warn(
-        `[config] URL de endpoint invalida, ignorada: "${raw}". Esperado algo como ` +
-        `https://script.google.com/macros/s/SEU_ID/exec`
-      );
-    }
-    return '';
-  }
-  return cleaned;
-}
-
-const ENV_GAS_ENDPOINT = sanitizeGasEndpoint(import.meta.env?.VITE_GAS_ENDPOINT || '');
-const FALLBACK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7jPlO1a4twVVxpWigeiio8paO2VWbEu0hzcFiLp60E3kPqbIcu6/exec';
-const DEFAULT_GAS_ENDPOINT = ENV_GAS_ENDPOINT || FALLBACK_GAS_ENDPOINT;
-
-/**
- * Versão da configuração de backend. Incrementar força cada dispositivo a
- * descartar o endpoint em cache e voltar ao default na próxima abertura.
- */
-const CONFIG_VERSION = 4;
-const KEY_CONFIG_VERSION = 'tp_flame_backend_config_version_v1';
+// Reexportado por compatibilidade — código antigo que ainda importa
+// `generateUUID` de `storage.ts` (em vez de `firestoreUtils.ts`) continua
+// funcionando sem mudar nada.
+export { generateUUID };
 
 class StorageService {
-  constructor() {
-    this.initDefaultData();
+  // ==========================================
+  // CACHE EM MEMÓRIA (fonte de verdade síncrona pra UI)
+  // ==========================================
+  private musicas: Musica[] = [];
+  private versoes: Versao[] = [];
+  private arquivos: Arquivo[] = [];
+  private notas: Nota[] = [];
+  private cultos: Culto[] = [];
+  private repertorio: RepertorioItem[] = [];
+  private integrantes: Integrante[] = [];
+  private historico: HistoricoItem[] = [];
+  private logs: LogItem[] = [];
+
+  private unsubscribers: Unsubscribe[] = [];
+  private pendingByCollection: Record<string, boolean> = {};
+  private onChangeCallback: (() => void) | null = null;
+  private isListening = false;
+
+  private notify() {
+    this.onChangeCallback?.();
   }
 
-  private initDefaultData() {
-    if (!localStorage.getItem(KEYS.MUSICAS)) {
-      localStorage.setItem(KEYS.CONFIG, JSON.stringify(INITIAL_CONFIG));
-      localStorage.setItem(KEYS.MUSICAS, JSON.stringify(INITIAL_MUSICAS));
-      localStorage.setItem(KEYS.VERSOES, JSON.stringify(INITIAL_VERSOES));
-      localStorage.setItem(KEYS.ARQUIVOS, JSON.stringify(INITIAL_ARQUIVOS));
-      localStorage.setItem(KEYS.NOTAS, JSON.stringify(INITIAL_NOTAS));
-      localStorage.setItem(KEYS.CULTOS, JSON.stringify(INITIAL_CULTOS));
-      localStorage.setItem(KEYS.REPERTORIO, JSON.stringify(INITIAL_REPERTORIO));
-      localStorage.setItem(KEYS.INTEGRANTES, JSON.stringify(INITIAL_INTEGRANTES));
-      localStorage.setItem(KEYS.HISTORICO, JSON.stringify(INITIAL_HISTORICO));
-      localStorage.setItem(KEYS.LOGS, JSON.stringify(INITIAL_LOGS));
-      localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify([]));
-    }
-  }
-
-  public resetToDefaults() {
-    localStorage.removeItem(KEYS.CONFIG);
-    localStorage.removeItem(KEYS.MUSICAS);
-    localStorage.removeItem(KEYS.VERSOES);
-    localStorage.removeItem(KEYS.ARQUIVOS);
-    localStorage.removeItem(KEYS.NOTAS);
-    localStorage.removeItem(KEYS.CULTOS);
-    localStorage.removeItem(KEYS.REPERTORIO);
-    localStorage.removeItem(KEYS.INTEGRANTES);
-    localStorage.removeItem(KEYS.HISTORICO);
-    localStorage.removeItem(KEYS.LOGS);
-    localStorage.removeItem(KEYS.SYNC_QUEUE);
-    localStorage.removeItem(KEYS.TOMBSTONES);
-    this.initDefaultData();
-  }
+  // ==========================================
+  // SINCRONIZAÇÃO EM TEMPO REAL
+  // ==========================================
 
   /**
-   * Zera os dados DESTE dispositivo. Não toca na planilha.
-   *
-   * O parâmetro `clearRemote` é aceito por compatibilidade mas ignorado: o
-   * Apps Script nunca teve um handler para a ação `clearAll`, então a chamada
-   * anterior só produzia um erro silencioso — dando a impressão de que a
-   * planilha havia sido limpa quando nada acontecia. Apagar o banco de todo
-   * mundo a partir de um endpoint público não é algo que deva existir.
+   * Liga os listeners do Firestore pras 9 tabelas (Config fica de fora —
+   * vestigial, sem tela que use). Precisa ser chamado só depois de
+   * autenticado (as Security Rules recusam listener sem login válido).
+   * Idempotente: chamar de novo com o app já ouvindo não faz nada.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async clearAllData(_clearRemote = true): Promise<boolean> {
-    localStorage.setItem(KEYS.CONFIG, JSON.stringify([]));
-    localStorage.setItem(KEYS.MUSICAS, JSON.stringify([]));
-    localStorage.setItem(KEYS.VERSOES, JSON.stringify([]));
-    localStorage.setItem(KEYS.ARQUIVOS, JSON.stringify([]));
-    localStorage.setItem(KEYS.NOTAS, JSON.stringify([]));
-    localStorage.setItem(KEYS.CULTOS, JSON.stringify([]));
-    localStorage.setItem(KEYS.REPERTORIO, JSON.stringify([]));
-    localStorage.setItem(KEYS.INTEGRANTES, JSON.stringify([]));
-    localStorage.setItem(KEYS.HISTORICO, JSON.stringify([]));
-    localStorage.setItem(KEYS.LOGS, JSON.stringify([]));
-    this.addLog('SYSTEM_CLEAR', 'Todos os dados locais foram zerados');
-    // A limpeza da fila vem DEPOIS do log: addLog enfileira, e limpar antes
-    // deixava a fila com uma pendência órfã logo após um "zerar tudo".
-    this.clearSyncQueue();
-    this.clearTombstones();
-    return true;
-  }
+  public startRealtimeSync(onChange: () => void) {
+    if (this.isListening) return;
+    this.isListening = true;
+    this.onChangeCallback = onChange;
 
-  // ==========================================
-  // TOMBSTONES (DELETION TRACKING)
-  // ==========================================
-
-  public getTombstones(): Set<string> {
-    const data = localStorage.getItem(KEYS.TOMBSTONES);
-    return new Set(data ? JSON.parse(data) : []);
-  }
-
-  public addTombstone(id: string) {
-    if (!id) return;
-    const tombstones = this.getTombstones();
-    tombstones.add(id);
-    localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(Array.from(tombstones)));
-  }
-
-  public removeTombstone(id: string) {
-    if (!id) return;
-    const tombstones = this.getTombstones();
-    tombstones.delete(id);
-    localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify(Array.from(tombstones)));
-  }
-
-  public clearTombstones() {
-    localStorage.setItem(KEYS.TOMBSTONES, JSON.stringify([]));
-  }
-
-  // ==========================================
-  // SYNC QUEUE & PERSISTENCE MANAGEMENT
-  // ==========================================
-
-  public getSyncQueue(): SyncQueueItem[] {
-    const data = localStorage.getItem(KEYS.SYNC_QUEUE);
-    return data ? JSON.parse(data) : [];
-  }
-
-  /**
-   * Carimba quem alterou e quando.
-   *
-   * Fica aqui, na entrada da fila, e não em cada método de mutação: é o único
-   * ponto por onde toda alteração passa obrigatoriamente, então não há como
-   * esquecer de carimbar ao adicionar uma funcionalidade nova.
-   *
-   * Hoje o carimbo é só informativo. Na Fase 2 ele vira a base para decidir
-   * quem vence um conflito — e por isso precisa começar a ser gravado agora,
-   * senão os registros criados até lá ficam sem histórico.
-   */
-  private stampAudit(table: string, action: 'insert' | 'update' | 'delete', data: any): any {
-    if (table === 'Logs' || table === 'Config' || action === 'delete') return data;
-    if (!data || typeof data !== 'object') return data;
-
-    const active = this.getActiveMember();
-    return {
-      ...data,
-      Atualizado_Em: new Date().toISOString(),
-      Atualizado_Por: active ? `${active.Nome} (${active.Funcao})` : 'Usuário Portal'
-    };
-  }
-
-  public addToSyncQueue(table: string, action: 'insert' | 'update' | 'delete', rawData: any) {
-    const data = this.stampAudit(table, action, rawData);
-    const queue = this.getSyncQueue();
-    const itemId = data?.ID || data?.id;
-
-    // Check if an operation for this specific item is already pending
-    const existingIndex = queue.findIndex(
-      (q) => q.table === table && (q.data?.ID === itemId || q.data?.id === itemId)
-    );
-
-    const newItem: SyncQueueItem = {
-      id: generateUUID(),
-      table,
-      action,
-      data,
-      timestamp: Date.now()
-    };
-
-    if (existingIndex !== -1) {
-      if (queue[existingIndex].action === 'insert' && action === 'update') {
-        // If it was newly inserted and then updated, keep it as insert with the newer data
-        queue[existingIndex] = { ...queue[existingIndex], data, timestamp: Date.now() };
-      } else if (action === 'delete') {
-        if (queue[existingIndex].action === 'insert') {
-          // If it was created locally and then deleted before sync, simply remove from queue
-          queue.splice(existingIndex, 1);
-        } else {
-          queue[existingIndex] = newItem;
+    const subscribe = <T extends { Excluido_Em?: string }>(
+      collectionName: string,
+      assign: (items: T[]) => void
+    ) => {
+      const unsub = onSnapshot(
+        collection(db, collectionName),
+        (snap) => {
+          const items = snap.docs
+            .map((d) => d.data() as T)
+            .filter((item) => !item.Excluido_Em);
+          assign(items);
+          this.pendingByCollection[collectionName] = snap.metadata.hasPendingWrites;
+          this.notify();
+        },
+        (err) => {
+          console.warn(`[firestore] Erro no listener de "${collectionName}":`, err);
         }
-      } else {
-        queue[existingIndex] = newItem;
-      }
-    } else {
-      queue.push(newItem);
-    }
-
-    localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify(queue));
-    this.scheduleFlush();
-  }
-
-  public removeFromSyncQueue(queueItemId: string) {
-    let queue = this.getSyncQueue();
-    queue = queue.filter((q) => q.id !== queueItemId);
-    localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify(queue));
-  }
-
-  public clearSyncQueue() {
-    localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify([]));
-  }
-
-  public hasPendingSync(): boolean {
-    return this.getSyncQueue().length > 0;
-  }
-
-  public getPendingCount(): number {
-    return this.getSyncQueue().length;
-  }
-
-  public markPendingSync() {
-    // Kept for backward compatibility
-  }
-
-  public clearPendingSync() {
-    this.clearSyncQueue();
-  }
-
-  public getLastSyncTime(): string | null {
-    return localStorage.getItem(KEYS.LAST_SYNC);
-  }
-
-  // ==========================================
-  // SPREADSHEET & GAS CONFIGURATION
-  // ==========================================
-
-  /**
-   * Alinha o backend salvo no dispositivo com os defaults do build.
-   *
-   * Roda uma vez por versão de configuração. Sobrescreve endpoint e
-   * Spreadsheet ID em cache porque a divergência entre eles era justamente o
-   * bug: um aparelho podia ficar preso numa planilha antiga indefinidamente,
-   * já que o valor em localStorage sempre vencia o default.
-   */
-  private migrateBackendConfig() {
-    const stored = Number(localStorage.getItem(KEY_CONFIG_VERSION) || '0');
-    if (stored >= CONFIG_VERSION) return;
-
-    localStorage.setItem(KEYS.GAS_ENDPOINT, DEFAULT_GAS_ENDPOINT);
-    // O ID em cache pertence ao endpoint anterior; descartar evita que o app
-    // continue gravando na planilha antiga pelo caminho OAuth.
-    localStorage.removeItem(KEYS.GAS_SPREADSHEET_ID);
-    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
-  }
-
-  public getGasEndpoint(): string {
-    this.migrateBackendConfig();
-    const stored = localStorage.getItem(KEYS.GAS_ENDPOINT) || '';
-    // Sanitiza também na leitura: um valor corrompido pode ter sido salvo
-    // antes desta validação existir. Sem isso, o dispositivo ficaria preso
-    // numa URL quebrada mesmo depois do código corrigido.
-    return sanitizeGasEndpoint(stored) || DEFAULT_GAS_ENDPOINT;
-  }
-
-  /**
-   * Pergunta ao endpoint qual planilha ele serve e guarda em cache.
-   *
-   * É o que garante que os dois caminhos de escrita — OAuth direto e Apps
-   * Script — apontem sempre para a mesma planilha. Enquanto não resolver, o
-   * ID fica vazio, o caminho OAuth não é usado e tudo passa pelo endpoint:
-   * mais lento, porém nunca dividido entre dois bancos.
-   */
-  public async refreshBackendIdentity(): Promise<{
-    spreadsheetId: string;
-    spreadsheetName: string;
-    schemaVersion: number;
-  } | null> {
-    const endpoint = this.getGasEndpoint();
-    if (!endpoint) return null;
-
-    try {
-      const res = await fetch(`${endpoint}?action=whoami`);
-      if (!res.ok) return null;
-
-      const json = await res.json();
-      if (json?.status !== 'success' || !json.spreadsheetId) return null;
-
-      localStorage.setItem(KEYS.GAS_SPREADSHEET_ID, json.spreadsheetId);
-      if (json.spreadsheetName) localStorage.setItem(KEYS.SPREADSHEET_NAME, json.spreadsheetName);
-
-      const remoteSchema = Number(json.schemaVersion || 0);
-      if (remoteSchema && remoteSchema < SCHEMA_VERSION) {
-        console.warn(
-          `[sync] Planilha no esquema v${remoteSchema}, app espera v${SCHEMA_VERSION}. Rode bootstrap() no Apps Script.`
-        );
-      }
-
-      return {
-        spreadsheetId: json.spreadsheetId,
-        spreadsheetName: json.spreadsheetName || '',
-        schemaVersion: remoteSchema
-      };
-    } catch {
-      // Offline é situação normal aqui; o caminho GAS segue funcionando.
-      return null;
-    }
-  }
-
-  /**
-   * Salva um endpoint colado à mão (painel admin ou modal do Google Workspace).
-   * Devolve false e NÃO salva nada se a URL não tiver o formato esperado —
-   * evita repetir, por colagem manual, o mesmo tipo de corrupção que já
-   * vazou uma vez através de uma variável de ambiente.
-   */
-  public setGasEndpoint(url: string): boolean {
-    const clean = sanitizeGasEndpoint(url);
-    if (!clean) return false;
-
-    localStorage.setItem(KEYS.GAS_ENDPOINT, clean);
-    // Escolha deliberada do usuário: marca a config como atual para que a
-    // migração não sobrescreva um endpoint customizado na próxima leitura.
-    localStorage.setItem(KEY_CONFIG_VERSION, String(CONFIG_VERSION));
-    return true;
-  }
-
-  /**
-   * ID da planilha resolvido a partir do endpoint (ver refreshBackendIdentity).
-   * Vazio significa "ainda nao sei": o caminho OAuth fica desligado e tudo vai
-   * pelo Apps Script, que e o comportamento seguro.
-   */
-  public getGasSpreadsheetId(): string {
-    this.migrateBackendConfig();
-    return localStorage.getItem(KEYS.GAS_SPREADSHEET_ID) || '';
-  }
-
-  // NÃO EXISTE setGasSpreadsheetId() PÚBLICO — DE PROPÓSITO.
-  //
-  // Esse método existiu até aqui e permitia que uma tela (GoogleWorkspaceModal)
-  // apontasse o app para uma planilha escolhida via Google Drive, totalmente
-  // independente do endpoint do Apps Script. É exatamente a divisão que a
-  // Fase 1 fechou por outro caminho: o app voltava a gravar em duas planilhas
-  // diferentes, uma pelo OAuth direto e outra pelo endpoint.
-  //
-  // O único jeito de mudar de planilha agora é apontar o ENDPOINT para uma
-  // implantação diferente (ver docs/INSTALAR-PLANILHA.md); o ID é sempre
-  // resolvido a partir dele, via refreshBackendIdentity(). Escrever direto em
-  // KEYS.GAS_SPREADSHEET_ID sem passar por ali reabre o bug.
-
-  public getSpreadsheetName(): string {
-    return localStorage.getItem(KEYS.SPREADSHEET_NAME) || 'TP Flame - Banco de Dados';
-  }
-
-  public setSpreadsheetName(name: string) {
-    localStorage.setItem(KEYS.SPREADSHEET_NAME, name.trim());
-  }
-
-  public getActiveSyncMode(): 'google_sheets_direct' | 'gas_endpoint' | 'offline_local' {
-    const token = getAccessToken();
-    const spreadsheetId = this.getGasSpreadsheetId();
-    const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
-    if (token && isRealSpreadsheetId) return 'google_sheets_direct';
-    if (this.getGasEndpoint()) return 'gas_endpoint';
-    return 'offline_local';
-  }
-
-  // ==========================================
-  // BULLETPROOF BIDIRECTIONAL SYNC ENGINE
-  // ==========================================
-
-  /**
-   * Envia uma mutação para a planilha e devolve se ela foi REALMENTE gravada.
-   *
-   * O valor de retorno é o que autoriza a remoção do item da fila, e a fila é
-   * a única coisa que impede o merge de apagar o registro do dispositivo.
-   * Por isso esta função só devolve true diante de confirmação lida do
-   * servidor — nunca por "a requisição saiu sem erro".
-   *
-   * A versão anterior usava `mode: 'no-cors'`, que devolve resposta opaca (sem
-   * status, sem corpo) e fazia `return true` incondicional. O endpoint do Apps
-   * Script responde com CORS válido, então dá para ler o corpo de verdade.
-   */
-  public async sendToGas(table: string, action: string, data: any): Promise<PushResult> {
-    const token = getAccessToken();
-    const spreadsheetId = this.getGasSpreadsheetId();
-    const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
-
-    // 1. Logado no Google com planilha válida: API v4 direta.
-    if (token && isRealSpreadsheetId) {
-      const result = await pushTableActionToGoogleSheets(
-        token,
-        spreadsheetId,
-        table,
-        action as 'insert' | 'update' | 'delete',
-        data
       );
-      // 'ok' e 'conflict' são desfechos definitivos do protocolo de
-      // sincronização — não faz sentido tentar de novo pelo caminho GAS.
-      // Só um 'error' de rede/API cai para o fallback.
-      if (result === 'ok' || result === 'conflict') return result;
-    }
+      this.unsubscribers.push(unsub);
+    };
 
-    // 2. Fallback: Web App do Apps Script.
-    const endpoint = this.getGasEndpoint();
-    if (!endpoint) return 'error';
+    subscribe<Musica>('musicas', (v) => { this.musicas = v; });
+    subscribe<Versao>('versoes', (v) => { this.versoes = v; });
+    subscribe<Arquivo>('arquivos', (v) => { this.arquivos = v; });
+    subscribe<Nota>('notas', (v) => { this.notas = v; });
+    subscribe<Culto>('cultos', (v) => { this.cultos = v; });
+    subscribe<RepertorioItem>('repertorio', (v) => { this.repertorio = v; });
+    subscribe<Integrante>('integrantes', (v) => { this.integrantes = v; });
+    subscribe<HistoricoItem>('historico', (v) => { this.historico = v; });
 
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        // text/plain mantém a requisição "simples": sem preflight, e a resposta
-        // do Apps Script continua legível pelo navegador.
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, table, data })
-      });
-
-      if (!res.ok) {
-        console.warn(`Backend recusou [${table}/${action}]: HTTP ${res.status}`);
-        return 'error';
-      }
-
-      const json = await res.json();
-      if (json?.status === 'success') return 'ok';
-
-      if (json?.status === 'conflict') {
-        console.info(`[sync] Conflito em [${table}/${action}]: ${json?.message || 'versão mais recente já existe na planilha'}`);
-        return 'conflict';
-      }
-
-      console.warn(`Backend reportou erro em [${table}/${action}]:`, json?.message);
-      return 'error';
-    } catch (err) {
-      console.warn(`Erro enviando para backend [${table}/${action}]:`, err);
-      return 'error';
-    }
+    // Logs: imutável, ordenado, sem filtro de Excluido_Em (não existe).
+    const logsUnsub = onSnapshot(
+      query(collection(db, 'logs'), orderBy('Data', 'desc'), limit(50)),
+      (snap) => {
+        this.logs = snap.docs.map((d) => d.data() as LogItem);
+        this.notify();
+      },
+      (err) => console.warn('[firestore] Erro no listener de "logs":', err)
+    );
+    this.unsubscribers.push(logsUnsub);
   }
 
-  // ==========================================
-  // FLUSH AUTOMÁTICO DA FILA
-  // ==========================================
-
-  private flushTimer: ReturnType<typeof setTimeout> | null = null;
-  private isFlushing = false;
+  /** Desliga todos os listeners — chamado no logout ou ao desmontar o app. */
+  public stopRealtimeSync() {
+    this.unsubscribers.forEach((unsub) => unsub());
+    this.unsubscribers = [];
+    this.isListening = false;
+    this.onChangeCallback = null;
+    this.musicas = [];
+    this.versoes = [];
+    this.arquivos = [];
+    this.notas = [];
+    this.cultos = [];
+    this.repertorio = [];
+    this.integrantes = [];
+    this.historico = [];
+    this.logs = [];
+    this.pendingByCollection = {};
+  }
 
   /**
-   * Agenda o envio da fila logo após uma mutação.
-   *
-   * Antes, cada mutação disparava um POST imediato E deixava o item na fila,
-   * o que fazia toda alteração ser gravada duas vezes. Agora existe um único
-   * caminho de escrita — a fila — e este agendador preserva a sensação de
-   * tempo real, juntando as mutações de uma mesma ação num lote só.
+   * Quantas tabelas têm escrita local ainda não confirmada pelo servidor
+   * (`hasPendingWrites` de cada listener). Não é uma contagem de itens como
+   * antes (a fila manual não existe mais) — é "quantas tabelas estão
+   * syncing agora", suficiente pro badge do Header continuar fazendo sentido.
    */
-  private scheduleFlush(delayMs = 1200) {
-    if (typeof setTimeout !== 'function') return;
-    if (this.flushTimer) clearTimeout(this.flushTimer);
-    this.flushTimer = setTimeout(() => {
-      this.flushTimer = null;
-      void this.flushQueue();
-    }, delayMs);
+  public getPendingCount(): number {
+    return Object.values(this.pendingByCollection).filter(Boolean).length;
   }
 
   /**
-   * Drena a fila. Um item só sai dela com confirmação do servidor; caso
-   * contrário permanece, com o contador de tentativas incrementado, para a
-   * próxima sincronização tentar de novo.
-   */
-  public async flushQueue(): Promise<{ pushed: number; failed: number; conflicts: number }> {
-    if (this.isFlushing) return { pushed: 0, failed: 0, conflicts: 0 };
-    this.isFlushing = true;
-
-    let pushed = 0;
-    let failed = 0;
-    let conflicts = 0;
-
-    try {
-      for (const item of this.getSyncQueue()) {
-        const result = await this.sendToGas(item.table, item.action, item.data);
-
-        if (result === 'ok') {
-          this.removeFromSyncQueue(item.id);
-          pushed++;
-        } else if (result === 'conflict') {
-          // A planilha já tem uma versão mais nova deste registro (editada
-          // por outra pessoa). A edição local perde — mas NUNCA fica presa
-          // tentando de novo pra sempre: sai da fila, e o pull que acontece
-          // logo em seguida em syncWithGas() traz a versão vencedora para
-          // este aparelho. Registrado como log local para dar visibilidade.
-          this.removeFromSyncQueue(item.id);
-          conflicts++;
-          this.addLog(
-            'SYNC_CONFLICT',
-            `Edição em ${item.table} descartada: alguém já havia salvo uma versão mais recente`
-          );
-        } else {
-          this.markQueueItemFailed(item.id);
-          failed++;
-        }
-      }
-    } finally {
-      this.isFlushing = false;
-    }
-
-    return { pushed, failed, conflicts };
-  }
-
-  private markQueueItemFailed(queueItemId: string) {
-    const queue = this.getSyncQueue();
-    const item = queue.find((q) => q.id === queueItemId);
-    if (!item) return;
-    item.attempts = (item.attempts || 0) + 1;
-    localStorage.setItem(KEYS.SYNC_QUEUE, JSON.stringify(queue));
-  }
-
-  /**
-   * Smart bidirectional synchronization:
-   * 1. Direct Google Sheets API v4 (if signed in with Google Workspace OAuth and valid sheet ID)
-   * 2. GAS Web App endpoint (public web app)
+   * Compatibilidade com o botão manual de sincronizar do Header: como o
+   * Firestore já mantém tudo atualizado sozinho em tempo real, não existe
+   * mais um "pull" de verdade pra disparar — isso só resolve depois de
+   * confirmar que os listeners estão de pé.
    */
   public async syncWithGas(): Promise<{
     success: boolean;
@@ -622,289 +175,13 @@ class StorageService {
     pushedCount: number;
     pulledCount: number;
     conflictCount: number;
-    mode?: string;
   }> {
-    // Descobre a planilha a partir do endpoint antes de qualquer coisa. Sem
-    // isso o caminho OAuth fica desligado e tudo passa pelo Apps Script —
-    // funciona, mas mais devagar.
-    if (!this.getGasSpreadsheetId()) {
-      await this.refreshBackendIdentity();
-    }
-
-    const token = getAccessToken();
-    const spreadsheetId = this.getGasSpreadsheetId();
-    const isRealSpreadsheetId = spreadsheetId && !spreadsheetId.startsWith('AKfy') && spreadsheetId.length > 15;
-    let pushedCount = 0;
-    let pulledCount = 0;
-    let conflictCount = 0;
-
-    // PATH A: DIRECT GOOGLE SHEETS API V4 (WHEN LOGGED IN WITH GOOGLE WORKSPACE)
-    if (token && isRealSpreadsheetId) {
-      try {
-        // Empurra a fila ANTES do pull. Se um item não confirmar (erro) ele
-        // permanece na fila e o merge o preserva no dispositivo. Se for
-        // recusado por conflito, sai da fila e o pull abaixo traz a versão
-        // vencedora da planilha para este aparelho.
-        const flushRes = await this.flushQueue();
-        pushedCount = flushRes.pushed;
-        conflictCount = flushRes.conflicts;
-
-        // Pull direct from Sheets API
-        const sheetsData = await readAllSpreadsheetData(token, spreadsheetId);
-        const currentQueue = this.getSyncQueue();
-
-        if (Array.isArray(sheetsData.musicas)) {
-          const merged = this.mergeCollections(this.getMusicas(), sheetsData.musicas, currentQueue, 'Musicas');
-          this.setDirect(KEYS.MUSICAS, merged);
-          pulledCount += sheetsData.musicas.length;
-        }
-
-        if (Array.isArray(sheetsData.versoes)) {
-          const merged = this.mergeCollections(this.getVersoes(), sheetsData.versoes, currentQueue, 'Versoes');
-          this.setDirect(KEYS.VERSOES, merged);
-        }
-
-        if (Array.isArray(sheetsData.integrantes)) {
-          const merged = this.mergeCollections(this.getIntegrantes(), sheetsData.integrantes, currentQueue, 'Integrantes');
-          this.setDirect(KEYS.INTEGRANTES, merged);
-          pulledCount += sheetsData.integrantes.length;
-        }
-
-        if (Array.isArray(sheetsData.cultos)) {
-          const merged = this.mergeCollections(this.getCultos(), sheetsData.cultos, currentQueue, 'Cultos');
-          this.setDirect(KEYS.CULTOS, merged);
-        }
-
-        if (Array.isArray(sheetsData.repertorio)) {
-          const merged = this.mergeCollections(this.getRepertorio(), sheetsData.repertorio, currentQueue, 'Repertorio');
-          this.setDirect(KEYS.REPERTORIO, merged);
-        }
-
-        if (Array.isArray(sheetsData.notas)) {
-          const merged = this.mergeCollections(this.getNotas(), sheetsData.notas, currentQueue, 'Notas');
-          this.setDirect(KEYS.NOTAS, merged);
-        }
-
-        if (Array.isArray(sheetsData.arquivos)) {
-          const merged = this.mergeCollections(this.getArquivos(), sheetsData.arquivos, currentQueue, 'Arquivos');
-          this.setDirect(KEYS.ARQUIVOS, merged);
-        }
-
-        // Historico entra no merge de tres vias como as demais tabelas: um
-        // registro criado offline e ainda nao confirmado nao pode ser
-        // apagado so porque o pull chegou primeiro.
-        if (Array.isArray(sheetsData.historico)) {
-          const merged = this.mergeCollections(this.getHistorico(), sheetsData.historico, currentQueue, 'Historico');
-          this.setDirect(KEYS.HISTORICO, merged);
-        }
-
-        // Logs fica de fora do merge de proposito: e um registro de auditoria
-        // somente-leitura na UI, nao algo que o usuario edita. Overwrite
-        // direto e aceitavel aqui.
-        if (Array.isArray(sheetsData.logs)) {
-          this.setDirect(KEYS.LOGS, sheetsData.logs.slice(0, 50));
-        }
-
-        localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
-        this.addLog('GOOGLE_SHEETS_SYNC', `Sincronização direta com Google Sheets API v4 (${pushedCount} enviados, ${pulledCount} recebidos)`);
-        return { success: true, pushedCount, pulledCount, conflictCount, mode: 'Google Sheets API v4' };
-      } catch (err: any) {
-        console.warn('Erro na sincronização direta do Sheets API, tentando via GAS Web App:', err);
-      }
-    }
-
-    // PATH B: GOOGLE APPS SCRIPT WEB APP ENDPOINT
-    const endpoint = this.getGasEndpoint();
-    if (!endpoint) {
-      return {
-        success: false,
-        message: 'Backend nao configurado. Cole a URL /exec do Apps Script no painel de administracao.',
-        pushedCount: 0,
-        pulledCount: 0,
-        conflictCount: 0
-      };
-    }
-
-    try {
-      const flushRes = await this.flushQueue();
-      pushedCount = flushRes.pushed;
-      conflictCount = flushRes.conflicts;
-
-      const res = await fetch(`${endpoint}?action=getAll`);
-      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-      const json = await res.json();
-
-      if (json.status === 'success' && json.data) {
-        const d = json.data;
-        const currentQueue = this.getSyncQueue();
-
-        if (Array.isArray(d.musicas)) {
-          const merged = this.mergeCollections(this.getMusicas(), d.musicas, currentQueue, 'Musicas');
-          this.setDirect(KEYS.MUSICAS, merged);
-          pulledCount += d.musicas.length;
-        }
-
-        if (Array.isArray(d.versoes)) {
-          const merged = this.mergeCollections(this.getVersoes(), d.versoes, currentQueue, 'Versoes');
-          this.setDirect(KEYS.VERSOES, merged);
-        }
-
-        if (Array.isArray(d.integrantes)) {
-          const merged = this.mergeCollections(this.getIntegrantes(), d.integrantes, currentQueue, 'Integrantes');
-          this.setDirect(KEYS.INTEGRANTES, merged);
-          pulledCount += d.integrantes.length;
-        }
-
-        if (Array.isArray(d.cultos)) {
-          const merged = this.mergeCollections(this.getCultos(), d.cultos, currentQueue, 'Cultos');
-          this.setDirect(KEYS.CULTOS, merged);
-        }
-
-        if (Array.isArray(d.repertorio)) {
-          const merged = this.mergeCollections(this.getRepertorio(), d.repertorio, currentQueue, 'Repertorio');
-          this.setDirect(KEYS.REPERTORIO, merged);
-        }
-
-        if (Array.isArray(d.notas)) {
-          const merged = this.mergeCollections(this.getNotas(), d.notas, currentQueue, 'Notas');
-          this.setDirect(KEYS.NOTAS, merged);
-        }
-
-        if (Array.isArray(d.arquivos)) {
-          const merged = this.mergeCollections(this.getArquivos(), d.arquivos, currentQueue, 'Arquivos');
-          this.setDirect(KEYS.ARQUIVOS, merged);
-        }
-
-        if (Array.isArray(d.historico)) {
-          const merged = this.mergeCollections(this.getHistorico(), d.historico, currentQueue, 'Historico');
-          this.setDirect(KEYS.HISTORICO, merged);
-        }
-
-        if (Array.isArray(d.logs)) {
-          this.setDirect(KEYS.LOGS, d.logs.slice(0, 50));
-        }
-
-        localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
-        this.addLog('GAS_SYNC_SUCCESS', `Sincronização concluída via GAS (${pushedCount} enviados, ${pulledCount} recebidos)`);
-        return { success: true, pushedCount, pulledCount, conflictCount, mode: 'Google Apps Script' };
-      } else {
-        return { success: false, message: json.message || 'Erro retornado pela planilha Google', pushedCount, pulledCount, conflictCount };
-      }
-    } catch (err: any) {
-      console.warn('Sincronização offline/falhou:', err);
-      const isCorsOrAuth = err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError');
-      const errorMsg = isCorsOrAuth
-        ? 'Não foi possível conectar ao Web App. Verifique se na implantação do Apps Script o campo "Quem tem acesso" foi definido como "Qualquer pessoa" (Anyone).'
-        : (err?.message || 'Falha de conexão com a planilha');
-      return { success: false, message: errorMsg, pushedCount, pulledCount, conflictCount };
-    }
-  }
-
-  public async fetchFromGas() {
-    return this.syncWithGas();
-  }
-
-  /**
-   * Pushes entire local database to Google Sheets (Authoritative Overwrite)
-   */
-  public async pushAllToGas(): Promise<{ success: boolean; message: string }> {
-    const payload = {
-      musicas: this.getMusicas(),
-      versoes: this.getVersoes(),
-      arquivos: this.getArquivos(),
-      notas: this.getNotas(),
-      cultos: this.getCultos(),
-      repertorio: this.getRepertorio(),
-      integrantes: this.getIntegrantes(),
-      historico: this.getHistorico()
-    };
-
-    const endpoint = this.getGasEndpoint();
-    if (!endpoint) {
-      return { success: false, message: 'URL da API Google Apps Script não configurada.' };
-    }
-
-    try {
-      await fetch(endpoint, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'replaceAll', data: payload })
-      });
-
-      this.clearSyncQueue();
-      this.clearTombstones();
-      localStorage.setItem(KEYS.LAST_SYNC, new Date().toISOString());
-      this.addLog('REPLACE_ALL', 'Planilha Google substituída com dados atuais do aplicativo');
-      return { success: true, message: 'Planilha atualizada e sincronizada com sucesso!' };
-    } catch (err: any) {
-      return { success: false, message: err?.message || 'Erro ao comunicar com a planilha' };
-    }
-  }
-
-  /**
-   * Merges local and remote collections without overwriting un-synced local changes
-   */
-  private mergeCollections<T extends { ID: string }>(
-    localList: T[],
-    remoteList: T[],
-    queue: SyncQueueItem[],
-    table: string
-  ): T[] {
-    // TRAVA ANTI-APAGÃO
-    //
-    // O merge trata o remoto como autoridade: o que é local, não está no
-    // remoto e não está na fila é descartado — é assim que a exclusão feita
-    // por outro integrante chega até este aparelho.
-    //
-    // Só que "o remoto voltou vazio" quase nunca significa "a equipe apagou
-    // tudo". Significa aba errada, planilha nova, permissão negada, resposta
-    // truncada. Nesses casos o comportamento correto é preservar o local e
-    // deixar o usuário resolver, não zerar a biblioteca de cifras.
-    if (remoteList.length === 0 && localList.length > 0) {
-      console.warn(
-        `[sync] "${table}": remoto vazio com ${localList.length} registro(s) locais. Merge ignorado por segurança.`
-      );
-      this.addLog(
-        'SYNC_MERGE_SKIPPED',
-        `Tabela ${table}: planilha retornou vazia, dados locais preservados`
-      );
-      return localList;
-    }
-
-    const tombstones = this.getTombstones();
-    const tablePending = queue.filter((q) => q.table === table);
-    const pendingDeleteIds = new Set(
-      tablePending.filter((q) => q.action === 'delete').map((q) => q.data?.ID || q.data?.id)
-    );
-    const pendingUpsertMap = new Map<string, T>();
-    tablePending
-      .filter((q) => q.action === 'insert' || q.action === 'update')
-      .forEach((q) => {
-        if (q.data?.ID) pendingUpsertMap.set(q.data.ID, q.data);
-      });
-
-    const resultMap = new Map<string, T>();
-
-    // 1. Add all valid remote items from Google Sheets (except those explicitly deleted locally or tombstoned)
-    for (const remote of remoteList) {
-      if (remote && remote.ID && !pendingDeleteIds.has(remote.ID) && !tombstones.has(remote.ID)) {
-        resultMap.set(remote.ID, remote);
-      }
-    }
-
-    // 2. Add local items only if they are actively in the pending sync queue (user created/updated them offline)
-    pendingUpsertMap.forEach((pendingItem, id) => {
-      if (!tombstones.has(id) && !pendingDeleteIds.has(id)) {
-        resultMap.set(id, pendingItem);
-      }
-    });
-
-    return Array.from(resultMap.values());
+    return { success: this.isListening, pushedCount: 0, pulledCount: 0, conflictCount: 0 };
   }
 
   // ==========================================
-  // ADMIN AUTHENTICATION
+  // ADMIN (senha local do painel — sem relação com quem pode usar o app,
+  // isso já é decidido pelas Security Rules / allowlist de e-mail)
   // ==========================================
 
   public getAdminPassword(): string {
@@ -932,90 +209,38 @@ class StorageService {
   }
 
   // ==========================================
-  // ACTIVE MEMBER / MUSICIAN PROFILE
+  // LOGS
   // ==========================================
 
-  public getActiveMemberId(): string | null {
-    return localStorage.getItem(KEYS.ACTIVE_MEMBER);
+  public getLogs(): LogItem[] {
+    return this.logs;
   }
 
-  public setActiveMemberId(id: string | null) {
-    if (id) {
-      localStorage.setItem(KEYS.ACTIVE_MEMBER, id);
-      const member = this.getIntegrantes().find(i => i.ID === id);
-      if (member) {
-        this.addLog('MEMBER_LOGIN', `Integrante ${member.Nome} (${member.Funcao}) conectou seu perfil`, member.Nome);
-      }
-    } else {
-      localStorage.removeItem(KEYS.ACTIVE_MEMBER);
-    }
-  }
-
-  public getActiveMember(): Integrante | null {
-    const id = this.getActiveMemberId();
-    if (!id) return null;
-    return this.getIntegrantes().find(i => i.ID === id) || null;
-  }
-
-  // ==========================================
-  // LOCAL GETTERS & SETTERS
-  // ==========================================
-
-  private get<T>(key: string): T[] {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
-  }
-
-  private set<T>(key: string, data: T[]) {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
-
-  private setDirect<T>(key: string, data: T[]) {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
-
-  /**
-   * Ações que descrevem a própria mecânica de sincronização. Ficam só no
-   * dispositivo: registrar sincronização na planilha fazia o app escrever um
-   * log para cada sync, e cada abertura do app gerava sync. Na auditoria, 73
-   * de 105 linhas da aba Logs em produção eram exatamente esse ruído.
-   */
-  private static readonly LOCAL_ONLY_LOG_ACTIONS = new Set([
-    'GAS_SYNC_SUCCESS',
-    'GAS_SYNC_FETCH',
-    'GOOGLE_SHEETS_SYNC',
-    'SYNC_MERGE_SKIPPED',
-    'MEMBER_LOGIN'
-  ]);
-
-  public addLog(action: string, detail: string, user?: string) {
-    const active = this.getActiveMember();
-    const effectiveUser = user || (active ? `${active.Nome} (${active.Funcao})` : 'Usuário Portal');
-
-    const logs = this.get<LogItem>(KEYS.LOGS);
-    const newLog: LogItem = {
-      ID: generateUUID(),
+  public addLog(action: string, detail: string, usuario?: string) {
+    const id = generateUUID();
+    const optimistic: LogItem = {
+      ID: id,
       Data: new Date().toISOString(),
-      Usuario: effectiveUser,
+      Usuario: usuario || 'Usuário desconhecido',
       Acao: action,
       Registro_Afetado: detail
     };
-    logs.unshift(newLog);
-    this.set(KEYS.LOGS, logs.slice(0, 50));
+    this.logs = [optimistic, ...this.logs].slice(0, 50);
+    this.notify();
 
-    if (!StorageService.LOCAL_ONLY_LOG_ACTIONS.has(action)) {
-      this.addToSyncQueue('Logs', 'insert', newLog);
-    }
+    fsLogs.addLogFirestore(action, detail, usuario, id).catch((err) => {
+      console.warn('[storage] Falha ao gravar log no Firestore:', err);
+    });
   }
 
   // ==========================================
   // MUSICAS & VERSOES
   // ==========================================
 
-  public getMusicas(): Musica[] { return this.get<Musica>(KEYS.MUSICAS); }
-  public getVersoes(): Versao[] { return this.get<Versao>(KEYS.VERSOES); }
-  public getArquivos(): Arquivo[] { return this.get<Arquivo>(KEYS.ARQUIVOS); }
-  public getNotas(): Nota[] { return this.get<Nota>(KEYS.NOTAS); }
+  public getMusicas(): Musica[] { return this.musicas; }
+  public getVersoes(): Versao[] { return this.versoes; }
+  public getArquivos(): Arquivo[] { return this.arquivos; }
+  public getNotas(): Nota[] { return this.notas; }
 
   public addMusicaWithVersao(
     musicaData: Omit<Musica, 'ID'>,
@@ -1023,408 +248,355 @@ class StorageService {
     notasData?: Omit<Nota, 'ID' | 'ID_Versao'>[],
     arquivosData?: Omit<Arquivo, 'ID' | 'ID_Versao'>[]
   ): { musica: Musica; versao: Versao } {
-    const musicas = this.getMusicas();
-    const versoes = this.getVersoes();
-    const notas = this.getNotas();
-    const arquivos = this.getArquivos();
+    const musicaId = generateUUID();
+    const versaoId = generateUUID();
 
-    const newMusica: Musica = {
-      ...musicaData,
-      ID: generateUUID()
-    };
+    const newMusica: Musica = { ...musicaData, ID: musicaId };
+    const newVersao: Versao = { ...versaoData, ID: versaoId, ID_Musica: musicaId };
 
-    const newVersao: Versao = {
-      ...versaoData,
-      ID: generateUUID(),
-      ID_Musica: newMusica.ID
-    };
+    this.musicas = [newMusica, ...this.musicas];
+    this.versoes = [newVersao, ...this.versoes];
 
-    musicas.unshift(newMusica);
-    versoes.unshift(newVersao);
+    fsMusicas.addMusicaFirestore(
+      { Nome: newMusica.Nome, Artista: newMusica.Artista, Categoria: newMusica.Categoria },
+      musicaId
+    ).catch((err) => console.warn('[storage] Falha ao criar música no Firestore:', err));
 
-    this.set(KEYS.MUSICAS, musicas);
-    this.set(KEYS.VERSOES, versoes);
-
-    this.addToSyncQueue('Musicas', 'insert', newMusica);
-    this.addToSyncQueue('Versoes', 'insert', newVersao);
+    fsVersoes.addVersaoFirestore(
+      {
+        ID_Musica: musicaId,
+        Nome_Versao: newVersao.Nome_Versao,
+        Tom: newVersao.Tom,
+        Modo: newVersao.Modo,
+        BPM: newVersao.BPM,
+        Compasso: newVersao.Compasso,
+        Letra: newVersao.Letra,
+        Estrutura: newVersao.Estrutura,
+        Obs: newVersao.Obs
+      },
+      versaoId
+    ).catch((err) => console.warn('[storage] Falha ao criar versão no Firestore:', err));
 
     if (notasData && notasData.length > 0) {
-      notasData.forEach((n) => {
-        const newNota: Nota = {
-          ...n,
-          ID: generateUUID(),
-          ID_Versao: newVersao.ID
-        };
-        notas.push(newNota);
-        this.addToSyncQueue('Notas', 'insert', newNota);
-        this.removeTombstone(newNota.ID);
+      const newNotas = notasData.map((n) => ({ ...n, ID: generateUUID(), ID_Versao: versaoId }));
+      this.notas = [...this.notas, ...newNotas];
+      newNotas.forEach((n) => {
+        fsNotas.addNotaFirestore(
+          { ID_Versao: n.ID_Versao, Instrumento: n.Instrumento, Observacao: n.Observacao, Autor: n.Autor, Titulo: n.Titulo, TipoNota: n.TipoNota },
+          n.ID
+        ).catch((err) => console.warn('[storage] Falha ao criar nota no Firestore:', err));
       });
-      this.set(KEYS.NOTAS, notas);
     }
 
     if (arquivosData && arquivosData.length > 0) {
-      arquivosData.forEach((a) => {
-        const newArquivo: Arquivo = {
-          ...a,
-          ID: generateUUID(),
-          ID_Versao: newVersao.ID
-        };
-        arquivos.push(newArquivo);
-        this.addToSyncQueue('Arquivos', 'insert', newArquivo);
-        this.removeTombstone(newArquivo.ID);
+      const newArquivos = arquivosData.map((a) => ({ ...a, ID: generateUUID(), ID_Versao: versaoId }));
+      this.arquivos = [...this.arquivos, ...newArquivos];
+      newArquivos.forEach((a) => {
+        fsArquivos.addArquivoFirestore(
+          { ID_Versao: a.ID_Versao, Tipo: a.Tipo, URL: a.URL, Nome: a.Nome },
+          a.ID
+        ).catch((err) => console.warn('[storage] Falha ao criar arquivo no Firestore:', err));
       });
-      this.set(KEYS.ARQUIVOS, arquivos);
     }
 
-
-    this.removeTombstone(newMusica.ID);
-    this.removeTombstone(newVersao.ID);
-
+    this.notify();
     this.addLog('INSERT_MUSICA', `Música "${newMusica.Nome}" criada`);
     return { musica: newMusica, versao: newVersao };
   }
 
-  public addVersao(versaoData: Omit<Versao, 'ID'>): Versao {
-    const versoes = this.getVersoes();
-    const newVersao: Versao = {
-      ...versaoData,
-      ID: generateUUID()
-    };
-    versoes.push(newVersao);
-    this.set(KEYS.VERSOES, versoes);
-    this.addToSyncQueue('Versoes', 'insert', newVersao);
-    this.removeTombstone(newVersao.ID);
-    this.addLog('INSERT_VERSAO', `Nova versão "${newVersao.Nome_Versao}" adicionada`);
-    return newVersao;
-  }
-
-  public deleteVersao(id: string) {
-    this.addTombstone(id);
-    let versoes = this.getVersoes();
-    versoes = versoes.filter((v) => v.ID !== id);
-    this.set(KEYS.VERSOES, versoes);
-    this.addToSyncQueue('Versoes', 'delete', { ID: id });
-
-    let notas = this.getNotas();
-    const removedNotas = notas.filter((n) => n.ID_Versao === id);
-    removedNotas.forEach((n) => {
-      this.addTombstone(n.ID);
-      this.addToSyncQueue('Notas', 'delete', { ID: n.ID });
-    });
-    notas = notas.filter((n) => n.ID_Versao !== id);
-    this.set(KEYS.NOTAS, notas);
-
-    let arquivos = this.getArquivos();
-    const removedArquivos = arquivos.filter((a) => a.ID_Versao === id);
-    removedArquivos.forEach((a) => {
-      this.addTombstone(a.ID);
-      this.addToSyncQueue('Arquivos', 'delete', { ID: a.ID });
-    });
-    arquivos = arquivos.filter((a) => a.ID_Versao !== id);
-    this.set(KEYS.ARQUIVOS, arquivos);
-
-    let repertorio = this.getRepertorio();
-    const removedRepertorio = repertorio.filter((r) => r.ID_Versao === id);
-    removedRepertorio.forEach((r) => {
-      this.addTombstone(r.ID);
-      this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
-    });
-    repertorio = repertorio.filter((r) => r.ID_Versao !== id);
-    this.set(KEYS.REPERTORIO, repertorio);
-
-    this.addLog('DELETE_VERSAO', `Versão ID ${id} excluída`);
-  }
-
   public addNota(notaData: Omit<Nota, 'ID'>): Nota {
-    const notas = this.getNotas();
-    const newNota: Nota = {
-      ...notaData,
-      ID: generateUUID()
-    };
-    notas.push(newNota);
-    this.set(KEYS.NOTAS, notas);
-    this.addToSyncQueue('Notas', 'insert', newNota);
-    this.removeTombstone(newNota.ID);
+    const id = generateUUID();
+    const newNota: Nota = { ...notaData, ID: id };
+    this.notas = [...this.notas, newNota];
+    this.notify();
+
+    fsNotas.addNotaFirestore(
+      { ID_Versao: newNota.ID_Versao, Instrumento: newNota.Instrumento, Observacao: newNota.Observacao, Autor: newNota.Autor, Titulo: newNota.Titulo, TipoNota: newNota.TipoNota },
+      id
+    ).catch((err) => console.warn('[storage] Falha ao criar nota no Firestore:', err));
+
     this.addLog('INSERT_NOTA', `Nota para ${newNota.Instrumento} inserida`);
     return newNota;
   }
 
   public addArquivo(arquivoData: Omit<Arquivo, 'ID'>): Arquivo {
-    const arquivos = this.getArquivos();
-    const newArquivo: Arquivo = {
-      ...arquivoData,
-      ID: generateUUID()
-    };
-    arquivos.push(newArquivo);
-    this.set(KEYS.ARQUIVOS, arquivos);
-    this.addToSyncQueue('Arquivos', 'insert', newArquivo);
-    this.removeTombstone(newArquivo.ID);
+    const id = generateUUID();
+    const newArquivo: Arquivo = { ...arquivoData, ID: id };
+    this.arquivos = [...this.arquivos, newArquivo];
+    this.notify();
+
+    fsArquivos.addArquivoFirestore(
+      { ID_Versao: newArquivo.ID_Versao, Tipo: newArquivo.Tipo, URL: newArquivo.URL, Nome: newArquivo.Nome },
+      id
+    ).catch((err) => console.warn('[storage] Falha ao criar arquivo no Firestore:', err));
+
     this.addLog('INSERT_ARQUIVO', `Anexo ${newArquivo.Tipo} adicionado`);
     return newArquivo;
   }
 
+  public updateMusica(id: string, data: Partial<Musica>) {
+    const index = this.musicas.findIndex((m) => m.ID === id);
+    if (index === -1) return;
+    this.musicas = this.musicas.map((m) => (m.ID === id ? { ...m, ...data } : m));
+    this.notify();
+
+    fsMusicas.updateMusicaFirestore(id, data).catch((err) =>
+      console.warn('[storage] Falha ao atualizar música no Firestore:', err)
+    );
+    this.addLog('UPDATE_MUSICA', `Música "${this.musicas[index].Nome}" atualizada`);
+  }
+
+  public updateVersao(id: string, data: Partial<Versao>) {
+    const index = this.versoes.findIndex((v) => v.ID === id);
+    if (index === -1) return;
+    this.versoes = this.versoes.map((v) => (v.ID === id ? { ...v, ...data } : v));
+    this.notify();
+
+    fsVersoes.updateVersaoFirestore(id, data).catch((err) =>
+      console.warn('[storage] Falha ao atualizar versão no Firestore:', err)
+    );
+    this.addLog('UPDATE_VERSAO', `Versão "${this.versoes[index].Nome_Versao}" atualizada`);
+  }
+
+  public updateNota(id: string, data: Partial<Nota>) {
+    const index = this.notas.findIndex((n) => n.ID === id);
+    if (index === -1) return;
+    this.notas = this.notas.map((n) => (n.ID === id ? { ...n, ...data } : n));
+    this.notify();
+
+    fsNotas.updateNotaFirestore(id, data).catch((err) =>
+      console.warn('[storage] Falha ao atualizar nota no Firestore:', err)
+    );
+    this.addLog('UPDATE_NOTA', `Nota/Cifra para ${this.notas[index].Instrumento} atualizada`);
+  }
+
   public deleteMusica(id: string) {
-    this.addTombstone(id);
-    let musicas = this.getMusicas();
-    musicas = musicas.filter((m) => m.ID !== id);
-    this.set(KEYS.MUSICAS, musicas);
-    this.addToSyncQueue('Musicas', 'delete', { ID: id });
+    // IMPORTANTE: capturar todos os IDs em cascata ANTES de filtrar os
+    // arrays locais — senão os helpers abaixo leriam os arrays já vazios
+    // do registro que acabou de sumir, e a exclusão em cascata no Firestore
+    // nunca aconteceria (bug pego em revisão antes do primeiro teste).
+    const versaoIds = this.versoes.filter((v) => v.ID_Musica === id).map((v) => v.ID);
+    const notaIds = this.getNotasIdsParaExcluirEmCascata(versaoIds);
+    const arquivoIds = this.getArquivosIdsParaExcluirEmCascata(versaoIds);
+    const repertorioIds = this.getRepertorioIdsParaExcluirEmCascata(undefined, versaoIds);
 
-    let versoes = this.getVersoes();
-    const removedVersoes = versoes.filter((v) => v.ID_Musica === id);
-    const removedVersaoIds = removedVersoes.map((v) => v.ID);
-    removedVersaoIds.forEach((vId) => {
-      this.addTombstone(vId);
-      this.addToSyncQueue('Versoes', 'delete', { ID: vId });
-    });
-    versoes = versoes.filter((v) => v.ID_Musica !== id);
-    this.set(KEYS.VERSOES, versoes);
+    this.musicas = this.musicas.filter((m) => m.ID !== id);
+    this.versoes = this.versoes.filter((v) => v.ID_Musica !== id);
+    this.notas = this.notas.filter((n) => !versaoIds.includes(n.ID_Versao));
+    this.arquivos = this.arquivos.filter((a) => !versaoIds.includes(a.ID_Versao));
+    this.repertorio = this.repertorio.filter((r) => !versaoIds.includes(r.ID_Versao));
+    this.notify();
 
-    let notas = this.getNotas();
-    const removedNotas = notas.filter((n) => removedVersaoIds.includes(n.ID_Versao));
-    removedNotas.forEach((n) => {
-      this.addTombstone(n.ID);
-      this.addToSyncQueue('Notas', 'delete', { ID: n.ID });
-    });
-    notas = notas.filter((n) => !removedVersaoIds.includes(n.ID_Versao));
-    this.set(KEYS.NOTAS, notas);
-
-    let arquivos = this.getArquivos();
-    const removedArquivos = arquivos.filter((a) => removedVersaoIds.includes(a.ID_Versao));
-    removedArquivos.forEach((a) => {
-      this.addTombstone(a.ID);
-      this.addToSyncQueue('Arquivos', 'delete', { ID: a.ID });
-    });
-    arquivos = arquivos.filter((a) => !removedVersaoIds.includes(a.ID_Versao));
-    this.set(KEYS.ARQUIVOS, arquivos);
-
-    let repertorio = this.getRepertorio();
-    const removedRepertorio = repertorio.filter((r) => removedVersaoIds.includes(r.ID_Versao));
-    removedRepertorio.forEach((r) => {
-      this.addTombstone(r.ID);
-      this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
-    });
-    repertorio = repertorio.filter((r) => !removedVersaoIds.includes(r.ID_Versao));
-    this.set(KEYS.REPERTORIO, repertorio);
+    fsMusicas.deleteMusicaFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir música:', err));
+    versaoIds.forEach((vId) =>
+      fsVersoes.deleteVersaoFirestore(vId).catch((err) => console.warn('[storage] Falha ao excluir versão em cascata:', err))
+    );
+    notaIds.forEach((nId) =>
+      fsNotas.deleteNotaFirestore(nId).catch((err) => console.warn('[storage] Falha ao excluir nota em cascata:', err))
+    );
+    arquivoIds.forEach((aId) =>
+      fsArquivos.deleteArquivoFirestore(aId).catch((err) => console.warn('[storage] Falha ao excluir arquivo em cascata:', err))
+    );
+    repertorioIds.forEach((rId) =>
+      fsRepertorio.deleteRepertorioItemFirestore(rId).catch((err) => console.warn('[storage] Falha ao excluir item de repertório em cascata:', err))
+    );
 
     this.addLog('DELETE_MUSICA', `Música ID ${id} excluída`);
   }
 
-  public updateMusica(id: string, data: Partial<Musica>) {
-    const musicas = this.getMusicas();
-    const index = musicas.findIndex((m) => m.ID === id);
-    if (index !== -1) {
-      musicas[index] = { ...musicas[index], ...data };
-      this.set(KEYS.MUSICAS, musicas);
-      this.addToSyncQueue('Musicas', 'update', musicas[index]);
-      this.addLog('UPDATE_MUSICA', `Música "${musicas[index].Nome}" atualizada`);
-    }
-  }
+  public deleteVersao(id: string) {
+    // Mesmo cuidado de deleteMusica: capturar antes de filtrar.
+    const notaIds = this.notas.filter((n) => n.ID_Versao === id).map((n) => n.ID);
+    const arquivoIds = this.arquivos.filter((a) => a.ID_Versao === id).map((a) => a.ID);
+    const repertorioIds = this.repertorio.filter((r) => r.ID_Versao === id).map((r) => r.ID);
 
-  public updateVersao(id: string, data: Partial<Versao>) {
-    const versoes = this.getVersoes();
-    const index = versoes.findIndex((v) => v.ID === id);
-    if (index !== -1) {
-      versoes[index] = { ...versoes[index], ...data };
-      this.set(KEYS.VERSOES, versoes);
-      this.addToSyncQueue('Versoes', 'update', versoes[index]);
-      this.addLog('UPDATE_VERSAO', `Versão "${versoes[index].Nome_Versao}" atualizada`);
-    }
-  }
+    this.versoes = this.versoes.filter((v) => v.ID !== id);
+    this.notas = this.notas.filter((n) => n.ID_Versao !== id);
+    this.arquivos = this.arquivos.filter((a) => a.ID_Versao !== id);
+    this.repertorio = this.repertorio.filter((r) => r.ID_Versao !== id);
+    this.notify();
 
-  public updateNota(id: string, data: Partial<Nota>) {
-    const notas = this.getNotas();
-    const index = notas.findIndex((n) => n.ID === id);
-    if (index !== -1) {
-      notas[index] = { ...notas[index], ...data };
-      this.set(KEYS.NOTAS, notas);
-      this.addToSyncQueue('Notas', 'update', notas[index]);
-      this.addLog('UPDATE_NOTA', `Nota/Cifra para ${notas[index].Instrumento} atualizada`);
-    }
+    fsVersoes.deleteVersaoFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir versão:', err));
+    notaIds.forEach((nId) => fsNotas.deleteNotaFirestore(nId).catch((err) => console.warn('[storage] Falha ao excluir nota em cascata:', err)));
+    arquivoIds.forEach((aId) => fsArquivos.deleteArquivoFirestore(aId).catch((err) => console.warn('[storage] Falha ao excluir arquivo em cascata:', err)));
+    repertorioIds.forEach((rId) => fsRepertorio.deleteRepertorioItemFirestore(rId).catch((err) => console.warn('[storage] Falha ao excluir item de repertório em cascata:', err)));
+
+    this.addLog('DELETE_VERSAO', `Versão ID ${id} excluída`);
   }
 
   public deleteNota(id: string) {
-    this.addTombstone(id);
-    let notas = this.getNotas();
-    notas = notas.filter((n) => n.ID !== id);
-    this.set(KEYS.NOTAS, notas);
-    this.addToSyncQueue('Notas', 'delete', { ID: id });
-    this.addLog('DELETE_NOTA', `Nota removida`);
+    this.notas = this.notas.filter((n) => n.ID !== id);
+    this.notify();
+    fsNotas.deleteNotaFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir nota:', err));
+    this.addLog('DELETE_NOTA', 'Nota removida');
   }
 
   public deleteArquivo(id: string) {
-    this.addTombstone(id);
-    let arquivos = this.getArquivos();
-    arquivos = arquivos.filter((a) => a.ID !== id);
-    this.set(KEYS.ARQUIVOS, arquivos);
-    this.addToSyncQueue('Arquivos', 'delete', { ID: id });
-    this.addLog('DELETE_ARQUIVO', `Anexo removido`);
+    this.arquivos = this.arquivos.filter((a) => a.ID !== id);
+    this.notify();
+    fsArquivos.deleteArquivoFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir arquivo:', err));
+    this.addLog('DELETE_ARQUIVO', 'Anexo removido');
+  }
+
+  // Pequenos helpers só pra deixar deleteMusica legível (evita recomputar
+  // os mesmos filtros três vezes com nomes genéricos soltos no meio do método).
+  private getNotasIdsParaExcluirEmCascata(versaoIds: string[]): string[] {
+    return this.notas.filter((n) => versaoIds.includes(n.ID_Versao)).map((n) => n.ID);
+  }
+  private getArquivosIdsParaExcluirEmCascata(versaoIds: string[]): string[] {
+    return this.arquivos.filter((a) => versaoIds.includes(a.ID_Versao)).map((a) => a.ID);
+  }
+  private getRepertorioIdsParaExcluirEmCascata(cultoId?: string, versaoIds?: string[]): string[] {
+    return this.repertorio
+      .filter((r) => (cultoId ? r.ID_Culto === cultoId : versaoIds!.includes(r.ID_Versao)))
+      .map((r) => r.ID);
   }
 
   // ==========================================
   // CULTOS & REPERTORIO
   // ==========================================
 
-  public getCultos(): Culto[] { return this.get<Culto>(KEYS.CULTOS); }
-  public getRepertorio(): RepertorioItem[] { return this.get<RepertorioItem>(KEYS.REPERTORIO); }
+  public getCultos(): Culto[] { return this.cultos; }
+  public getRepertorio(): RepertorioItem[] { return this.repertorio; }
 
   public addCulto(cultoData: Omit<Culto, 'ID'>): Culto {
-    const cultos = this.getCultos();
-    const newCulto: Culto = {
-      ...cultoData,
-      ID: generateUUID()
-    };
-    cultos.unshift(newCulto);
-    this.set(KEYS.CULTOS, cultos);
-    this.addToSyncQueue('Cultos', 'insert', newCulto);
-    this.removeTombstone(newCulto.ID);
+    const id = generateUUID();
+    const newCulto: Culto = { ...cultoData, ID: id };
+    this.cultos = [newCulto, ...this.cultos];
+    this.notify();
+
+    fsCultos.addCultoFirestore(
+      { Data: newCulto.Data, Nome_Evento: newCulto.Nome_Evento, Status: newCulto.Status, Observacoes: newCulto.Observacoes },
+      id
+    ).catch((err) => console.warn('[storage] Falha ao criar culto no Firestore:', err));
+
     this.addLog('INSERT_CULTO', `Culto "${newCulto.Nome_Evento}" agendado`);
     return newCulto;
   }
 
   public updateCulto(id: string, data: Partial<Culto>) {
-    const cultos = this.getCultos();
-    const index = cultos.findIndex((c) => c.ID === id);
-    if (index !== -1) {
-      cultos[index] = { ...cultos[index], ...data };
-      this.set(KEYS.CULTOS, cultos);
-      this.addToSyncQueue('Cultos', 'update', cultos[index]);
-      this.addLog('UPDATE_CULTO', `Culto "${cultos[index].Nome_Evento}" atualizado`);
-    }
+    const index = this.cultos.findIndex((c) => c.ID === id);
+    if (index === -1) return;
+    this.cultos = this.cultos.map((c) => (c.ID === id ? { ...c, ...data } : c));
+    this.notify();
+
+    fsCultos.updateCultoFirestore(id, data).catch((err) => console.warn('[storage] Falha ao atualizar culto:', err));
+    this.addLog('UPDATE_CULTO', `Culto "${this.cultos[index].Nome_Evento}" atualizado`);
   }
 
   public deleteCulto(id: string) {
-    this.addTombstone(id);
-    let cultos = this.getCultos();
-    cultos = cultos.filter((c) => c.ID !== id);
-    this.set(KEYS.CULTOS, cultos);
-    this.addToSyncQueue('Cultos', 'delete', { ID: id });
+    const repertorioIds = this.getRepertorioIdsParaExcluirEmCascata(id);
 
-    let repertorio = this.getRepertorio();
-    const removedRepertorio = repertorio.filter((r) => r.ID_Culto === id);
-    removedRepertorio.forEach((r) => {
-      this.addTombstone(r.ID);
-      this.addToSyncQueue('Repertorio', 'delete', { ID: r.ID });
-    });
-    repertorio = repertorio.filter((r) => r.ID_Culto !== id);
-    this.set(KEYS.REPERTORIO, repertorio);
+    this.cultos = this.cultos.filter((c) => c.ID !== id);
+    this.repertorio = this.repertorio.filter((r) => r.ID_Culto !== id);
+    this.notify();
+
+    fsCultos.deleteCultoFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir culto:', err));
+    repertorioIds.forEach((rId) =>
+      fsRepertorio.deleteRepertorioItemFirestore(rId).catch((err) => console.warn('[storage] Falha ao excluir item de repertório em cascata:', err))
+    );
 
     this.addLog('DELETE_CULTO', `Culto ID ${id} excluído`);
   }
 
   public addSongToRepertorio(cultoId: string, versaoId: string, dirigente?: string, observacao?: string): RepertorioItem {
-    const repertorio = this.getRepertorio();
-    const currentItems = repertorio.filter((r) => r.ID_Culto === cultoId);
+    const currentItems = this.repertorio.filter((r) => r.ID_Culto === cultoId);
     const maxOrdem = currentItems.reduce((max, item) => Math.max(max, item.Ordem), 0);
 
+    const id = generateUUID();
     const newItem: RepertorioItem = {
-      ID: generateUUID(),
+      ID: id,
       ID_Culto: cultoId,
       ID_Versao: versaoId,
       Ordem: maxOrdem + 1,
       Dirigente: dirigente || '',
       Observacao_Culto: observacao || ''
     };
+    this.repertorio = [...this.repertorio, newItem];
+    this.notify();
 
-    repertorio.push(newItem);
-    this.set(KEYS.REPERTORIO, repertorio);
-    this.addToSyncQueue('Repertorio', 'insert', newItem);
-    this.removeTombstone(newItem.ID);
+    fsRepertorio.addRepertorioItemFirestore(
+      { ID_Culto: cultoId, ID_Versao: versaoId, Ordem: newItem.Ordem, Dirigente: newItem.Dirigente, Observacao_Culto: newItem.Observacao_Culto },
+      id
+    ).catch((err) => console.warn('[storage] Falha ao adicionar música ao repertório no Firestore:', err));
+
     this.addLog('INSERT_REPERTORIO', `Música adicionada ao culto ID ${cultoId}`);
     return newItem;
   }
 
   public removeSongFromRepertorio(repertorioId: string) {
-    this.addTombstone(repertorioId);
-    let repertorio = this.getRepertorio();
-    repertorio = repertorio.filter((r) => r.ID !== repertorioId);
-    this.set(KEYS.REPERTORIO, repertorio);
-    this.addToSyncQueue('Repertorio', 'delete', { ID: repertorioId });
-    this.addLog('DELETE_REPERTORIO', `Música removida do repertório`);
+    this.repertorio = this.repertorio.filter((r) => r.ID !== repertorioId);
+    this.notify();
+    fsRepertorio.deleteRepertorioItemFirestore(repertorioId).catch((err) => console.warn('[storage] Falha ao remover música do repertório:', err));
+    this.addLog('DELETE_REPERTORIO', 'Música removida do repertório');
   }
 
   public reorderRepertorio(cultoId: string, newOrderIds: string[]) {
-    const repertorio = this.getRepertorio();
+    this.repertorio = this.repertorio.map((item) => {
+      if (item.ID_Culto !== cultoId) return item;
+      const novaOrdem = newOrderIds.indexOf(item.ID);
+      return novaOrdem === -1 ? item : { ...item, Ordem: novaOrdem + 1 };
+    });
+    this.notify();
+
     newOrderIds.forEach((id, index) => {
-      const item = repertorio.find((r) => r.ID === id && r.ID_Culto === cultoId);
+      const item = this.repertorio.find((r) => r.ID === id && r.ID_Culto === cultoId);
       if (item) {
-        item.Ordem = index + 1;
-        this.addToSyncQueue('Repertorio', 'update', item);
+        fsRepertorio.updateRepertorioItemFirestore(id, { Ordem: index + 1 }).catch((err) =>
+          console.warn('[storage] Falha ao reordenar repertório:', err)
+        );
       }
     });
-    this.set(KEYS.REPERTORIO, repertorio);
   }
 
   // ==========================================
   // INTEGRANTES
   // ==========================================
 
-  public getIntegrantes(): Integrante[] { return this.get<Integrante>(KEYS.INTEGRANTES); }
+  public getIntegrantes(): Integrante[] { return this.integrantes; }
 
   public addIntegrante(data: Omit<Integrante, 'ID'>): Integrante {
-    const integrantes = this.getIntegrantes();
-    const newMember: Integrante = {
-      ...data,
-      ID: generateUUID(),
-      Ativo: true
-    };
-    integrantes.push(newMember);
-    this.set(KEYS.INTEGRANTES, integrantes);
-    this.addToSyncQueue('Integrantes', 'insert', newMember);
-    this.removeTombstone(newMember.ID);
+    const id = generateUUID();
+    const newMember: Integrante = { ...data, ID: id, Ativo: true };
+    this.integrantes = [...this.integrantes, newMember];
+    this.notify();
+
+    fsIntegrantes.addIntegranteFirestore(
+      { Nome: newMember.Nome, Funcao: newMember.Funcao, Email: newMember.Email, Telefone: newMember.Telefone, Ativo: newMember.Ativo },
+      id
+    ).catch((err) => console.warn('[storage] Falha ao cadastrar integrante no Firestore:', err));
+
     this.addLog('INSERT_INTEGRANTE', `Integrante ${newMember.Nome} cadastrado`);
     return newMember;
   }
 
+  public updateIntegrante(id: string, data: Partial<Integrante>) {
+    const index = this.integrantes.findIndex((i) => i.ID === id);
+    if (index === -1) return;
+    this.integrantes = this.integrantes.map((i) => (i.ID === id ? { ...i, ...data } : i));
+    this.notify();
+
+    fsIntegrantes.updateIntegranteFirestore(id, data).catch((err) => console.warn('[storage] Falha ao atualizar integrante:', err));
+    this.addLog('UPDATE_INTEGRANTE', `Integrante ${this.integrantes[index].Nome} atualizado`);
+  }
+
   public deleteIntegrante(id: string) {
-    this.addTombstone(id);
-    let integrantes = this.getIntegrantes();
-    integrantes = integrantes.filter((i) => i.ID !== id);
-    this.set(KEYS.INTEGRANTES, integrantes);
-    this.addToSyncQueue('Integrantes', 'delete', { ID: id });
+    this.integrantes = this.integrantes.filter((i) => i.ID !== id);
+    this.notify();
+    fsIntegrantes.deleteIntegranteFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir integrante:', err));
     this.addLog('DELETE_INTEGRANTE', `Integrante ID ${id} removido`);
   }
 
-  public updateIntegrante(id: string, data: Partial<Integrante>) {
-    const integrantes = this.getIntegrantes();
-    const index = integrantes.findIndex((i) => i.ID === id);
-    if (index !== -1) {
-      integrantes[index] = { ...integrantes[index], ...data };
-      this.set(KEYS.INTEGRANTES, integrantes);
-      this.addToSyncQueue('Integrantes', 'update', integrantes[index]);
-      this.addLog('UPDATE_INTEGRANTE', `Integrante ${integrantes[index].Nome} atualizado`);
-    }
-  }
-
   // ==========================================
-  // HISTORICO & LOGS
+  // HISTORICO (só leitura — nenhuma tela cria/edita hoje)
   // ==========================================
 
-  public getHistorico(): HistoricoItem[] { return this.get<HistoricoItem>(KEYS.HISTORICO); }
-  public getLogs(): LogItem[] { return this.get<LogItem>(KEYS.LOGS); }
+  public getHistorico(): HistoricoItem[] { return this.historico; }
 
-  public addHistorico(data: Omit<HistoricoItem, 'ID'>): HistoricoItem {
-    const historico = this.getHistorico();
-    const newHist: HistoricoItem = {
-      ...data,
-      ID: generateUUID()
-    };
-    historico.unshift(newHist);
-    this.set(KEYS.HISTORICO, historico);
-    this.addToSyncQueue('Historico', 'insert', newHist);
-    this.removeTombstone(newHist.ID);
-    this.addLog('INSERT_HISTORICO', `Histórico registrado`);
-    return newHist;
-  }
-
-  public deleteHistorico(id: string) {
-    this.addTombstone(id);
-    let historico = this.getHistorico();
-    historico = historico.filter((h) => h.ID !== id);
-    this.set(KEYS.HISTORICO, historico);
-    this.addToSyncQueue('Historico', 'delete', { ID: id });
-    this.addLog('DELETE_HISTORICO', `Item de histórico removido`);
-  }
+  // ==========================================
+  // CONFIG (vestigial — ver firestoreConfig.ts. Sem getters/setters aqui
+  // porque nenhuma tela usa ConfigItem hoje; ficaria código morto.)
+  // ==========================================
 }
 
 export const storage = new StorageService();

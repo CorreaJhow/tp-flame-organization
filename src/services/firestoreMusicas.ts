@@ -1,16 +1,11 @@
 /**
- * Camada de dados da tabela Musicas via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO: nada no app real importa este arquivo ainda. É a
- * prova de conceito do padrão que as outras 9 tabelas vão seguir depois —
- * só troca pra valer quando todas estiverem prontas e testadas (migrar uma
- * tabela de cada vez deixaria o app sem saber "de onde eu leio" no meio do
- * caminho, mais risco que benefício).
+ * Camada de dados da tabela Musicas via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`, que
+ * mantém um cache em memória atualizado por `onSnapshot` e chama as funções
+ * daqui pra escrever.
  *
  * Mesmos nomes de campo de `Musica` em `src/types.ts` — os componentes de
- * UI que hoje leem `musica.Nome`, `musica.Artista` etc. não precisam mudar
- * quando a troca de verdade acontecer.
+ * UI que leem `musica.Nome`, `musica.Artista` etc. não precisaram mudar.
  */
 import {
   collection,
@@ -21,8 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Musica } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando } from './firestoreUtils';
+import { generateUUID, quemEstaEditando } from './firestoreUtils';
 
 const COLLECTION = 'musicas';
 
@@ -34,9 +28,10 @@ export async function getMusicasFirestore(): Promise<Musica[]> {
 }
 
 export async function addMusicaFirestore(
-  input: Pick<Musica, 'Nome' | 'Artista' | 'Categoria'>
+  input: Pick<Musica, 'Nome' | 'Artista' | 'Categoria'>,
+  idPreGerado?: string
 ): Promise<Musica> {
-  const id = generateUUID();
+  const id = idPreGerado || generateUUID();
   const musica: Musica = {
     ID: id,
     Nome: input.Nome.trim(),

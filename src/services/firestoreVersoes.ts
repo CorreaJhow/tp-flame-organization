@@ -1,9 +1,6 @@
 /**
- * Camada de dados da tabela Versoes via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão de `firestoreMusicas.ts` — nada no
- * app real importa este arquivo ainda.
+ * Camada de dados da tabela Versoes via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`.
  *
  * `getVersoesFirestore()` traz TODAS as versões, sem filtrar por música —
  * de propósito, espelha `storage.getVersoes()` de hoje. O app já filtra
@@ -20,8 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Versao } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando, stripUndefined } from './firestoreUtils';
+import { generateUUID, quemEstaEditando, stripUndefined } from './firestoreUtils';
 
 const COLLECTION = 'versoes';
 
@@ -37,8 +33,8 @@ type CamposEditaveisVersao = Pick<
   'ID_Musica' | 'Nome_Versao' | 'Tom' | 'Modo' | 'BPM' | 'Compasso' | 'Letra' | 'Estrutura' | 'Obs'
 >;
 
-export async function addVersaoFirestore(input: CamposEditaveisVersao): Promise<Versao> {
-  const id = generateUUID();
+export async function addVersaoFirestore(input: CamposEditaveisVersao, idPreGerado?: string): Promise<Versao> {
+  const id = idPreGerado || generateUUID();
   const versao: Versao = {
     ID: id,
     ...input,

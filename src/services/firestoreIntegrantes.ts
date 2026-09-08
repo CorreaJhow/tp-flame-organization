@@ -1,9 +1,6 @@
 /**
- * Camada de dados da tabela Integrantes via Firestore (Fase 4, Fase B —
- * ver docs/PLANO-FASE4-MIGRACAO-FIREBASE.md).
- *
- * ISOLADO DE PROPÓSITO, mesmo padrão das tabelas anteriores — nada no app
- * real importa este arquivo ainda.
+ * Camada de dados da tabela Integrantes via Firestore (Fase 4 — ver
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`.
  *
  * E-mail/telefone só ficam legíveis pra quem estiver autenticado e na
  * allowlist da equipe (ver firestore.rules) — diferente de hoje, onde
@@ -18,8 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Integrante } from '../types';
-import { generateUUID } from './storage';
-import { quemEstaEditando, stripUndefined } from './firestoreUtils';
+import { generateUUID, quemEstaEditando, stripUndefined } from './firestoreUtils';
 
 const COLLECTION = 'integrantes';
 
@@ -32,8 +28,8 @@ export async function getIntegrantesFirestore(): Promise<Integrante[]> {
 
 type CamposEditaveisIntegrante = Pick<Integrante, 'Nome' | 'Funcao' | 'Email' | 'Telefone' | 'Ativo'>;
 
-export async function addIntegranteFirestore(input: CamposEditaveisIntegrante): Promise<Integrante> {
-  const id = generateUUID();
+export async function addIntegranteFirestore(input: CamposEditaveisIntegrante, idPreGerado?: string): Promise<Integrante> {
+  const id = idPreGerado || generateUUID();
   const integrante: Integrante = {
     ID: id,
     ...input,
