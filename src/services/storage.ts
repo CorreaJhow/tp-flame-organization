@@ -619,3 +619,16 @@ class StorageService {
 }
 
 export const storage = new StorageService();
+
+/**
+ * Expõe o singleton em `window.storage` — só pra depuração/leitura pontual
+ * via console do navegador (ex.: a skill `/donna` gerando relatório com
+ * `window.storage.getMusicas()` depois de logada no app de verdade).
+ *
+ * Não é uma exposição nova de dado: quem já está autenticado no app já tem
+ * acesso a exatamente esses mesmos dados pela tela — isto só dá um atalho
+ * pra ler sem precisar navegar cada tabela na UI. Não escreve nada sozinho.
+ */
+if (typeof window !== 'undefined') {
+  (window as unknown as { storage: StorageService }).storage = storage;
+}
