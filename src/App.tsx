@@ -3,10 +3,8 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DashboardView } from './components/DashboardView';
 import { LibraryView } from './components/LibraryView';
-import { SongDetailModal } from './components/SongDetailModal';
 import { SongFormModal } from './components/SongFormModal';
 import { CultosView } from './components/CultosView';
-import { StageModeModal } from './components/StageModeModal';
 import { IntegrantesView } from './components/IntegrantesView';
 import { MaisView } from './components/MaisView';
 import { FeedbackModal } from './components/FeedbackModal';
@@ -44,11 +42,44 @@ const AdminView = lazy(() =>
   import('./components/AdminView').then((m) => ({ default: m.AdminView }))
 );
 
+/**
+ * Modo Palco e a ficha de música (SongDetailModal) puxam o ChordViewer
+ * junto — é o trecho mais pesado do bundle e só é usado ao abrir uma
+ * música específica, nunca no primeiro carregamento do app. Viram chunks
+ * separados aqui, e o efeito de pré-carregamento logo abaixo (dentro do
+ * componente App) busca esses chunks em segundo plano assim que o app
+ * fica ocioso — pelo Golden Rule do projeto (resiliência de palco vem
+ * antes de qualquer coisa), quem abre o Modo Palco ao vivo não pode
+ * depender de uma rede boa naquele instante exato; o chunk já deve estar
+ * baixado e em cache do Service Worker bem antes disso.
+ */
+const stageModeModalImport = () => import('./components/StageModeModal');
+const songDetailModalImport = () => import('./components/SongDetailModal');
+const StageModeModal = lazy(() =>
+  stageModeModalImport().then((m) => ({ default: m.StageModeModal }))
+);
+const SongDetailModal = lazy(() =>
+  songDetailModalImport().then((m) => ({ default: m.SongDetailModal }))
+);
+
 /** Fallback do Suspense: mesmo padrão visual do spinner de sync do Header. */
 function LazyViewFallback() {
   return (
     <div className="flex items-center justify-center py-16 text-slate-500">
       <RefreshCw className="w-5 h-5 animate-spin text-[#FF4D00]" />
+    </div>
+  );
+}
+
+/** Fallback do Suspense pros modais em tela cheia (Modo Palco / Ficha de
+ * Música) — mesmo fundo escuro deles, pra não piscar um branco/vazio no
+ * meio da troca de tela. Na prática quase nunca aparece, porque o
+ * pré-carregamento em segundo plano já deixa o chunk pronto antes do
+ * clique. */
+function LazyFullScreenFallback() {
+  return (
+    <div className="fixed inset-0 z-50 bg-[#080808] flex items-center justify-center">
+      <RefreshCw className="w-6 h-6 animate-spin text-[#FF4D00]" />
     </div>
   );
 }
@@ -160,6 +191,29 @@ function AppContent() {
     storage.startRealtimeSync(refreshData, () => setIsBlocked(true));
     return () => storage.stopRealtimeSync();
   }, [refreshData]);
+
+  /**
+   * Pré-carrega em segundo plano os chunks do Modo Palco e da Ficha de
+   * Música assim que o app fica ocioso — antes de qualquer clique. São
+   * chunks separados (ver comentário no topo do arquivo) só pelo peso do
+   * bundle inicial; ninguém deveria sentir isso como demora na hora de
+   * entrar numa música ao vivo. `requestIdleCallback` evita competir com o
+   * carregamento inicial da tela; o timeout garante que roda mesmo se o
+   * navegador não suportar a API (Safari) ou nunca ficar "ocioso" de
+   * verdade.
+   */
+  useEffect(() => {
+    const prefetch = () => {
+      stageModeModalImport();
+      songDetailModalImport();
+    };
+    if ('requestIdleCallback' in window) {
+      const id = (window as any).requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const timeoutId = setTimeout(prefetch, 2000);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   /**
    * Botão manual de "sincronizar": como o Firestore já mantém tudo
@@ -328,14 +382,16 @@ function AppContent() {
 
       {/* Song Detail Modal */}
       {selectedSongForDetail && (
-        <SongDetailModal
-          musica={selectedSongForDetail}
-          versoes={versoes.filter((v) => v.ID_Musica === selectedSongForDetail.ID)}
-          arquivos={arquivos}
-          notas={notas}
-          onClose={() => setSelectedSongForDetail(null)}
-          onDataChanged={refreshData}
-        />
+        <Suspense fallback={<LazyFullScreenFallback />}>
+          <SongDetailModal
+            musica={selectedSongForDetail}
+            versoes={versoes.filter((v) => v.ID_Musica === selectedSongForDetail.ID)}
+            arquivos={arquivos}
+            notas={notas}
+            onClose={() => setSelectedSongForDetail(null)}
+            onDataChanged={refreshData}
+          />
+        </Suspense>
       )}
 
       {/* Song Form Modal */}
@@ -348,14 +404,16 @@ function AppContent() {
 
       {/* Stage Mode Modal */}
       {stageModeCulto && (
-        <StageModeModal
-          culto={stageModeCulto}
-          repertorio={repertorio}
-          versoes={versoes}
-          musicas={musicas}
-          notas={notas}
-          onClose={() => setStageModeCulto(null)}
-        />
+        <Suspense fallback={<LazyFullScreenFallback />}>
+          <StageModeModal
+            culto={stageModeCulto}
+            repertorio={repertorio}
+            versoes={versoes}
+            musicas={musicas}
+            notas={notas}
+            onClose={() => setStageModeCulto(null)}
+          />
+        </Suspense>
       )}
 
       {/* Feedback & Bug Report Modal */}

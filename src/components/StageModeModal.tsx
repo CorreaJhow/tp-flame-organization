@@ -16,7 +16,8 @@ import {
   Plus,
   Mic,
   Eye,
-  Layers
+  Layers,
+  WifiOff
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
 import { formatKeyDisplay } from '../utils/chordTransposer';
@@ -33,6 +34,29 @@ interface StageModeModalProps {
   onClose: () => void;
 }
 
+// Preferências do Modo Palco lembradas por aparelho (não por pessoa — não
+// há login separado por instrumento/voz). Cobre o caso comum de "esse
+// celular é sempre o da Larissa, sempre no modo Letra, sempre com foco na
+// própria voz" — sem isso, toda música/todo culto exigia reconfigurar do
+// zero, e quem mais sentia isso era o vocalista.
+const STAGE_PREFS_KEY = 'tp_flame_stage_prefs_v1';
+
+interface StagePrefs {
+  displayMode: 'cifra' | 'letra';
+  fontSizeStep: number;
+  showVocalHighlights: boolean;
+  focusVoice: string | null;
+}
+
+const loadStagePrefs = (): Partial<StagePrefs> => {
+  try {
+    const raw = localStorage.getItem(STAGE_PREFS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
 export const StageModeModal: React.FC<StageModeModalProps> = ({
   culto,
   repertorio,
@@ -47,8 +71,57 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [semitones, setSemitones] = useState(0);
-  const [displayMode, setDisplayMode] = useState<'cifra' | 'letra'>('cifra');
-  const [fontSizeStep, setFontSizeStep] = useState(0); // -1, 0, 1, 2, 3
+
+  // "Toque de novo pra sair": o botão vermelho de Sair fica exatamente
+  // onde o polegar passa ao segurar o celular numa mão — no meio de uma
+  // apresentação, um toque sem querer aí obriga a reabrir o culto, achar
+  // a música de novo e reconfigurar os filtros. Sem virar um modal (que
+  // atrapalharia quem realmente quer sair rápido), o primeiro toque só
+  // "arma" o botão por alguns segundos; sai de verdade só no segundo
+  // toque, ou sozinho se ninguém confirmar. Esc no teclado sai direto —
+  // quem usa teclado não é o cenário do toque acidental.
+  const EXIT_CONFIRM_WINDOW_MS = 2500;
+  const [exitArmed, setExitArmed] = useState(false);
+  const exitArmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (exitArmTimeoutRef.current) clearTimeout(exitArmTimeoutRef.current);
+    };
+  }, []);
+
+  // O aviso de "Offline" do header principal fica escondido atrás do Modo
+  // Palco (ele cobre a tela toda). Sem repetir esse indicador aqui, se a
+  // internet cair no meio do culto ninguém percebe — não que trave nada
+  // (tudo já funciona local), mas some a segurança de saber que os dados
+  // não estão sincronizando com o resto da equipe naquele momento.
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const handleExitTap = () => {
+    if (exitArmed) {
+      if (exitArmTimeoutRef.current) clearTimeout(exitArmTimeoutRef.current);
+      onClose();
+      return;
+    }
+    setExitArmed(true);
+    exitArmTimeoutRef.current = setTimeout(() => setExitArmed(false), EXIT_CONFIRM_WINDOW_MS);
+  };
+  const [displayMode, setDisplayMode] = useState<'cifra' | 'letra'>(
+    () => loadStagePrefs().displayMode ?? 'cifra'
+  );
+  const [fontSizeStep, setFontSizeStep] = useState(
+    () => loadStagePrefs().fontSizeStep ?? 0
+  ); // -1, 0, 1, 2, 3
 
   // Auto-scroll State & Speed
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
@@ -56,9 +129,24 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   const [showNotes, setShowNotes] = useState(false);
 
   // Vocal Annotation & Focus State
-  const [focusVoice, setFocusVoice] = useState<string | null>(null);
-  const [showVocalHighlights, setShowVocalHighlights] = useState(true);
+  const [focusVoice, setFocusVoice] = useState<string | null>(
+    () => loadStagePrefs().focusVoice ?? null
+  );
+  const [showVocalHighlights, setShowVocalHighlights] = useState(
+    () => loadStagePrefs().showVocalHighlights ?? true
+  );
   const [selectedLayerId, setSelectedLayerId] = useState<string>('oficial');
+
+  // Grava a preferência a cada mudança. Guardado por aparelho (localStorage
+  // simples) — não faz sentido sincronizar isso entre integrantes.
+  useEffect(() => {
+    try {
+      const prefs: StagePrefs = { displayMode, fontSizeStep, showVocalHighlights, focusVoice };
+      localStorage.setItem(STAGE_PREFS_KEY, JSON.stringify(prefs));
+    } catch {
+      // localStorage indisponível (aba anônima, etc.) — sem persistência, sem quebrar nada.
+    }
+  }, [displayMode, fontSizeStep, showVocalHighlights, focusVoice]);
 
   // Tempo (BPM) da versão atual — só leitura, mostrada no banner de
   // informações. O metrônomo que existia aqui foi removido a pedido do
@@ -244,6 +332,38 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     }
   };
 
+  // Trocar de música arrastando o dedo na letra — segurando o microfone
+  // numa mão, arrastar é mais natural do que mirar num botão pequeno. Os
+  // botões continuam funcionando normalmente, isso é só um atalho extra.
+  //
+  // Decide a direção só no touchend (comparando o deslocamento total) e
+  // nunca chama preventDefault no touchmove — a rolagem vertical normal da
+  // letra (dedo ou auto-scroll) continua funcionando exatamente igual. Só
+  // dispara troca de música quando o arrasto é claramente mais horizontal
+  // que vertical, pra não confundir com o gesto de rolar a letra.
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+
+    const SWIPE_THRESHOLD = 70;
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) handleNextSong();
+      else handlePrevSong();
+    }
+  };
+
   if (!currentRep || !currentVersao || !currentMusica) {
     return (
       <div className="fixed inset-0 z-50 bg-[#080808] flex items-center justify-center p-4 text-white">
@@ -276,8 +396,17 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             </button>
 
             <div className="min-w-0 flex-1">
-              <span className="text-[11px] font-black text-[#FF4D00] uppercase tracking-wider block">
+              <span className="text-[11px] font-black text-[#FF4D00] uppercase tracking-wider flex items-center gap-1.5">
                 {currentIndex + 1} DE {setlist.length}
+                {!isOnline && (
+                  <span
+                    className="flex items-center gap-1 text-amber-400 bg-amber-950/40 border border-amber-500/30 px-1.5 py-0.5 rounded normal-case tracking-normal"
+                    title="Sem conexão — os dados continuam salvos neste aparelho e sincronizam sozinhos quando voltar"
+                  >
+                    <WifiOff className="w-2.5 h-2.5" />
+                    Offline
+                  </span>
+                )}
               </span>
               <h2 className="text-xs sm:text-sm font-extrabold text-white leading-tight truncate">
                 {currentMusica.Nome}
@@ -297,15 +426,21 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             </button>
           </div>
 
-          {/* High Visibility Close Button */}
+          {/* High Visibility Close Button — toque de novo pra confirmar */}
           <button
             id="exit-stage-mode-top-button"
-            onClick={onClose}
-            className="py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs flex items-center gap-1 shrink-0 shadow-lg active:scale-95 transition-all border border-red-400/30 min-h-[40px]"
-            title="Sair do Modo Palco (Esc)"
+            onClick={handleExitTap}
+            className={`py-2.5 px-3 rounded-xl text-white font-extrabold text-xs flex items-center gap-1 shrink-0 shadow-lg active:scale-95 transition-all border min-h-[40px] ${
+              exitArmed
+                ? 'bg-red-500 border-red-300 ring-2 ring-red-400/60 animate-pulse'
+                : 'bg-red-600 hover:bg-red-700 border-red-400/30'
+            }`}
+            title={exitArmed ? 'Toque de novo pra confirmar' : 'Sair do Modo Palco (Esc)'}
           >
             <X className="w-4 h-4" />
-            <span className="hidden sm:inline">Sair</span>
+            <span className={exitArmed ? 'inline' : 'hidden sm:inline'}>
+              {exitArmed ? 'Confirmar' : 'Sair'}
+            </span>
           </button>
         </div>
 
@@ -413,6 +548,8 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         // scrolling garante rolagem com inércia normal no iOS.
         className="flex-1 overflow-y-auto px-2 sm:px-6 py-4 space-y-4"
         style={{ scrollBehavior: 'auto', WebkitOverflowScrolling: 'touch' }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Header Info Banner */}
         <div className="bg-[#121212] border border-slate-800/80 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
@@ -622,11 +759,16 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
           <button
             id="exit-stage-mode-bottom-button"
-            onClick={onClose}
-            className="py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-red-950/80 text-slate-300 hover:text-red-400 font-bold text-xs flex items-center gap-1.5 border border-slate-700 transition-all active:scale-95"
+            onClick={handleExitTap}
+            title={exitArmed ? 'Toque de novo pra confirmar' : 'Sair do Modo Palco'}
+            className={`py-2 px-3.5 rounded-xl font-bold text-xs flex items-center gap-1.5 border transition-all active:scale-95 ${
+              exitArmed
+                ? 'bg-red-950/80 text-red-400 border-red-500/50 animate-pulse'
+                : 'bg-slate-800 hover:bg-red-950/80 text-slate-300 hover:text-red-400 border-slate-700'
+            }`}
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sair</span>
+            <span>{exitArmed ? 'Toque de novo' : 'Sair'}</span>
           </button>
         </div>
       </div>
