@@ -35,12 +35,36 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onNavigate
 }) => {
   const { showToast } = useToast();
-  const { user, signOut } = useAuth();
+  const { user, signOut, linkPasswordToAccount, hasPasswordProvider } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState(() => storage.isAdminLoggedIn());
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Adicionar e-mail/senha numa conta que hoje só entra por Google
+  const [linkPasswordInput, setLinkPasswordInput] = useState('');
+  const [linkPasswordSuccess, setLinkPasswordSuccess] = useState(false);
+  const [isLinkingPassword, setIsLinkingPassword] = useState(false);
+
+  const handleLinkPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (linkPasswordInput.trim().length < 6) {
+      showToast('A senha precisa ter pelo menos 6 caracteres.', 'warning');
+      return;
+    }
+    setIsLinkingPassword(true);
+    try {
+      await linkPasswordToAccount(linkPasswordInput.trim());
+      setLinkPasswordSuccess(true);
+      setLinkPasswordInput('');
+      showToast('Senha adicionada! Essa conta agora aceita login por Google ou e-mail/senha.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Não foi possível adicionar a senha.', 'warning');
+    } finally {
+      setIsLinkingPassword(false);
+    }
+  };
 
   // Change password state
   const [newPassword, setNewPassword] = useState('');
@@ -215,6 +239,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <span>Sair</span>
             </button>
           </div>
+
+          {!hasPasswordProvider && (
+            <form onSubmit={handleLinkPassword} className="space-y-2 pt-1">
+              <label className="text-[11px] text-slate-400 leading-relaxed block">
+                Essa conta hoje só entra por Google. Definir uma senha aqui permite logar
+                também por e-mail/senha com o mesmo e-mail — útil pra dar acesso a essa
+                conta (ex.: uma automação) sem compartilhar a senha do Google.
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={linkPasswordInput}
+                  onChange={(e) => setLinkPasswordInput(e.target.value)}
+                  placeholder="Nova senha (mín. 6 caracteres)..."
+                  className="flex-1 bg-[#080808] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+                />
+                <button
+                  type="submit"
+                  disabled={isLinkingPassword}
+                  className="py-2 px-3.5 rounded-xl bg-[#181818] border border-slate-700 hover:border-[#FF4D00] text-white font-bold text-xs disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {isLinkingPassword ? 'Salvando...' : 'Definir senha'}
+                </button>
+              </div>
+              {linkPasswordSuccess && (
+                <p className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Senha definida com sucesso!
+                </p>
+              )}
+            </form>
+          )}
         </section>
       )}
 
