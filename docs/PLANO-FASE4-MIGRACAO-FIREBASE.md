@@ -214,28 +214,58 @@ Tudo isso roda em paralelo ao app atual, sem desligar nada.
    corrigido em revisão antes do teste (cascata de exclusão calculava os
    IDs órfãos *depois* de já ter filtrado o array local, sempre voltando
    vazio) — coberto agora por teste automatizado dedicado.
-8. **Pendente.** Script de migração **uma vez só** dos dados reais de
-   produção (Sheets → Firestore), preservando IDs. **Não apaga nada do
-   Sheets** — continua vivo como cópia de segurança durante a transição.
-   Só faz sentido rodar isso já perto da Fase D — o Firestore de produção
-   está vazio de propósito até lá.
+8. ✅ **Feito (08/09/2026).** `scripts/migrar-dados.mjs` — busca tudo via
+   `?action=getAll` do Apps Script (só leitura, planilha nunca tocada) e
+   grava no Firestore preservando IDs. Modo `--write` só grava depois de um
+   dry-run mostrando as contagens. Credenciais da conta usada pra
+   autenticar o script vêm de variável de ambiente
+   (`MIGRACAO_EMAIL`/`MIGRACAO_SENHA`), nunca hardcoded — o arquivo é
+   commitado num repositório público. Rodado ao vivo: 5 músicas, 5
+   versões, 5 arquivos, 2 cultos, 3 itens de repertório, 9 integrantes, 206
+   logs migrados. **Achado:** nenhum integrante tem e-mail cadastrado na
+   planilha (`Email` vazio pros 9) — a lista de permissão das Security
+   Rules continua precisando ser completada manualmente, não dá pra
+   derivar dos dados migrados.
 9. ✅ **Feito.** Suíte de testes adaptada pra nova camada (mocks do
    Firestore, sem tocar rede real) — 27 testes, `npm run lint` e
    `npm run build` limpos.
 
-### Fase C — Validação isolada
-10. Testar em uma URL de Preview Deployment da Vercel (branch separada,
-    não `main`) — login com Google, criar/editar/apagar música de teste,
-    testar modo offline (desligar a rede no DevTools e confirmar que o
-    Modo Palco continua abrindo cifra salva).
-11. Convidar 1-2 pessoas da equipe pra testar nessa URL de preview antes
-    de qualquer coisa ir pra produção.
+### Fase C + D — Na prática, aconteceram juntas e direto em produção
 
-### Fase D — Corte (fora de janela de ensaio/culto, como da última vez)
-12. Merge pra `main` → Vercel publica em produção.
-13. Acompanhar ao vivo com a equipe na primeira sincronização real.
-14. Manter o Apps Script/planilha viva (só leitura, sem uso) por um tempo
-    de segurança antes de desligar de vez — é o "cabo de emergência".
+O plano original previa testar numa Preview Deployment separada antes de
+ir pra `main`. Na prática, seguimos o padrão que este projeto já usa desde
+sempre (commit direto em `main`, deploy automático) — cada etapa da Fase B
+foi testada ao vivo, mas em `main`/produção, não numa branch separada. Isso
+quase causou um incidente: o primeiro push do `storage.ts` novo foi pro ar
+sem as variáveis `VITE_FIREBASE_*` configuradas na Vercel, deixando o site
+com tela branca por um tempo até percebermos e corrigirmos. Registrado
+aqui pra não repetir — da próxima vez que uma mudança exigir variável de
+ambiente nova, ela entra na Vercel **antes** do push que passa a depender
+dela, não depois.
+
+O que efetivamente aconteceu, em ordem:
+12. ✅ Variáveis `VITE_FIREBASE_*` configuradas na Vercel (Production) —
+    precisou refazer uma vez porque a primeira tentativa tirou o prefixo
+    `VITE_` achando que era mais seguro (não é — ver decisão registrada na
+    seção 2.1; sem o prefixo o Vite nem expõe a variável pro app).
+13. ✅ Domínio `tp-flame-organization.vercel.app` adicionado aos
+    "Authorized domains" do Firebase Authentication — sem isso o login com
+    Google falhava silenciosamente (só funcionava via `localhost`, nunca
+    testado no domínio real até aqui).
+14. ✅ Tela de bloqueio (`AccessBlockedScreen`) adicionada depois de testar
+    ao vivo com uma conta real (`tpflamemusic@gmail.com`) fora da
+    allowlist — login funcionava, app abria vazio, sem explicar por quê.
+15. ✅ Migração de dados (item 8 acima) rodada contra produção, confirmada
+    ao vivo — o Dashboard já mostra "Evento Colheita" e o repertório real.
+16. **Pendente:** completar a allowlist com o e-mail de cada integrante da
+    equipe (ver achado no item 8 — não veio da planilha).
+17. **Pendente:** restaurar `email_verified == true` nas Security Rules
+    (removido temporariamente pra facilitar os testes da Fase B, ver seção
+    2.3) — fazer só depois que a allowlist estiver completa e estável, pra
+    não travar ninguém no meio do processo.
+18. **Pendente:** manter o Apps Script/planilha vivos (só leitura, sem uso)
+    por um tempo de segurança antes de desligar de vez — é o "cabo de
+    emergência" caso algo precise ser conferido contra a fonte original.
 
 ## 5. Estimativa honesta
 

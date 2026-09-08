@@ -7,16 +7,24 @@
 > em [`INSTALAR-PLANILHA.md`](./INSTALAR-PLANILHA.md). Este arquivo é só o resumo
 > executivo: o que já foi feito, o que foi decidido, o que falta.
 >
-> Atualizado em: 04/09/2026 (após a segunda auditoria — "Raio-X", os 5 ganhos
-> rápidos do commit `efc517d`, e o code-splitting das telas de admin/config).
+> Atualizado em: 08/09/2026 — **mudança grande**: o backend deixou de ser
+> Google Sheets/Apps Script e passou a ser Firebase (Firestore + Auth), com
+> login obrigatório. Ver [`PLANO-FASE4-MIGRACAO-FIREBASE.md`](./PLANO-FASE4-MIGRACAO-FIREBASE.md)
+> pro relato completo — o resto deste arquivo ainda descreve a arquitetura
+> antiga em vários pontos (histórico, não desatualizar sem revisar).
 
 ---
 
 ## 1. O que é o projeto
 
 PWA para a equipe de louvor gerenciar cifras, repertório e cultos, funcionando
-100% offline no palco e sincronizando com uma planilha Google (sem servidor
-próprio). Ver propósito completo e stack em [`CLAUDE.md`](../CLAUDE.md).
+100% offline no palco. Ver propósito completo e stack em [`CLAUDE.md`](../CLAUDE.md).
+
+**Backend (desde 08/09/2026): Firebase — Firestore (banco) + Authentication
+(login por Google ou e-mail/senha, obrigatório pra usar o app)**, não mais
+Google Sheets/Apps Script. Ver seção 2 abaixo e o plano da Fase 4 pro
+histórico completo dessa migração e o que ainda falta (allowlist da equipe,
+restaurar `email_verified`).
 
 Produção: **https://tp-flame-organization.vercel.app** (Vercel, deploy
 automático a cada push em `main`, repositório público no GitHub).
