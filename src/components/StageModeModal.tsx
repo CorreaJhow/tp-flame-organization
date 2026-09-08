@@ -355,20 +355,22 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     <div className="fixed inset-0 z-50 bg-[#080808] text-white flex flex-col font-sans overflow-hidden">
       {/* Top Fixed Controls Bar */}
       <div className="bg-[#121212] border-b border-slate-800 px-3 py-2 sticky top-0 z-40 shadow-2xl space-y-2">
+        {/* Linha 1: navegação entre músicas + sair. Sempre visível e sem
+            disputar espaço com as ferramentas — é o que mais precisa estar
+            fácil de acertar no meio de uma música, no palco. */}
         <div className="flex items-center justify-between gap-2">
-          {/* Setlist Stepper */}
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <button
               onClick={handlePrevSong}
               disabled={currentIndex === 0}
-              className="p-2 sm:p-2.5 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors shrink-0"
+              className="p-2.5 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
               title="Música Anterior (Seta Esquerda)"
             >
               <ChevronLeft className="w-5 h-5 text-[#FF4D00]" />
             </button>
 
-            <div className="min-w-0">
-              <span className="text-[12px] font-black text-[#FF4D00] uppercase tracking-wider block">
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] font-black text-[#FF4D00] uppercase tracking-wider block">
                 {currentIndex + 1} DE {setlist.length}
               </span>
               <h2 className="text-xs sm:text-sm font-extrabold text-white leading-tight truncate">
@@ -379,20 +381,35 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             <button
               onClick={handleNextSong}
               disabled={currentIndex === setlist.length - 1}
-              className="p-2 sm:p-2.5 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors shrink-0"
+              className="p-2.5 rounded-xl bg-[#1a1a1a] hover:bg-[#222] disabled:opacity-20 transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
               title="Próxima Música (Seta Direita)"
             >
               <ChevronRight className="w-5 h-5 text-[#FF4D00]" />
             </button>
           </div>
 
-          {/* Mode Switcher & Tools */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* High Visibility Close Button */}
+          <button
+            id="exit-stage-mode-top-button"
+            onClick={onClose}
+            className="py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs flex items-center gap-1 shrink-0 shadow-lg active:scale-95 transition-all border border-red-400/30 min-h-[40px]"
+            title="Sair do Modo Palco (Esc)"
+          >
+            <X className="w-4 h-4" />
+            <span className="hidden sm:inline">Sair</span>
+          </button>
+        </div>
+
+        {/* Linha 2: ferramentas de exibição — rolagem horizontal própria
+            (com indicador de sombra) em vez de espremer tudo numa linha só
+            com a navegação. */}
+        <div className="relative -mx-3 px-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {/* Display Mode Toggle (Cifra / Letra) */}
-            <div className="bg-[#080808] p-1 border border-slate-800 rounded-xl flex items-center gap-1">
+            <div className="bg-[#080808] p-1 border border-slate-800 rounded-xl flex items-center gap-1 shrink-0">
               <button
                 onClick={() => setDisplayMode('cifra')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all min-h-[36px] ${
                   displayMode === 'cifra'
                     ? 'bg-[#FF4D00] text-slate-950 shadow-md'
                     : 'text-slate-400 hover:text-white'
@@ -400,11 +417,11 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                 title="Modo Cifra (para Instrumentistas)"
               >
                 <Music2 className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Cifra</span>
+                <span>Cifra</span>
               </button>
               <button
                 onClick={() => setDisplayMode('letra')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all min-h-[36px] ${
                   displayMode === 'letra'
                     ? 'bg-[#FF4D00] text-slate-950 shadow-md'
                     : 'text-slate-400 hover:text-white'
@@ -412,16 +429,16 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                 title="Modo Letra (para Vocais - Fonte Grande)"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Letra</span>
+                <span>Letra</span>
               </button>
             </div>
 
             {/* Font Sizing Controls (A- / A+) */}
-            <div className="bg-[#080808] p-1 border border-slate-800 rounded-xl flex items-center gap-0.5">
+            <div className="bg-[#080808] p-1 border border-slate-800 rounded-xl flex items-center gap-0.5 shrink-0">
               <button
                 onClick={() => setFontSizeStep((s) => Math.max(-1, s - 1))}
                 disabled={fontSizeStep <= -1}
-                className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+                className="p-2 rounded text-slate-400 hover:text-white disabled:opacity-30 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Diminuir Fonte"
               >
                 <Minus className="w-3.5 h-3.5" />
@@ -430,7 +447,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               <button
                 onClick={() => setFontSizeStep((s) => Math.min(3, s + 1))}
                 disabled={fontSizeStep >= 3}
-                className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+                className="p-2 rounded text-slate-400 hover:text-white disabled:opacity-30 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Aumentar Fonte"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -439,10 +456,10 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
             {/* Transposer (Only in Cifra mode or when applicable) */}
             {displayMode === 'cifra' && (
-              <div className="flex items-center gap-1 bg-[#080808] border border-slate-800 p-1 rounded-xl">
+              <div className="flex items-center gap-1 bg-[#080808] border border-slate-800 p-1 rounded-xl shrink-0">
                 <button
                   onClick={() => setSemitones((s) => s - 1)}
-                  className="p-1 rounded text-[#FF4D00] hover:bg-[#1a1a1a]"
+                  className="p-2 rounded text-[#FF4D00] hover:bg-[#1a1a1a] min-w-[36px] min-h-[36px] flex items-center justify-center"
                   title="Baixar 1 Tom"
                 >
                   <ArrowDown className="w-3.5 h-3.5" />
@@ -450,7 +467,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                 <span className="text-xs font-black text-[#FF4D00] px-1">{currentKeyDisplay}</span>
                 <button
                   onClick={() => setSemitones((s) => s + 1)}
-                  className="p-1 rounded text-[#FF4D00] hover:bg-[#1a1a1a]"
+                  className="p-2 rounded text-[#FF4D00] hover:bg-[#1a1a1a] min-w-[36px] min-h-[36px] flex items-center justify-center"
                   title="Subir 1 Tom"
                 >
                   <ArrowUp className="w-3.5 h-3.5" />
@@ -460,7 +477,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
             <button
               onClick={() => setShowNotes(!showNotes)}
-              className={`p-2 rounded-xl border transition-colors ${
+              className={`p-2.5 rounded-xl border transition-colors shrink-0 min-w-[40px] min-h-[36px] flex items-center justify-center ${
                 showNotes
                   ? 'bg-[#FF4D00] text-slate-950 border-[#FF4D00] font-bold'
                   : 'bg-[#1a1a1a] text-slate-300 border-slate-800'
@@ -469,18 +486,9 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             >
               <MessageSquare className="w-4 h-4" />
             </button>
-
-            {/* High Visibility Close Button */}
-            <button
-              id="exit-stage-mode-top-button"
-              onClick={onClose}
-              className="py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs flex items-center gap-1 shrink-0 shadow-lg active:scale-95 transition-all border border-red-400/30"
-              title="Sair do Modo Palco (Esc)"
-            >
-              <X className="w-4 h-4" />
-              <span className="hidden sm:inline">Sair</span>
-            </button>
           </div>
+          {/* Sombra indicando que a linha rola pra direita */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#121212] to-transparent" />
         </div>
       </div>
 
@@ -503,7 +511,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
           <div className="flex items-center gap-2">
             <div className="bg-[#080808] border border-slate-800 px-2.5 py-1 rounded-xl text-center">
               <span className="text-[12px] text-slate-500 uppercase font-bold block">Tom</span>
-              <span className="text-xs font-black text-[#FF4D00]">{currentKeyDisplay}</span>
+              <span className="text-xs font-black text-amber-400">{currentKeyDisplay}</span>
             </div>
 
             <div className="bg-[#080808] border border-slate-800 px-2.5 py-1 rounded-xl text-center">
@@ -687,38 +695,42 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
           {/* Quick Voice Focus Filter Chips */}
           {showVocalHighlights && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-800/60">
-              <span className="text-[12px] font-bold text-slate-500 uppercase shrink-0">
-                Filtrar Foco:
-              </span>
-              <button
-                onClick={() => setFocusVoice(null)}
-                className={`px-2.5 py-1 rounded-xl text-[13px] font-bold shrink-0 transition-all ${
-                  focusVoice === null
-                    ? 'bg-white text-slate-950 shadow-md font-extrabold scale-105'
-                    : 'bg-[#181818] text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                Todas as Vozes
-              </button>
+            <div className="relative pt-1 border-t border-slate-800/60">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[12px] font-bold text-slate-500 uppercase shrink-0">
+                  Filtrar Foco:
+                </span>
+                <button
+                  onClick={() => setFocusVoice(null)}
+                  className={`px-2.5 py-1.5 rounded-xl text-[13px] font-bold shrink-0 transition-all ${
+                    focusVoice === null
+                      ? 'bg-white text-slate-950 shadow-md font-extrabold scale-105'
+                      : 'bg-[#181818] text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  Todas as Vozes
+                </button>
 
-              {availableVocals.map((vocal) => {
-                const cfg = getVocalConfig(vocal);
-                const isSelected = focusVoice?.toLowerCase() === vocal.toLowerCase();
-                return (
-                  <button
-                    key={vocal}
-                    onClick={() => setFocusVoice(isSelected ? null : vocal)}
-                    className={`px-2.5 py-1 rounded-xl text-[13px] font-extrabold border shrink-0 transition-all ${
-                      isSelected
-                        ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105 shadow-md`
-                        : 'bg-[#181818] border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    {isSelected ? `✓ ${vocal}` : vocal}
-                  </button>
-                );
-              })}
+                {availableVocals.map((vocal) => {
+                  const cfg = getVocalConfig(vocal);
+                  const isSelected = focusVoice?.toLowerCase() === vocal.toLowerCase();
+                  return (
+                    <button
+                      key={vocal}
+                      onClick={() => setFocusVoice(isSelected ? null : vocal)}
+                      className={`px-2.5 py-1.5 rounded-xl text-[13px] font-extrabold border shrink-0 transition-all ${
+                        isSelected
+                          ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105 shadow-md`
+                          : 'bg-[#181818] border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {isSelected ? `✓ ${vocal}` : vocal}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Sombra indicando que a linha rola pra direita */}
+              <div className="pointer-events-none absolute right-0 top-1 bottom-0 w-6 bg-gradient-to-l from-[#121212] to-transparent" />
             </div>
           )}
         </div>
@@ -772,19 +784,23 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
           </button>
 
           {/* Speed Selector Presets */}
-          <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800 text-xs font-black">
-            <span className="text-[12px] text-slate-500 px-1 font-bold">VEL:</span>
-            {[0.5, 1, 1.5, 2, 3, 4].map((speed) => (
-              <button
-                key={speed}
-                onClick={() => setScrollSpeed(speed)}
-                className={`px-2 py-0.5 rounded-lg text-[13px] transition-colors ${
-                  scrollSpeed === speed ? 'bg-[#FF4D00] text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {speed}x
-              </button>
-            ))}
+          <div className="relative min-w-0">
+            <div className="flex items-center gap-1 bg-[#080808] p-1 rounded-xl border border-slate-800 text-xs font-black overflow-x-auto no-scrollbar">
+              <span className="text-[12px] text-slate-500 px-1 font-bold shrink-0">VEL:</span>
+              {[0.5, 1, 1.5, 2, 3, 4].map((speed) => (
+                <button
+                  key={speed}
+                  onClick={() => setScrollSpeed(speed)}
+                  className={`px-2.5 py-2 rounded-lg text-[13px] shrink-0 min-h-[36px] transition-colors ${
+                    scrollSpeed === speed ? 'bg-[#FF4D00] text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
+            {/* Sombra indicando que a linha rola pra direita */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-[#080808] to-transparent rounded-r-xl" />
           </div>
         </div>
 

@@ -58,7 +58,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
           {upcomingCulto && (
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900/90 text-[#FF4D00] border border-[#FF4D00]/30">
+            <span
+              className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                upcomingCulto.Status === 'Confirmado'
+                  ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/30'
+                  : upcomingCulto.Status === 'Concluído'
+                  ? 'bg-slate-900/90 text-slate-400 border-slate-700'
+                  : 'bg-teal-950/90 text-teal-400 border-teal-500/30'
+              }`}
+            >
               {upcomingCulto.Status}
             </span>
           )}
@@ -116,7 +124,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {versao?.Tom && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#1f1f1f] text-[#FF4D00] border border-[#FF4D00]/30">
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#1f1f1f] text-amber-400 border border-amber-500/30">
                             Tom {formatKeyDisplay(versao.Tom, versao.Modo)}
                           </span>
                         )}

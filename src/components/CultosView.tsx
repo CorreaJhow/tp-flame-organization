@@ -417,7 +417,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                           ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
                           : currentCulto.Status === 'Concluído'
                           ? 'bg-slate-900 text-slate-400 border-slate-700'
-                          : 'bg-orange-950/60 text-orange-400 border-orange-500/30'
+                          : 'bg-teal-950/60 text-teal-400 border-teal-500/30'
                       }`}
                     >
                       {currentCulto.Status || 'Confirmado'}
@@ -538,7 +538,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                             )}
                           </h4>
                           {versao && (
-                            <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-[#080808] text-[#FF4D00] border border-slate-800">
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-[#080808] text-amber-400 border border-slate-800">
                               Tom {formatKeyDisplay(versao.Tom, versao.Modo)}
                             </span>
                           )}
@@ -676,7 +676,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                               ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
                               : culto.Status === 'Concluído'
                               ? 'bg-slate-900 text-slate-400 border-slate-700'
-                              : 'bg-orange-950/60 text-orange-400 border-orange-500/30'
+                              : 'bg-teal-950/60 text-teal-400 border-teal-500/30'
                           }`}
                         >
                           {culto.Status || 'Confirmado'}
