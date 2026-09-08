@@ -87,11 +87,20 @@ class StorageService {
    * vestigial, sem tela que use). Precisa ser chamado só depois de
    * autenticado (as Security Rules recusam listener sem login válido).
    * Idempotente: chamar de novo com o app já ouvindo não faz nada.
+   *
+   * `onPermissionDenied` existe porque login e permissão são coisas
+   * diferentes: o Firebase Auth deixa qualquer conta Google entrar, mas as
+   * Security Rules só liberam LER dado pra quem estiver na allowlist de
+   * e-mail. Sem isso, alguém fora da lista logava normalmente e via o app
+   * inteiro vazio, sem entender por quê — parecia banco de dados quebrado,
+   * não "sem permissão". Chamado no máximo uma vez por sessão de listener
+   * (qualquer uma das 9 tabelas que barrar já é suficiente pra saber).
    */
-  public startRealtimeSync(onChange: () => void) {
+  public startRealtimeSync(onChange: () => void, onPermissionDenied?: () => void) {
     if (this.isListening) return;
     this.isListening = true;
     this.onChangeCallback = onChange;
+    let permissionDeniedJaAvisado = false;
 
     const subscribe = <T extends { Excluido_Em?: string }>(
       collectionName: string,
@@ -107,8 +116,12 @@ class StorageService {
           this.pendingByCollection[collectionName] = snap.metadata.hasPendingWrites;
           this.notify();
         },
-        (err) => {
+        (err: any) => {
           console.warn(`[firestore] Erro no listener de "${collectionName}":`, err);
+          if (err?.code === 'permission-denied' && !permissionDeniedJaAvisado) {
+            permissionDeniedJaAvisado = true;
+            onPermissionDenied?.();
+          }
         }
       );
       this.unsubscribers.push(unsub);
@@ -130,7 +143,13 @@ class StorageService {
         this.logs = snap.docs.map((d) => d.data() as LogItem);
         this.notify();
       },
-      (err) => console.warn('[firestore] Erro no listener de "logs":', err)
+      (err: any) => {
+        console.warn('[firestore] Erro no listener de "logs":', err);
+        if (err?.code === 'permission-denied' && !permissionDeniedJaAvisado) {
+          permissionDeniedJaAvisado = true;
+          onPermissionDenied?.();
+        }
+      }
     );
     this.unsubscribers.push(logsUnsub);
   }

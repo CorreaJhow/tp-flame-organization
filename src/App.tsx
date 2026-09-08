@@ -28,7 +28,7 @@ import {
   LogItem,
   ViewTab
 } from './types';
-import { Calendar, Flame, RefreshCw, X } from 'lucide-react';
+import { Calendar, Flame, RefreshCw, ShieldAlert, LogOut, X } from 'lucide-react';
 
 /**
  * Code-splitting das telas de admin/config (backlog item 4 do
@@ -64,8 +64,45 @@ function AuthLoadingScreen() {
   );
 }
 
+/**
+ * Tela mostrada quando o login funcionou (é uma conta Google válida) mas o
+ * e-mail não está na allowlist das Security Rules do Firestore — login e
+ * permissão são coisas diferentes. Sem isso, a pessoa via o app inteiro
+ * vazio, sem entender se era um bug ou falta de acesso.
+ */
+function AccessBlockedScreen({ email, onSignOut }: { email: string | null; onSignOut: () => void }) {
+  return (
+    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#121212] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto shadow-inner">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-white mb-1.5">Acesso não autorizado</h1>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            O login funcionou, mas o e-mail{' '}
+            <strong className="text-slate-300">{email || 'desta conta'}</strong> ainda não tem
+            permissão pra usar o TP Flame. Peça pra um administrador liberar seu e-mail, ou entre
+            com a conta certa da equipe.
+          </p>
+        </div>
+        <button
+          onClick={onSignOut}
+          className="w-full py-3 px-4 rounded-xl bg-[#181818] hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sair e tentar outra conta</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const { showToast } = useToast();
+  const { user, signOut } = useAuth();
+  const [isBlocked, setIsBlocked] = useState(false);
   const [currentTab, setCurrentTab] = useState<ViewTab>('inicio');
 
   // Database State
@@ -120,7 +157,7 @@ function AppContent() {
    * listeners não podem continuar depois que a sessão termina.
    */
   useEffect(() => {
-    storage.startRealtimeSync(refreshData);
+    storage.startRealtimeSync(refreshData, () => setIsBlocked(true));
     return () => storage.stopRealtimeSync();
   }, [refreshData]);
 
@@ -178,6 +215,10 @@ function AppContent() {
     showToast('Culto agendado com sucesso!', 'success');
     refreshData();
   };
+
+  if (isBlocked) {
+    return <AccessBlockedScreen email={user?.email ?? null} onSignOut={signOut} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#080808] text-slate-100 font-sans selection:bg-[#FF4D00] selection:text-slate-950">
