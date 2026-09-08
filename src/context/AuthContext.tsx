@@ -13,6 +13,8 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  linkWithCredential,
+  EmailAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
   signOut as firebaseSignOut,
@@ -27,6 +29,17 @@ interface AuthContextValue {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  /**
+   * Acrescenta e-mail/senha como método de login numa conta que hoje só
+   * entra por Google — o mesmo usuário (mesmo UID) passa a aceitar os dois
+   * caminhos. Existe pra contas compartilhadas (ex.: a conta da banda no
+   * Google) que precisam de um login alternativo pra alguém sem acesso à
+   * senha do Google — como a skill /donna, que não deve nunca usar
+   * credencial de conta Google de verdade.
+   */
+  linkPasswordToAccount: (password: string) => Promise<void>;
+  /** true se a conta atual já aceita login por e-mail/senha (além de/no lugar de Google). */
+  hasPasswordProvider: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -86,12 +99,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await sendPasswordResetEmail(auth, email.trim());
   }, []);
 
+  const linkPasswordToAccount = useCallback(async (password: string) => {
+    if (!auth.currentUser || !auth.currentUser.email) {
+      throw new Error('Precisa estar logado, com e-mail conhecido, pra adicionar uma senha.');
+    }
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, password);
+    await linkWithCredential(auth.currentUser, credential);
+  }, []);
+
+  const hasPasswordProvider = !!user?.providerData?.some((p) => p.providerId === 'password');
+
   const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, linkPasswordToAccount, hasPasswordProvider, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
