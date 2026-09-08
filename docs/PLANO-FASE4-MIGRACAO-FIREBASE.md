@@ -274,9 +274,15 @@ O que efetivamente aconteceu, em ordem:
     script de migração. Credenciais em `.env.local` (git-ignorado), com
     fallback pra variável de ambiente se preferir passar na hora. Rodado
     manualmente uma vez em 08/09 pra atualizar a planilha (estava com foto
-    de 04/09). **Falta:** decidir a frequência da tarefa agendada
-    (semanal? após cada culto?) e configurar de fato — ver conversa com o
-    usuário.
+    de 04/09).
+
+    **Tarefa agendada configurada** (08/09/2026): roda toda semana,
+    domingo às 20h — task local `backup-firestore-planilha`
+    (`C:\Users\jhona\.claude\scheduled-tasks\backup-firestore-planilha\SKILL.md`).
+    É uma tarefa **local**, não uma rotina de nuvem: precisa do app aberto
+    (se estiver fechado no horário, roda no próximo lançamento) — decisão
+    deliberada, porque o script depende do `.env.local` (credenciais),
+    que não existe num checkout novo do GitHub numa rotina de nuvem.
 
 ## 5. Estimativa honesta
 
