@@ -263,9 +263,20 @@ O que efetivamente aconteceu, em ordem:
     (removido temporariamente pra facilitar os testes da Fase B, ver seção
     2.3) — fazer só depois que a allowlist estiver completa e estável, pra
     não travar ninguém no meio do processo.
-18. **Pendente:** manter o Apps Script/planilha vivos (só leitura, sem uso)
-    por um tempo de segurança antes de desligar de vez — é o "cabo de
-    emergência" caso algo precise ser conferido contra a fonte original.
+18. ✅ **Feito (08/09/2026) — backup periódico decidido e implementado.**
+    O Firestore no plano gratuito (Spark) não tem backup automático nativo
+    (só existe no plano pago/Blaze) — decisão do usuário: em vez de add
+    infraestrutura paga, reaproveitar a planilha como espelho de backup,
+    atualizado periodicamente em vez de ficar como uma foto parada do dia
+    da migração. `scripts/exportar-backup-planilha.mjs` lê tudo do
+    Firestore (filtrando soft-deletes) e sobrescreve a planilha via a ação
+    `replaceAll` já existente no Apps Script — mesmo sentido inverso do
+    script de migração. Credenciais em `.env.local` (git-ignorado), com
+    fallback pra variável de ambiente se preferir passar na hora. Rodado
+    manualmente uma vez em 08/09 pra atualizar a planilha (estava com foto
+    de 04/09). **Falta:** decidir a frequência da tarefa agendada
+    (semanal? após cada culto?) e configurar de fato — ver conversa com o
+    usuário.
 
 ## 5. Estimativa honesta
 
