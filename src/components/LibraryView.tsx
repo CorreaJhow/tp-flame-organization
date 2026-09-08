@@ -203,7 +203,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       {musica.Categoria}
                     </span>
                     {mainVersao && (
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20">
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
                         Tom {formatKeyDisplay(mainVersao.Tom, mainVersao.Modo)}
                       </span>
                     )}
