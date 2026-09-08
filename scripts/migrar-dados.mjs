@@ -49,8 +49,9 @@ const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzXHtLDcy3pJFiyg7j
 // num repositorio publico). Passe via variavel de ambiente na hora de
 // rodar, por exemplo:
 //   MIGRACAO_EMAIL="..." MIGRACAO_SENHA="..." node scripts/migrar-dados.mjs --write
-const CONTA_MIGRACAO_EMAIL = process.env.MIGRACAO_EMAIL;
-const CONTA_MIGRACAO_SENHA = process.env.MIGRACAO_SENHA;
+// process.env vence se setado na hora; senao cai pro .env.local.
+const CONTA_MIGRACAO_EMAIL = process.env.MIGRACAO_EMAIL || env.MIGRACAO_EMAIL;
+const CONTA_MIGRACAO_SENHA = process.env.MIGRACAO_SENHA || env.MIGRACAO_SENHA;
 
 function stripUndefined(obj) {
   const out = {};
@@ -131,7 +132,9 @@ async function main() {
   console.log('Migracao concluida. A planilha continua intacta (nada foi apagado de la).');
 }
 
-main().catch((err) => {
-  console.error('ERRO:', err.message || err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0)) // o SDK do Firestore mantem a conexao aberta -- sem isso, o processo Node nunca termina sozinho.
+  .catch((err) => {
+    console.error('ERRO:', err.message || err);
+    process.exit(1);
+  });
