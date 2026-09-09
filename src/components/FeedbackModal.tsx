@@ -34,11 +34,11 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-[#121212] border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-surface border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between bg-[#181818]">
+        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between bg-surface-hover">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center">
               <MessageSquarePlus className="w-5 h-5" />
             </div>
             <div>
@@ -48,7 +48,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-[#080808] hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-base hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -79,8 +79,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                     onClick={() => setType('sugestao')}
                     className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                       type === 'sugestao'
-                        ? 'bg-[#FF4D00] text-slate-950 border-[#FF4D00] shadow-md'
-                        : 'bg-[#080808] text-slate-400 border-slate-800 hover:text-white'
+                        ? 'bg-brand text-slate-950 border-brand shadow-md'
+                        : 'bg-base text-slate-400 border-slate-800 hover:text-white'
                     }`}
                   >
                     <Lightbulb className="w-4 h-4" />
@@ -93,7 +93,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                     className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                       type === 'bug'
                         ? 'bg-red-500 text-white border-red-500 shadow-md'
-                        : 'bg-[#080808] text-slate-400 border-slate-800 hover:text-white'
+                        : 'bg-base text-slate-400 border-slate-800 hover:text-white'
                     }`}
                   >
                     <Bug className="w-4 h-4" />
@@ -112,14 +112,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex: Gabriel (Violão)"
-                  className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00]"
+                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand"
                 />
               </div>
 
               {/* Message */}
               <div>
                 <label className="text-xs font-bold text-slate-300 block mb-1">
-                  Descreva o que aconteceu ou sua ideia <span className="text-[#FF4D00]">*</span>
+                  Descreva o que aconteceu ou sua ideia <span className="text-brand">*</span>
                 </label>
                 <textarea
                   rows={4}
@@ -131,7 +131,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                       : 'Ex: Ao tentar abrir a cifra x no celular a tela ficou preta...'
                   }
                   required
-                  className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] resize-none"
+                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand resize-none"
                 />
               </div>
 
@@ -140,15 +140,15 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                 <button
                   type="submit"
                   disabled={!mensagem.trim()}
-                  className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] disabled:opacity-30 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
+                  className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover disabled:opacity-30 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
                 >
                   <Send className="w-4 h-4" />
                   <span>Enviar para o Registro do Sistema</span>
                 </button>
               </div>
 
-              <div className="p-3 bg-[#080808] border border-slate-800/80 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
-                <HeartHandshake className="w-4 h-4 text-[#FF4D00] shrink-0" />
+              <div className="p-3 bg-base border border-slate-800/80 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
+                <HeartHandshake className="w-4 h-4 text-brand shrink-0" />
                 <span>Obrigado por ajudar a evoluir o sistema do nosso ministério!</span>
               </div>
             </form>

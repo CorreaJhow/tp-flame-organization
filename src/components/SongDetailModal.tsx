@@ -165,12 +165,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#121212] border border-slate-800 w-full max-w-2xl max-h-[92vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-surface border border-slate-800 w-full max-w-2xl max-h-[92vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-start justify-between bg-[#121212] sticky top-0 z-10">
+        <div className="p-4 border-b border-slate-800 flex items-start justify-between bg-surface sticky top-0 z-10">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/30">
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-brand/20 text-brand border border-brand/30">
                 {musica.Categoria}
               </span>
             </div>
@@ -185,7 +185,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowEditSongModal(true)}
-              className="py-1.5 px-3 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs flex items-center gap-1 shadow-md active:scale-95 transition-all"
+              className="py-1.5 px-3 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-xs flex items-center gap-1 shadow-md active:scale-95 transition-all"
               title="Editar Cifra e Detalhes"
             >
               <Edit3 className="w-3.5 h-3.5" />
@@ -217,7 +217,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-[#FF4D00]" />
+                <Layers className="w-3.5 h-3.5 text-brand" />
                 Versões Disponíveis ({versoes.length})
               </span>
             </div>
@@ -232,8 +232,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
                     selectedVersaoId === v.ID
-                      ? 'bg-[#FF4D00] text-slate-950 border-[#FF4D00] shadow-md font-black'
-                      : 'bg-[#080808] text-slate-400 border-slate-800 hover:text-white'
+                      ? 'bg-brand text-slate-950 border-brand shadow-md font-black'
+                      : 'bg-base text-slate-400 border-slate-800 hover:text-white'
                   }`}
                 >
                   {v.Nome_Versao} (Tom {formatKeyDisplay(v.Tom, v.Modo)})
@@ -245,14 +245,14 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
           {currentVersao && (
             <>
               {/* Key, BPM & Compasso Bar */}
-              <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+              <div className="bg-base border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div>
                     <span className="text-[10px] text-slate-500 uppercase font-bold block">
                       Tom da Versão
                     </span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-black text-[#FF4D00]">
+                      <span className="text-xl font-black text-brand">
                         Tom {currentKeyDisplay}
                       </span>
                       {semitones !== 0 && (
@@ -266,7 +266,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   {(currentVersao.BPM || currentVersao.Compasso) && (
                     <div className="border-l border-slate-800 pl-4">
                       <span className="text-[10px] text-slate-500 uppercase font-bold block flex items-center gap-1">
-                        <Activity className="w-3 h-3 text-[#FF4D00]" />
+                        <Activity className="w-3 h-3 text-brand" />
                         Andamento
                       </span>
                       <div className="text-xs font-black text-slate-200 mt-0.5">
@@ -280,13 +280,13 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                 </div>
 
                 {/* Transpose Buttons */}
-                <div className="flex items-center gap-1.5 bg-[#121212] border border-slate-800 p-1 rounded-xl">
+                <div className="flex items-center gap-1.5 bg-surface border border-slate-800 p-1 rounded-xl">
                   <button
                     onClick={() => setSemitones(s => s - 1)}
                     className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-bold flex items-center gap-1"
                     title="Diminuir meio tom (-1)"
                   >
-                    <ArrowDown className="w-3.5 h-3.5 text-[#FF4D00]" />
+                    <ArrowDown className="w-3.5 h-3.5 text-brand" />
                     <span>-1</span>
                   </button>
 
@@ -295,14 +295,14 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                     className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-bold flex items-center gap-1"
                     title="Aumentar meio tom (+1)"
                   >
-                    <ArrowUp className="w-3.5 h-3.5 text-[#FF4D00]" />
+                    <ArrowUp className="w-3.5 h-3.5 text-brand" />
                     <span>+1</span>
                   </button>
 
                   {semitones !== 0 && (
                     <button
                       onClick={() => setSemitones(0)}
-                      className="p-1.5 rounded-lg bg-[#FF4D00]/20 text-[#FF4D00] hover:bg-[#FF4D00]/30 text-xs font-bold"
+                      className="p-1.5 rounded-lg bg-brand/20 text-brand hover:bg-brand/30 text-xs font-bold"
                       title="Restaurar Tom Original"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -317,7 +317,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${
                     lastPlayedInfo.isRecent
                       ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                      : 'bg-[#080808] border-slate-800 text-slate-400'
+                      : 'bg-base border-slate-800 text-slate-400'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -336,9 +336,9 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 
               {/* Structure Display */}
               {currentVersao.Estrutura && (
-                <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-3">
+                <div className="bg-base border border-slate-800/80 rounded-2xl p-3">
                   <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1.5 flex items-center gap-1">
-                    <Tag className="w-3 h-3 text-[#FF4D00]" />
+                    <Tag className="w-3 h-3 text-brand" />
                     Estrutura da Música:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -347,7 +347,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       .map((part, idx) => (
                         <span
                           key={idx}
-                          className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-[#121212] border border-slate-800 text-[#FF4D00]"
+                          className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-surface border border-slate-800 text-brand"
                         >
                           {part.trim()}
                         </span>
@@ -362,7 +362,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   onClick={() => setActiveTab('letra')}
                   className={`pb-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${
                     activeTab === 'letra'
-                      ? 'border-[#FF4D00] text-[#FF4D00]'
+                      ? 'border-brand text-brand'
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -374,7 +374,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   onClick={() => setActiveTab('notas')}
                   className={`pb-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${
                     activeTab === 'notas'
-                      ? 'border-[#FF4D00] text-[#FF4D00]'
+                      ? 'border-brand text-brand'
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -386,7 +386,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   onClick={() => setActiveTab('arquivos')}
                   className={`pb-2 text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${
                     activeTab === 'arquivos'
-                      ? 'border-[#FF4D00] text-[#FF4D00]'
+                      ? 'border-brand text-brand'
                       : 'border-transparent text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -399,15 +399,15 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               {activeTab === 'letra' && (
                 <div className="space-y-3">
                   {/* Vocal Controls & Voice Filter Chips */}
-                  <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-3 space-y-2">
+                  <div className="bg-base border border-slate-800/80 rounded-2xl p-3 space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setShowVocalHighlights(!showVocalHighlights)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
                             showVocalHighlights
-                              ? 'bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40'
-                              : 'bg-[#121212] text-slate-500 border border-slate-800'
+                              ? 'bg-brand/20 text-brand border border-brand/40'
+                              : 'bg-surface text-slate-500 border border-slate-800'
                           }`}
                           title="Ativar/Desativar Destaques de Vozes"
                         >
@@ -431,10 +431,10 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                               showToast('Cifra copiada para a área de transferência!', 'success');
                             }
                           }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white border border-slate-700 font-sans font-bold text-xs transition-all active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-hover hover:bg-[#222] text-slate-300 hover:text-white border border-slate-700 font-sans font-bold text-xs transition-all active:scale-95"
                           title="Copiar Cifra"
                         >
-                          <Copy className="w-3.5 h-3.5 text-[#FF4D00]" />
+                          <Copy className="w-3.5 h-3.5 text-brand" />
                           <span>Copiar Cifra</span>
                         </button>
                       </div>
@@ -450,7 +450,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                           className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold shrink-0 transition-all ${
                             focusVoice === null
                               ? 'bg-white text-slate-950 shadow-md font-extrabold'
-                              : 'bg-[#121212] text-slate-400 hover:text-white border border-slate-800'
+                              : 'bg-surface text-slate-400 hover:text-white border border-slate-800'
                           }`}
                         >
                           Todas as Vozes
@@ -466,7 +466,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                               className={`px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold border shrink-0 transition-all ${
                                 isSelected
                                   ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/40 shadow-sm`
-                                  : 'bg-[#121212] border-slate-800 text-slate-400 hover:text-slate-200'
+                                  : 'bg-surface border-slate-800 text-slate-400 hover:text-slate-200'
                               }`}
                             >
                               {isSelected ? `✓ ${vocal}` : vocal}
@@ -477,7 +477,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                     )}
                   </div>
 
-                  <div className="bg-[#080808] border border-slate-800/80 rounded-2xl p-4 sm:p-5 font-mono text-xs text-slate-200 leading-relaxed shadow-inner">
+                  <div className="bg-base border border-slate-800/80 rounded-2xl p-4 sm:p-5 font-mono text-xs text-slate-200 leading-relaxed shadow-inner">
                     <ChordViewer 
                       text={currentVersao.Letra} 
                       semitones={semitones}
@@ -498,7 +498,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleStartCifrarBase}
-                        className="py-1 px-2.5 rounded-xl bg-gradient-to-r from-[#FF4D00] to-orange-600 text-slate-950 hover:opacity-90 text-xs font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                        className="py-1 px-2.5 rounded-xl bg-gradient-to-r from-brand to-orange-600 text-slate-950 hover:opacity-90 text-xs font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
                         title="Criar versão cifrada personalizada a partir da letra base"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
@@ -510,7 +510,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                           setIsCustomCifraMode(false);
                           setShowAddNota(!showAddNota);
                         }}
-                        className="py-1 px-2.5 rounded-xl bg-[#1a1a1a] text-slate-300 hover:bg-[#222] text-xs font-bold flex items-center gap-1 border border-slate-700"
+                        className="py-1 px-2.5 rounded-xl bg-surface-hover text-slate-300 hover:bg-[#222] text-xs font-bold flex items-center gap-1 border border-slate-700"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Nota Rápida</span>
@@ -519,14 +519,14 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   </div>
 
                   {showAddNota && (
-                    <form onSubmit={handleAddNotaSubmit} className="bg-[#080808] p-3.5 rounded-2xl border border-slate-800 space-y-2.5 animate-in fade-in">
+                    <form onSubmit={handleAddNotaSubmit} className="bg-base p-3.5 rounded-2xl border border-slate-800 space-y-2.5 animate-in fade-in">
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-slate-300">Instrumento / Integrante:</span>
                           <select
                             value={newNotaInst}
                             onChange={(e) => setNewNotaInst(e.target.value as Nota['Instrumento'])}
-                            className="bg-[#121212] border border-slate-700 rounded-xl text-xs text-white p-2 font-bold"
+                            className="bg-surface border border-slate-700 rounded-xl text-xs text-white p-2 font-bold"
                           >
                             <option value="Teclado">Teclado</option>
                             <option value="Violão">Violão</option>
@@ -540,7 +540,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                         </div>
 
                         {isCustomCifraMode && (
-                          <span className="text-[10px] font-bold text-[#FF4D00] bg-[#FF4D00]/10 border border-[#FF4D00]/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-brand bg-brand/10 border border-brand/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
                             <Music2 className="w-3 h-3" />
                             Cifra Personalizada
                           </span>
@@ -555,7 +555,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                               key={chord}
                               type="button"
                               onClick={() => setNewNotaObs((prev) => `${prev} ${chord}`)}
-                              className="px-1.5 py-0.5 rounded bg-[#181818] hover:bg-[#252525] text-[#FF4D00] font-mono text-[11px] font-black border border-slate-800 shrink-0"
+                              className="px-1.5 py-0.5 rounded bg-surface-hover hover:bg-[#252525] text-brand font-mono text-[11px] font-black border border-slate-800 shrink-0"
                             >
                               {chord}
                             </button>
@@ -567,7 +567,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                         value={newNotaObs}
                         onChange={(e) => setNewNotaObs(e.target.value)}
                         placeholder={isCustomCifraMode ? "Edite e cifre a música diretamente a partir da letra base..." : "Escreva a observação técnica ou instrução..."}
-                        className={`w-full bg-[#121212] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] ${
+                        className={`w-full bg-surface border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand ${
                           isCustomCifraMode ? 'font-mono leading-relaxed' : ''
                         }`}
                         rows={isCustomCifraMode ? 10 : 3}
@@ -587,7 +587,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1.5 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                          className="px-4 py-1.5 rounded-xl bg-brand text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>{isCustomCifraMode ? 'Salvar Cifra Personalizada' : 'Salvar Nota'}</span>
@@ -597,7 +597,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   )}
 
                   {currentNotas.length === 0 ? (
-                    <div className="py-6 text-center bg-[#080808] rounded-2xl border border-slate-800/80 space-y-2">
+                    <div className="py-6 text-center bg-base rounded-2xl border border-slate-800/80 space-y-2">
                       <p className="text-xs text-slate-400">
                         Nenhuma cifra ou nota personalizada cadastrada para esta versão.
                       </p>
@@ -610,10 +610,10 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       {currentNotas.map((n) => {
                         const isFullCifra = n.Observacao && n.Observacao.includes('\n');
                         return (
-                          <div key={n.ID} className="bg-[#080808] border border-slate-800 rounded-2xl p-3.5 text-xs space-y-2">
+                          <div key={n.ID} className="bg-base border border-slate-800 rounded-2xl p-3.5 text-xs space-y-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-[#FF4D00] bg-[#FF4D00]/10 border border-[#FF4D00]/30 px-2.5 py-0.5 rounded-lg text-xs">
+                                <span className="font-extrabold text-brand bg-brand/10 border border-brand/30 px-2.5 py-0.5 rounded-lg text-xs">
                                   [{n.Instrumento}]
                                 </span>
                                 {isFullCifra && (
@@ -632,7 +632,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                             </div>
 
                             {isFullCifra ? (
-                              <div className="bg-[#121212] p-3 rounded-xl border border-slate-800/80 max-h-60 overflow-y-auto">
+                              <div className="bg-surface p-3 rounded-xl border border-slate-800/80 max-h-60 overflow-y-auto">
                                 <ChordViewer text={n.Observacao} semitones={semitones} />
                               </div>
                             ) : (
@@ -656,7 +656,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                     </span>
                     <button
                       onClick={() => setShowAddArq(!showAddArq)}
-                      className="py-1 px-2.5 rounded-xl bg-[#FF4D00]/20 text-[#FF4D00] hover:bg-[#FF4D00]/30 text-xs font-bold flex items-center gap-1 border border-[#FF4D00]/30"
+                      className="py-1 px-2.5 rounded-xl bg-brand/20 text-brand hover:bg-brand/30 text-xs font-bold flex items-center gap-1 border border-brand/30"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Anexar Link</span>
@@ -664,12 +664,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   </div>
 
                   {showAddArq && (
-                    <form onSubmit={handleAddArquivoSubmit} className="bg-[#080808] p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <form onSubmit={handleAddArquivoSubmit} className="bg-base p-3 rounded-2xl border border-slate-800 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <select
                           value={newArqTipo}
                           onChange={(e) => setNewArqTipo(e.target.value as Arquivo['Tipo'])}
-                          className="bg-[#121212] border border-slate-800 rounded-xl text-xs text-white p-2"
+                          className="bg-surface border border-slate-800 rounded-xl text-xs text-white p-2"
                         >
                           <option value="Spotify">Spotify</option>
                           <option value="Youtube">Youtube</option>
@@ -684,7 +684,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                           value={newArqNome}
                           onChange={(e) => setNewArqNome(e.target.value)}
                           placeholder="Nome do link (opcional)"
-                          className="bg-[#121212] border border-slate-800 rounded-xl p-2 text-xs text-white"
+                          className="bg-surface border border-slate-800 rounded-xl p-2 text-xs text-white"
                         />
                       </div>
 
@@ -693,7 +693,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                         value={newArqUrl}
                         onChange={(e) => setNewArqUrl(e.target.value)}
                         placeholder="https://..."
-                        className="w-full bg-[#121212] border border-slate-800 rounded-xl p-2 text-xs text-white"
+                        className="w-full bg-surface border border-slate-800 rounded-xl p-2 text-xs text-white"
                         required
                       />
 
@@ -707,7 +707,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                         </button>
                         <button
                           type="submit"
-                          className="px-3 py-1 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs"
+                          className="px-3 py-1 rounded-xl bg-brand text-slate-950 font-black text-xs"
                         >
                           Anexar
                         </button>
@@ -716,7 +716,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   )}
 
                   {currentArquivos.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic py-4 text-center bg-[#080808] rounded-xl border border-slate-800/80">
+                    <p className="text-xs text-slate-500 italic py-4 text-center bg-base rounded-xl border border-slate-800/80">
                       Nenhum anexo ou link cadastrado para esta versão.
                     </p>
                   ) : (
@@ -724,7 +724,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                       {currentArquivos.map((a) => (
                         <div
                           key={a.ID}
-                          className="bg-[#080808] hover:bg-[#121212] border border-slate-800 rounded-2xl p-3 text-xs flex items-center justify-between transition-colors group"
+                          className="bg-base hover:bg-surface border border-slate-800 rounded-2xl p-3 text-xs flex items-center justify-between transition-colors group"
                         >
                           <a
                             href={a.URL}
@@ -732,7 +732,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 min-w-0 flex-1"
                           >
-                            <ExternalLink className="w-4 h-4 text-[#FF4D00] shrink-0" />
+                            <ExternalLink className="w-4 h-4 text-brand shrink-0" />
                             <div className="min-w-0">
                               <span className="font-bold text-white block truncate">
                                 {a.Nome || a.Tipo}
@@ -766,7 +766,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
         </div>
 
         {/* Modal Sticky Footer for Easy Close on Mobile */}
-        <div className="p-3 border-t border-slate-800/80 bg-[#121212] flex justify-end shrink-0 sticky bottom-0 z-20">
+        <div className="p-3 border-t border-slate-800/80 bg-surface flex justify-end shrink-0 sticky bottom-0 z-20">
           <button
             onClick={onClose}
             className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 active:scale-95 transition-all"

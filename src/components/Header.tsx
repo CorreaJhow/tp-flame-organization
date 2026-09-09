@@ -37,14 +37,14 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-[#0c0c0c]/95 backdrop-blur-md border-b border-slate-800/80 text-white px-4 py-3 shadow-xl">
+    <header className="sticky top-0 z-30 bg-header/95 backdrop-blur-md border-b border-slate-800/80 text-white px-4 py-3 shadow-xl">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
         {/* Brand */}
         <div
           onClick={() => onNavigateTab('inicio')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <div className="w-9 h-9 rounded-xl bg-[#FF4D00] flex items-center justify-center shadow-lg shadow-[#FF4D00]/20 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center shadow-lg shadow-brand/20 group-hover:scale-105 transition-transform">
             <Flame className="w-5 h-5 text-slate-950 fill-slate-950 stroke-[2.5]" />
           </div>
           <div>
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="font-extrabold text-lg tracking-tight text-white leading-none">
                 TP FLAME
               </h1>
-              <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/30">
+              <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-brand/20 text-brand border border-brand/30">
                 PRO
               </span>
             </div>
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
           {user && (
             <button
               onClick={() => onNavigateTab('admin')}
-              className="flex items-center gap-1.5 pl-1 pr-2 py-1 min-h-[40px] rounded-full bg-[#121212] hover:bg-[#181818] border border-slate-800 transition-all active:scale-95"
+              className="flex items-center gap-1.5 pl-1 pr-2 py-1 min-h-[40px] rounded-full bg-surface hover:bg-surface-hover border border-slate-800 transition-all active:scale-95"
               title={user.displayName || user.email || 'Sua conta'}
             >
               {user.photoURL ? (
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-7 h-7 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-[#FF4D00]/15 text-[#FF4D00] border border-[#FF4D00]/30 flex items-center justify-center text-[11px] font-black shrink-0">
+                <div className="w-7 h-7 rounded-full bg-brand/15 text-brand border border-brand/30 flex items-center justify-center text-[11px] font-black shrink-0">
                   {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
                 </div>
               )}
@@ -109,10 +109,10 @@ export const Header: React.FC<HeaderProps> = ({
               disabled={isSyncing || !isOnline}
               className={`relative p-2 rounded-xl transition-all border ${
                 isSyncing
-                  ? 'bg-[#181818] text-[#FF4D00] border-[#FF4D00]/40'
+                  ? 'bg-surface-hover text-brand border-brand/40'
                   : !isOnline
-                  ? 'bg-[#121212] text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
-                  : 'text-slate-400 hover:text-white bg-[#121212] hover:bg-[#181818] border-slate-800'
+                  ? 'bg-surface text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
+                  : 'text-slate-400 hover:text-white bg-surface hover:bg-surface-hover border-slate-800'
               }`}
               title={
                 !isOnline
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
               {pendingCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF4D00] text-slate-950 text-[10px] font-black flex items-center justify-center border-2 border-[#0c0c0c] shadow-sm">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-slate-950 text-[10px] font-black flex items-center justify-center border-2 border-header shadow-sm">
                   {pendingCount > 99 ? '99+' : pendingCount}
                 </span>
               )}
@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="header-admin-nav-button"
             onClick={() => onNavigateTab('admin')}
-            className="p-2 rounded-xl text-slate-400 hover:text-[#FF4D00] hover:bg-[#181818] transition-all border border-slate-800"
+            className="p-2 rounded-xl text-slate-400 hover:text-brand hover:bg-surface-hover transition-all border border-slate-800"
             title="Painel de Administração (Acesso Restrito)"
           >
             <Shield className="w-4 h-4" />

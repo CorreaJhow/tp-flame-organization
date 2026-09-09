@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/**
+ * Paleta base do app (CLAUDE.md: dark mode #080808/#121212 + acento laranja
+ * #FF4D00) — nomeada aqui como tokens do Tailwind v4 em vez de ficar
+ * espalhada como hex solto em cada componente (`bg-[#FF4D00]` em ~20
+ * arquivos). Gera as classes de utilitário automaticamente (`bg-brand`,
+ * `text-surface-hover/50`, etc.), inclusive com modificador de opacidade.
+ *
+ * `#181818` e `#1a1a1a` (usados em arquivos diferentes pro mesmo papel —
+ * hover/estado ativo sutil sobre um painel) foram unificados em
+ * `surface-hover`, por serem indistinguíveis a olho nu. Tons decorativos
+ * usados uma única vez (gradientes de fundo, por exemplo) continuam como
+ * hex literal — não fazem parte da paleta repetida, tokenizar não ajuda.
+ */
+@theme {
+  --color-brand: #FF4D00;
+  --color-brand-hover: #e04400;
+  --color-base: #080808;
+  --color-header: #0c0c0c;
+  --color-surface: #121212;
+  --color-surface-hover: #181818;
+}
+
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {

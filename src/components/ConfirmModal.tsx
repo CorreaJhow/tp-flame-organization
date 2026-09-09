@@ -26,16 +26,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-[#121212] border border-slate-800 w-full max-w-md rounded-3xl p-6 space-y-5 shadow-2xl relative overflow-hidden">
+      <div className="bg-surface border border-slate-800 w-full max-w-md rounded-3xl p-6 space-y-5 shadow-2xl relative overflow-hidden">
         {/* Top Accent Line */}
-        <div className={`absolute top-0 left-0 right-0 h-1 ${isDanger ? 'bg-red-500' : 'bg-[#FF4D00]'}`} />
+        <div className={`absolute top-0 left-0 right-0 h-1 ${isDanger ? 'bg-red-500' : 'bg-brand'}`} />
 
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0 ${
               isDanger 
                 ? 'bg-red-950/50 text-red-400 border-red-500/30' 
-                : 'bg-[#FF4D00]/10 text-[#FF4D00] border-[#FF4D00]/20'
+                : 'bg-brand/10 text-brand border-brand/20'
             }`}>
               {isDanger ? <Trash2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
             </div>
@@ -51,7 +51,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-400 hover:text-white transition-colors border border-slate-800 shrink-0"
+            className="p-1.5 rounded-xl bg-surface-hover hover:bg-[#222] text-slate-400 hover:text-white transition-colors border border-slate-800 shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -61,7 +61,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800/80">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-[#181818] hover:bg-[#222] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 transition-all active:scale-95"
+            className="px-4 py-2.5 rounded-xl bg-surface-hover hover:bg-[#222] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 transition-all active:scale-95"
           >
             {cancelText}
           </button>
@@ -74,7 +74,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             className={`px-4 py-2.5 rounded-xl font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 ${
               isDanger
                 ? 'bg-red-600 hover:bg-red-500 text-white'
-                : 'bg-[#FF4D00] hover:bg-[#e04400] text-slate-950'
+                : 'bg-brand hover:bg-brand-hover text-slate-950'
             }`}
           >
             {confirmText}

@@ -63,7 +63,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Music2 className="w-5 h-5 text-[#FF4D00]" />
+            <Music2 className="w-5 h-5 text-brand" />
             Biblioteca de Músicas
           </h2>
           <p className="text-xs text-slate-400">
@@ -74,7 +74,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         <button
           id="add-song-library-button"
           onClick={onOpenNewSongModal}
-          className="py-2.5 px-3.5 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+          className="py-2.5 px-3.5 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Cadastrar</span>
@@ -90,7 +90,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Pesquisar por Nome, Artista, Categoria ou Tom (ex: Adoração, E)..."
-          className="w-full bg-[#121212] border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00] transition-colors"
+          className="w-full bg-surface border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand transition-colors"
         />
         {searchQuery && (
           <button
@@ -116,8 +116,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                   selectedCategory === cat
-                    ? 'bg-[#FF4D00] text-slate-950 shadow-sm font-black'
-                    : 'bg-[#121212] text-slate-400 border border-slate-800 hover:text-white'
+                    ? 'bg-brand text-slate-950 shadow-sm font-black'
+                    : 'bg-surface text-slate-400 border border-slate-800 hover:text-white'
                 }`}
               >
                 <span>{cat}</span>
@@ -138,7 +138,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               setSelectedKey('Todos');
               setSearchQuery('');
             }}
-            className="text-[11px] font-bold text-[#FF4D00] hover:underline shrink-0 bg-[#FF4D00]/10 border border-[#FF4D00]/20 px-2.5 py-1 rounded-xl whitespace-nowrap"
+            className="text-[11px] font-bold text-brand hover:underline shrink-0 bg-brand/10 border border-brand/20 px-2.5 py-1 rounded-xl whitespace-nowrap"
           >
             Resetar Filtros
           </button>
@@ -148,7 +148,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       {/* Key Filter Bar */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 border-t border-slate-800/60 pt-2">
         <span className="text-[10px] uppercase font-bold text-slate-500 shrink-0 flex items-center gap-1 mr-1">
-          <Filter className="w-3 h-3 text-[#FF4D00]" /> Tom:
+          <Filter className="w-3 h-3 text-brand" /> Tom:
         </span>
         {availableKeys.map((key) => (
           <button
@@ -156,8 +156,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             onClick={() => setSelectedKey(key)}
             className={`px-2 py-0.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all ${
               selectedKey === key
-                ? 'bg-[#FF4D00] text-slate-950 font-black'
-                : 'bg-[#121212] text-slate-400 border border-slate-800 hover:text-[#FF4D00]'
+                ? 'bg-brand text-slate-950 font-black'
+                : 'bg-surface text-slate-400 border border-slate-800 hover:text-brand'
             }`}
           >
             {key}
@@ -168,7 +168,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       {/* Songs List */}
       <div className="space-y-2.5 pt-1">
         {filteredMusicas.length === 0 ? (
-          <div className="text-center py-12 bg-[#121212] rounded-2xl border border-slate-800/80 p-6 space-y-3">
+          <div className="text-center py-12 bg-surface rounded-2xl border border-slate-800/80 p-6 space-y-3">
             <Music2 className="w-10 h-10 text-slate-600 mx-auto" />
             <div>
               <h3 className="text-sm font-bold text-white">Nenhuma música encontrada</h3>
@@ -178,7 +178,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             </div>
             <button
               onClick={onOpenNewSongModal}
-              className="py-2.5 px-4 rounded-xl bg-[#FF4D00] text-slate-950 font-black text-xs inline-flex items-center gap-1.5"
+              className="py-2.5 px-4 rounded-xl bg-brand text-slate-950 font-black text-xs inline-flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Nova Música</span>
@@ -195,7 +195,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 key={musica.ID}
                 id={`song-card-${musica.ID}`}
                 onClick={() => onSelectSong(musica)}
-                className="bg-[#121212] hover:bg-[#181818] border border-slate-800/80 rounded-2xl p-4 cursor-pointer transition-all active:scale-[0.99] flex items-center justify-between gap-3 group shadow-md"
+                className="bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 cursor-pointer transition-all active:scale-[0.99] flex items-center justify-between gap-3 group shadow-md"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -209,7 +209,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     )}
                   </div>
 
-                  <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors truncate">
+                  <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors truncate">
                     {musica.Nome}
                   </h3>
                   <p className="text-xs text-slate-400 truncate font-medium">
@@ -230,7 +230,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   </div>
                 </div>
 
-                <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-[#FF4D00] transition-colors shrink-0" />
+                <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-brand transition-colors shrink-0" />
               </div>
             );
           })

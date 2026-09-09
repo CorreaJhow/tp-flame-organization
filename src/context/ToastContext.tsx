@@ -58,14 +58,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   ? 'bg-[#220c0e]/95 border-red-500/40 text-red-200'
                   : isWarning
                   ? 'bg-[#241708]/95 border-amber-500/40 text-amber-200'
-                  : 'bg-[#121212]/95 border-slate-700/80 text-slate-200'
+                  : 'bg-surface/95 border-slate-700/80 text-slate-200'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
                 {isError && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
                 {isWarning && <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
-                {!isSuccess && !isError && !isWarning && <Info className="w-4 h-4 text-[#FF4D00] shrink-0" />}
+                {!isSuccess && !isError && !isWarning && <Info className="w-4 h-4 text-brand shrink-0" />}
 
                 <span className="text-xs font-bold leading-snug break-words">
                   {toast.message}

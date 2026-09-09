@@ -172,11 +172,11 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#121212] border border-slate-800 w-full max-w-xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-surface border border-slate-800 w-full max-w-xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#121212]">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#FF4D00]/15 text-[#FF4D00] flex items-center justify-center border border-[#FF4D00]/30">
+            <div className="w-8 h-8 rounded-xl bg-brand/15 text-brand flex items-center justify-center border border-brand/30">
               {isEditing ? <Edit3 className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
             </div>
             <div>
@@ -209,7 +209,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="ex: Ruja o Leão"
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
                 required
               />
             </div>
@@ -223,7 +223,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 value={artista}
                 onChange={(e) => setArtista(e.target.value)}
                 placeholder="ex: FHOP"
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
                 required
               />
             </div>
@@ -237,7 +237,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               <select
                 value={categoria}
                 onChange={(e) => setCategoria(e.target.value)}
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
               >
                 <option value="Adoração">Adoração</option>
                 <option value="Celebração">Celebração</option>
@@ -255,7 +255,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 <select
                   value={tom}
                   onChange={(e) => setTom(e.target.value)}
-                  className="flex-1 min-w-0 bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white font-bold focus:outline-none focus:border-[#FF4D00]"
+                  className="flex-1 min-w-0 bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white font-bold focus:outline-none focus:border-brand"
                 >
                   {ALL_KEYS.map((k) => (
                     <option key={k} value={k}>
@@ -267,12 +267,12 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 {/* Maior/Menor: guardado separado do Tom, nunca como "Bm" em
                     texto livre — é o que permite a transposição e o futuro
                     campo harmônico saberem a qualidade do tom, não só a nota. */}
-                <div className="flex bg-[#080808] border border-slate-800 rounded-xl p-1 shrink-0">
+                <div className="flex bg-base border border-slate-800 rounded-xl p-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => setModo('Maior')}
                     className={`px-2.5 rounded-lg text-xs font-bold transition-all ${
-                      modo === 'Maior' ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400 hover:text-white'
+                      modo === 'Maior' ? 'bg-brand text-slate-950' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     Maior
@@ -281,7 +281,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                     type="button"
                     onClick={() => setModo('Menor')}
                     className={`px-2.5 rounded-lg text-xs font-bold transition-all ${
-                      modo === 'Menor' ? 'bg-[#FF4D00] text-slate-950' : 'text-slate-400 hover:text-white'
+                      modo === 'Menor' ? 'bg-brand text-slate-950' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     Menor
@@ -304,7 +304,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 placeholder="ex: 128"
                 min="30"
                 max="300"
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00] font-bold"
+                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand font-bold"
               />
             </div>
 
@@ -315,7 +315,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               <select
                 value={compasso}
                 onChange={(e) => setCompasso(e.target.value)}
-                className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#FF4D00] font-bold"
+                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand font-bold"
               >
                 <option value="4/4">4/4 (Quaternário)</option>
                 <option value="3/4">3/4 (Ternário / Valsa)</option>
@@ -335,7 +335,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               value={nomeVersao}
               onChange={(e) => setNomeVersao(e.target.value)}
               placeholder="ex: Versão Oficial Ao Vivo"
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+              className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
             />
           </div>
 
@@ -348,7 +348,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               value={estrutura}
               onChange={(e) => setEstrutura(e.target.value)}
               placeholder="ex: INTRO - V1 - REFRÃO - V2 - REFRÃO - PONTE - OUTRO"
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00] font-mono"
+              className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand font-mono"
             />
           </div>
 
@@ -358,16 +358,16 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 Letra com Cifras & Divisão de Vozes
               </label>
               <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#FF4D00]" />
+                <Sparkles className="w-3 h-3 text-brand" />
                 Clique nos botões abaixo para marcar vozes
               </span>
             </div>
 
             {/* Vocal & Section Quick Insertion Toolbar */}
-            <div className="bg-[#0c0c0c] border border-slate-800/80 rounded-xl p-2 mb-2 space-y-2">
+            <div className="bg-header border border-slate-800/80 rounded-xl p-2 mb-2 space-y-2">
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
                 <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0 flex items-center gap-1 mr-1">
-                  <Mic className="w-3 h-3 text-[#FF4D00]" />
+                  <Mic className="w-3 h-3 text-brand" />
                   Vozes:
                 </span>
                 {availableVocals.map((vocal) => {
@@ -420,7 +420,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                           className={`px-2 py-0.5 rounded-lg text-xs font-bold border transition-all ${
                             isSelected
                               ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105`
-                              : 'bg-[#181818] border-slate-800 text-slate-400 hover:text-white'
+                              : 'bg-surface-hover border-slate-800 text-slate-400 hover:text-white'
                           }`}
                         >
                           {isSelected ? `✓ ${vocal}` : `+ ${vocal}`}
@@ -477,7 +477,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                     key={sec}
                     type="button"
                     onClick={() => insertTagAtCursor(sec)}
-                    className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#181818] hover:bg-[#222] text-slate-300 border border-slate-700 shrink-0 transition-all hover:text-white"
+                    className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-surface-hover hover:bg-[#222] text-slate-300 border border-slate-700 shrink-0 transition-all hover:text-white"
                   >
                     {sec}
                   </button>
@@ -491,7 +491,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               onChange={(e) => setLetra(e.target.value)}
               placeholder={`[INTRO]\n[E] [B] [C#m] [A]\n\n[Voz: Larissa]\n[E] Sobre o trono de glória...\n\n[Voz: Bianca]\n[A] Te exaltamos para sempre...\n\n[Voz: Todos]\n[C#m] Santo, Santo...`}
               rows={9}
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#FF4D00] font-mono leading-relaxed"
+              className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand font-mono leading-relaxed"
             />
           </div>
 
@@ -504,7 +504,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               value={obs}
               onChange={(e) => setObs(e.target.value)}
               placeholder="ex: Arranjo acústico de violão na intro"
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+              className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
             />
           </div>
 
@@ -519,7 +519,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all"
             >
               {isEditing ? 'Salvar Alterações' : 'Cadastrar Música'}
             </button>

@@ -98,12 +98,12 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#121212] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-[#FF4D00]" />
+    <div className="min-h-screen bg-base flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-surface border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-brand" />
 
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center mx-auto shadow-inner">
             <Flame className="w-8 h-8" />
           </div>
           <h1 className="text-xl font-bold text-white">TP Flame</h1>
@@ -122,7 +122,7 @@ export const LoginScreen: React.FC = () => {
             </div>
             <button
               onClick={() => resetFormAndGoTo('login')}
-              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-sm shadow-lg transition-all active:scale-95 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-sm shadow-lg transition-all active:scale-95 cursor-pointer"
             >
               Ir para o login
             </button>
@@ -142,7 +142,7 @@ export const LoginScreen: React.FC = () => {
             </div>
             <button
               onClick={() => resetFormAndGoTo('login')}
-              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-sm shadow-lg transition-all active:scale-95 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-sm shadow-lg transition-all active:scale-95 cursor-pointer"
             >
               Voltar ao login
             </button>
@@ -170,13 +170,13 @@ export const LoginScreen: React.FC = () => {
               placeholder="seu.email@exemplo.com"
               required
               autoFocus
-              className="w-full bg-[#080808] border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+              className="w-full bg-base border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
             />
             {errorMsg && <p className="text-xs text-red-400 font-medium bg-red-950/40 border border-red-500/30 p-2.5 rounded-xl text-center">{errorMsg}</p>}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] disabled:opacity-50 text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover disabled:opacity-50 text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
             >
               <span>{isSubmitting ? 'Enviando...' : 'Enviar link de redefinição'}</span>
             </button>
@@ -218,7 +218,7 @@ export const LoginScreen: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu.email@exemplo.com"
                     required
-                    className="w-full bg-[#080808] border border-slate-800 rounded-xl pl-9 pr-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+                    className="w-full bg-base border border-slate-800 rounded-xl pl-9 pr-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
@@ -234,7 +234,7 @@ export const LoginScreen: React.FC = () => {
                     placeholder="Digite sua senha..."
                     required
                     minLength={6}
-                    className="w-full bg-[#080808] border border-slate-800 rounded-xl pl-9 pr-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+                    className="w-full bg-base border border-slate-800 rounded-xl pl-9 pr-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
                   />
                   <button
                     type="button"
@@ -256,7 +256,7 @@ export const LoginScreen: React.FC = () => {
                     placeholder="Digite a senha de novo..."
                     required
                     minLength={6}
-                    className="w-full bg-[#080808] border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00]"
+                    className="w-full bg-base border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
                   />
                 </div>
               )}
@@ -265,7 +265,7 @@ export const LoginScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => resetFormAndGoTo('forgot')}
-                  className="text-xs font-bold text-[#FF4D00] hover:underline cursor-pointer"
+                  className="text-xs font-bold text-brand hover:underline cursor-pointer"
                 >
                   Esqueci minha senha
                 </button>
@@ -276,7 +276,7 @@ export const LoginScreen: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] disabled:opacity-50 text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover disabled:opacity-50 text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
               >
                 <span>{isSubmitting ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar conta'}</span>
                 <ChevronRight className="w-4 h-4" />
@@ -285,9 +285,9 @@ export const LoginScreen: React.FC = () => {
 
             <p className="text-center text-xs text-slate-500">
               {mode === 'login' ? (
-                <>Não tem conta? <button onClick={() => resetFormAndGoTo('signup')} className="text-[#FF4D00] font-bold hover:underline cursor-pointer">Criar conta</button></>
+                <>Não tem conta? <button onClick={() => resetFormAndGoTo('signup')} className="text-brand font-bold hover:underline cursor-pointer">Criar conta</button></>
               ) : (
-                <>Já tem conta? <button onClick={() => resetFormAndGoTo('login')} className="text-[#FF4D00] font-bold hover:underline cursor-pointer">Entrar</button></>
+                <>Já tem conta? <button onClick={() => resetFormAndGoTo('login')} className="text-brand font-bold hover:underline cursor-pointer">Entrar</button></>
               )}
             </p>
           </div>

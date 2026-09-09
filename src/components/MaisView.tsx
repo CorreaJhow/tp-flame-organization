@@ -37,14 +37,14 @@ export const MaisView: React.FC<MaisViewProps> = ({
         {onOpenPwaModal && (
           <button
             onClick={onOpenPwaModal}
-            className="w-full bg-gradient-to-r from-[#181818] via-[#1a1512] to-[#251508] hover:from-[#202020] hover:to-[#2c180a] border border-[#FF4D00]/40 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-lg"
+            className="w-full bg-gradient-to-r from-surface-hover via-[#1a1512] to-[#251508] hover:from-[#202020] hover:to-[#2c180a] border border-brand/40 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-lg"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-11 h-11 rounded-xl bg-brand/20 text-brand border border-brand/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Smartphone className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors flex items-center gap-2">
                   <span>Instalar App no Celular (PWA)</span>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     RECOMENDADO
@@ -61,14 +61,14 @@ export const MaisView: React.FC<MaisViewProps> = ({
 
         <button
           onClick={onOpenFeedback}
-          className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <MessageSquarePlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors">
+              <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
                 Caixa de Sugestões & Reportar Bug
               </h3>
               <p className="text-xs text-slate-400">
@@ -81,14 +81,14 @@ export const MaisView: React.FC<MaisViewProps> = ({
 
         <button
           onClick={() => onNavigate('integrantes')}
-          className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors">
+              <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
                 Equipe de Louvor
               </h3>
               <p className="text-xs text-slate-400">
@@ -101,7 +101,7 @@ export const MaisView: React.FC<MaisViewProps> = ({
 
         <button
           onClick={() => onNavigate('historico')}
-          className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -121,14 +121,14 @@ export const MaisView: React.FC<MaisViewProps> = ({
 
         <button
           onClick={() => onNavigate('admin')}
-          className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-[#FF4D00] transition-colors">
+              <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
                 Painel de Administração
               </h3>
               <p className="text-xs text-slate-400">
@@ -141,31 +141,31 @@ export const MaisView: React.FC<MaisViewProps> = ({
       </div>
 
       {/* Ministry Metrics Summary */}
-      <section className="bg-[#121212] border border-slate-800/80 rounded-2xl p-4 shadow-md space-y-3">
+      <section className="bg-surface border border-slate-800/80 rounded-2xl p-4 shadow-md space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-[#FF4D00]" />
+          <Activity className="w-3.5 h-3.5 text-brand" />
           Estatísticas do Ministério
         </h3>
         <div className="grid grid-cols-4 gap-2">
-          <div className="bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-center">
-            <Music2 className="w-4 h-4 text-[#FF4D00] mx-auto mb-1" />
+          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
+            <Music2 className="w-4 h-4 text-brand mx-auto mb-1" />
             <span className="text-base font-extrabold text-white block leading-none">{totalMusicas}</span>
             <span className="text-[10px] text-slate-400">Músicas</span>
           </div>
 
-          <div className="bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-center">
+          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
             <FileSpreadsheet className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
             <span className="text-base font-extrabold text-white block leading-none">{totalVersoes}</span>
             <span className="text-[10px] text-slate-400">Versões</span>
           </div>
 
-          <div className="bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-center">
+          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
             <Calendar className="w-4 h-4 text-blue-400 mx-auto mb-1" />
             <span className="text-base font-extrabold text-white block leading-none">{totalCultos}</span>
             <span className="text-[10px] text-slate-400">Cultos</span>
           </div>
 
-          <div className="bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-center">
+          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
             <Users className="w-4 h-4 text-purple-400 mx-auto mb-1" />
             <span className="text-base font-extrabold text-white block leading-none">{totalIntegrantes}</span>
             <span className="text-[10px] text-slate-400">Equipe</span>

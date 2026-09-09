@@ -21,7 +21,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-[#0c0c0c]/95 backdrop-blur-md border-t border-slate-800/80 py-1 px-2 shadow-2xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-header/95 backdrop-blur-md border-t border-slate-800/80 py-1 px-2 shadow-2xl">
       <div className="max-w-md mx-auto flex items-center justify-between">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -37,14 +37,14 @@ export const Navigation: React.FC<NavigationProps> = ({
               onClick={() => onSelectTab(tab.id)}
               className={`relative min-h-[50px] px-2 flex flex-col items-center justify-center rounded-xl transition-all flex-1 ${
                 isActive
-                  ? 'text-[#FF4D00] font-bold'
+                  ? 'text-brand font-bold'
                   : 'text-slate-400 hover:text-slate-200 active:scale-95'
               }`}
             >
               <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-[#FF4D00]' : ''}`} />
+                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-brand' : ''}`} />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1.5 -right-2 bg-[#FF4D00] text-slate-950 text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-[#0c0c0c]">
+                  <span className="absolute -top-1.5 -right-2 bg-brand text-slate-950 text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-header">
                     {tab.badge}
                   </span>
                 ) : null}
@@ -53,7 +53,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {tab.label}
               </span>
               {isActive && (
-                <div className="absolute top-0 w-8 h-0.5 bg-[#FF4D00] rounded-full shadow-[0_0_8px_#FF4D00]" />
+                <div className="absolute top-0 w-8 h-0.5 bg-brand rounded-full shadow-[0_0_8px_#FF4D00]" />
               )}
             </button>
           );

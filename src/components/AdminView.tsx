@@ -115,17 +115,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
         {onNavigate && (
           <button
             onClick={() => onNavigate('mais')}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF4D00] hover:underline bg-[#121212] border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline bg-surface border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Voltar para Mais</span>
           </button>
         )}
 
-        <div className="bg-[#121212] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#FF4D00]" />
+        <div className="bg-surface border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-brand" />
 
-          <div className="w-16 h-16 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center mx-auto shadow-inner">
             <Lock className="w-8 h-8" />
           </div>
 
@@ -149,7 +149,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder="Digite sua senha..."
-                  className="w-full bg-[#080808] border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF4D00] transition-colors pr-10"
+                  className="w-full bg-base border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand transition-colors pr-10"
                   autoFocus
                 />
                 <button
@@ -170,7 +170,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 px-4 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
             >
               <span>Entrar na Administração</span>
               <ChevronRight className="w-4 h-4" />
@@ -187,7 +187,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {onNavigate && (
         <button
           onClick={() => onNavigate('mais')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF4D00] hover:underline bg-[#121212] border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline bg-surface border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para Mais</span>
@@ -195,9 +195,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
       )}
 
       {/* Header Banner */}
-      <div className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+      <div className="bg-surface border border-slate-800/80 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
@@ -212,7 +212,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
         <button
           onClick={handleLogout}
-          className="py-2 px-3.5 rounded-xl bg-[#1a1a1a] hover:bg-red-950/60 text-slate-300 hover:text-red-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="py-2 px-3.5 rounded-xl bg-surface-hover hover:bg-red-950/60 text-slate-300 hover:text-red-400 border border-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>Sair da Administração</span>
@@ -221,19 +221,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Conta Google conectada */}
       {user && (
-        <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-3">
+        <section className="bg-surface border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-3">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <UserCircle2 className="w-4 h-4 text-[#FF4D00]" />
+            <UserCircle2 className="w-4 h-4 text-brand" />
             Sua Conta
           </h3>
-          <div className="flex items-center justify-between gap-3 p-3 bg-[#080808] border border-slate-800 rounded-2xl">
+          <div className="flex items-center justify-between gap-3 p-3 bg-base border border-slate-800 rounded-2xl">
             <div className="min-w-0">
               <p className="text-xs font-bold text-white truncate">{user.displayName || 'Conta conectada'}</p>
               <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
             </div>
             <button
               onClick={() => signOut()}
-              className="shrink-0 py-1.5 px-3 rounded-xl bg-[#181818] hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              className="shrink-0 py-1.5 px-3 rounded-xl bg-surface-hover hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sair</span>
@@ -253,12 +253,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   value={linkPasswordInput}
                   onChange={(e) => setLinkPasswordInput(e.target.value)}
                   placeholder="Nova senha (mín. 6 caracteres)..."
-                  className="flex-1 bg-[#080808] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+                  className="flex-1 bg-base border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand"
                 />
                 <button
                   type="submit"
                   disabled={isLinkingPassword}
-                  className="py-2 px-3.5 rounded-xl bg-[#181818] border border-slate-700 hover:border-[#FF4D00] text-white font-bold text-xs disabled:opacity-50 cursor-pointer shrink-0"
+                  className="py-2 px-3.5 rounded-xl bg-surface-hover border border-slate-700 hover:border-brand text-white font-bold text-xs disabled:opacity-50 cursor-pointer shrink-0"
                 >
                   {isLinkingPassword ? 'Salvando...' : 'Definir senha'}
                 </button>
@@ -274,9 +274,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
       )}
 
       {/* Change Admin Password */}
-      <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-3">
+      <section className="bg-surface border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-3">
         <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <Lock className="w-4 h-4 text-[#FF4D00]" />
+          <Lock className="w-4 h-4 text-brand" />
           Alterar Senha de Administrador
         </h3>
 
@@ -286,11 +286,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Nova senha do admin..."
-            className="flex-1 bg-[#080808] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+            className="flex-1 bg-base border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand"
           />
           <button
             type="submit"
-            className="py-2 px-4 rounded-xl bg-[#181818] border border-slate-700 hover:border-[#FF4D00] text-white font-bold text-xs cursor-pointer"
+            className="py-2 px-4 rounded-xl bg-surface-hover border border-slate-700 hover:border-brand text-white font-bold text-xs cursor-pointer"
           >
             Atualizar
           </button>
@@ -304,10 +304,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
       </section>
 
       {/* Database Status */}
-      <section className="bg-[#121212] border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
+      <section className="bg-surface border border-slate-800/80 rounded-3xl p-5 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-[#FF4D00]" />
+            <HardDrive className="w-4 h-4 text-brand" />
             Status do Banco de Dados & Registros
           </h3>
           <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
@@ -317,32 +317,32 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-          <div className="bg-[#080808] border border-slate-800 p-3 rounded-2xl">
+          <div className="bg-base border border-slate-800 p-3 rounded-2xl">
             <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Músicas</span>
             <span className="text-xl font-black text-white">{totalMusicas}</span>
           </div>
-          <div className="bg-[#080808] border border-slate-800 p-3 rounded-2xl">
+          <div className="bg-base border border-slate-800 p-3 rounded-2xl">
             <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Versões</span>
             <span className="text-xl font-black text-white">{totalVersoes}</span>
           </div>
-          <div className="bg-[#080808] border border-slate-800 p-3 rounded-2xl">
+          <div className="bg-base border border-slate-800 p-3 rounded-2xl">
             <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Cultos</span>
             <span className="text-xl font-black text-white">{totalCultos}</span>
           </div>
-          <div className="bg-[#080808] border border-slate-800 p-3 rounded-2xl">
+          <div className="bg-base border border-slate-800 p-3 rounded-2xl">
             <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">Integrantes</span>
             <span className="text-xl font-black text-white">{totalIntegrantes}</span>
           </div>
         </div>
 
-        <div className="p-3.5 bg-[#080808] border border-slate-800 rounded-2xl flex items-center justify-between text-xs text-slate-400">
+        <div className="p-3.5 bg-base border border-slate-800 rounded-2xl flex items-center justify-between text-xs text-slate-400">
           <span className="font-medium text-slate-300">
             Todas as alterações, adições e exclusões são salvas e sincronizadas em tempo real.
           </span>
           <button
             onClick={handleCheckConnection}
             disabled={isSyncing}
-            className="py-1.5 px-3 rounded-xl bg-[#181818] hover:bg-[#222] border border-slate-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+            className="py-1.5 px-3 rounded-xl bg-surface-hover hover:bg-[#222] border border-slate-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Verificando...' : 'Verificar Conexão'}</span>

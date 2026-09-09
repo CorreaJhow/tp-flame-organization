@@ -106,7 +106,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
               : vocalConfigs[0] 
               ? `${vocalConfigs[0].badgeBg} ${vocalConfigs[0].badgeBorder}` 
               : 'bg-slate-900 border-slate-700'
-          } ${isFocused && focusVoice ? 'ring-2 ring-[#FF4D00]/60 scale-[1.01]' : ''} ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
+          } ${isFocused && focusVoice ? 'ring-2 ring-brand/60 scale-[1.01]' : ''} ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
         >
           <div className="flex items-center gap-2 flex-wrap font-black text-xs uppercase tracking-wider">
             {isDuet ? (
@@ -133,7 +133,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
           </div>
 
           {focusVoice && isVoiceMatching(focusVoice, vocalInfo.singers) && (
-            <span className="text-[12px] font-black uppercase px-2 py-0.5 rounded-full bg-[#FF4D00] text-slate-950 shadow-sm flex items-center gap-1">
+            <span className="text-[12px] font-black uppercase px-2 py-0.5 rounded-full bg-brand text-slate-950 shadow-sm flex items-center gap-1">
               ★ Sua Parte
             </span>
           )}
@@ -162,11 +162,11 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
         return (
           <div
             key={lineIndex}
-            className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#FF4D00]/25 via-[#FF4D00]/10 to-transparent border-l-4 border-[#FF4D00] text-[#FF4D00] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
+            className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-brand/25 via-brand/10 to-transparent border-l-4 border-brand text-brand font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
               isLetraMode ? 'text-sm sm:text-base my-4' : 'text-xs sm:text-sm'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-[#FF4D00] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
             <span>{headerText}</span>
           </div>
         );
@@ -177,7 +177,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     if (trimmedLine.startsWith('(') && trimmedLine.endsWith(')')) {
       return (
         <div key={lineIndex} className={`my-1.5 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF4D00]/20 text-[#FF4D00] border border-[#FF4D00]/40 font-bold italic shadow-sm ${
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand/20 text-brand border border-brand/40 font-bold italic shadow-sm ${
             isLetraMode ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
           }`}>
             💡 {trimmedLine}
@@ -223,7 +223,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
             elements.push(
               <span
                 key={keyCounter++}
-                className="inline-block font-black text-[#FF4D00] bg-[#FF4D00]/15 border border-[#FF4D00]/50 px-1.5 py-0.5 rounded-md mx-0.5 text-xs sm:text-sm tracking-wider shadow-sm ring-1 ring-[#FF4D00]/20"
+                className="inline-block font-black text-brand bg-brand/15 border border-brand/50 px-1.5 py-0.5 rounded-md mx-0.5 text-xs sm:text-sm tracking-wider shadow-sm ring-1 ring-brand/20"
               >
                 {transposed}
               </span>
@@ -298,7 +298,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
               return (
                 <span
                   key={pIdx}
-                  className="inline-block mx-1 my-0.5 px-2 py-0.5 rounded-md bg-[#FF4D00]/25 text-[#FF4D00] border border-[#FF4D00]/60 font-black text-xs uppercase tracking-wider shadow-sm"
+                  className="inline-block mx-1 my-0.5 px-2 py-0.5 rounded-md bg-brand/25 text-brand border border-brand/60 font-black text-xs uppercase tracking-wider shadow-sm"
                 >
                   {inner}
                 </span>
@@ -315,7 +315,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
             return (
               <span
                 key={pIdx}
-                className="inline-block mx-0.5 px-1.5 py-0.2 rounded bg-[#FF4D00] text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-md transform -translate-y-0.5"
+                className="inline-block mx-0.5 px-1.5 py-0.2 rounded bg-brand text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-md transform -translate-y-0.5"
               >
                 {transposed}
               </span>
@@ -327,7 +327,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
             return (
               <span
                 key={pIdx}
-                className="inline-block mx-1 text-[#FF4D00] font-bold italic bg-[#FF4D00]/10 border border-[#FF4D00]/30 px-1.5 py-0.2 rounded text-xs"
+                className="inline-block mx-1 text-brand font-bold italic bg-brand/10 border border-brand/30 px-1.5 py-0.2 rounded text-xs"
               >
                 {part}
               </span>

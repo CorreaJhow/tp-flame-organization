@@ -47,13 +47,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-6 pb-28">
       {/* GIGANTIC HIGHLIGHT CARD: PRÓXIMO CULTO */}
-      <section className="bg-gradient-to-br from-[#121212] via-[#121212] to-[#20100a] rounded-3xl p-6 border border-slate-800/80 shadow-2xl relative overflow-hidden transition-all hover:border-[#FF4D00]/40">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-[#FF4D00]/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="bg-gradient-to-br from-surface via-surface to-[#20100a] rounded-3xl p-6 border border-slate-800/80 shadow-2xl relative overflow-hidden transition-all hover:border-brand/40">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-brand/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#FF4D00] animate-ping" />
-            <span className="text-xs font-black uppercase tracking-widest text-[#FF4D00]">
+            <span className="w-3 h-3 rounded-full bg-brand animate-ping" />
+            <span className="text-xs font-black uppercase tracking-widest text-brand">
               PRÓXIMO CULTO
             </span>
           </div>
@@ -78,22 +78,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h2 className="text-2xl font-black text-white leading-tight mb-1">
                 {upcomingCulto.Nome_Evento}
               </h2>
-              <p className="text-xs font-semibold text-[#FF4D00]/90 flex items-center gap-1.5 capitalize">
-                <Clock className="w-4 h-4 text-[#FF4D00]" />
+              <p className="text-xs font-semibold text-brand/90 flex items-center gap-1.5 capitalize">
+                <Clock className="w-4 h-4 text-brand" />
                 {formatDate(upcomingCulto.Data)}
               </p>
             </div>
 
             {/* Setlist Summary */}
-            <div className="bg-[#080808]/90 rounded-2xl p-4 border border-slate-800/80 space-y-2.5">
+            <div className="bg-base/90 rounded-2xl p-4 border border-slate-800/80 space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold text-slate-300">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#FF4D00]" />
+                  <Sparkles className="w-3.5 h-3.5 text-brand" />
                   Repertório ({upcomingRepertorio.length} músicas)
                 </span>
                 <button
                   onClick={() => onNavigate('cultos')}
-                  className="text-[#FF4D00] hover:underline flex items-center gap-0.5 text-[11px]"
+                  className="text-brand hover:underline flex items-center gap-0.5 text-[11px]"
                 >
                   Ver no Culto <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -109,16 +109,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <div
                       key={item.ID}
                       onClick={() => musica && onSelectSong?.(musica)}
-                      className={`flex items-center justify-between text-xs bg-[#121212] px-3 py-2 rounded-xl border border-slate-800/80 transition-all ${
-                        musica ? 'cursor-pointer hover:border-slate-700 hover:bg-[#181818] group' : ''
+                      className={`flex items-center justify-between text-xs bg-surface px-3 py-2 rounded-xl border border-slate-800/80 transition-all ${
+                        musica ? 'cursor-pointer hover:border-slate-700 hover:bg-surface-hover group' : ''
                       }`}
                       title={musica ? 'Clique para abrir detalhes e cifra' : ''}
                     >
                       <div className="flex items-center gap-2.5 truncate">
-                        <span className="w-5 h-5 rounded-full bg-[#FF4D00]/20 text-[#FF4D00] font-black text-[10px] flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-brand/20 text-brand font-black text-[10px] flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <span className="font-bold text-white truncate group-hover:text-[#FF4D00] transition-colors">
+                        <span className="font-bold text-white truncate group-hover:text-brand transition-colors">
                           {musica?.Nome || 'Música'}
                         </span>
                       </div>
@@ -129,7 +129,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           </span>
                         )}
                         {musica && (
-                          <FileText className="w-3.5 h-3.5 text-slate-500 group-hover:text-[#FF4D00] transition-colors" />
+                          <FileText className="w-3.5 h-3.5 text-slate-500 group-hover:text-brand transition-colors" />
                         )}
                       </div>
                     </div>
@@ -147,7 +147,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               id="start-stage-mode-button"
               onClick={() => onOpenStageMode(upcomingCulto)}
-              className="w-full py-4 px-5 rounded-2xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-base flex items-center justify-center gap-2.5 shadow-xl shadow-[#FF4D00]/20 active:scale-[0.98] transition-all"
+              className="w-full py-4 px-5 rounded-2xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-base flex items-center justify-center gap-2.5 shadow-xl shadow-brand/20 active:scale-[0.98] transition-all"
             >
               <Play className="w-5 h-5 fill-slate-950" />
               <span>MODO PALCO</span>
@@ -160,7 +160,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </p>
             <button
               onClick={onOpenNewCultoModal}
-              className="py-3 px-5 rounded-xl bg-[#FF4D00] text-slate-950 font-bold text-xs inline-flex items-center gap-2 shadow-lg"
+              className="py-3 px-5 rounded-xl bg-brand text-slate-950 font-bold text-xs inline-flex items-center gap-2 shadow-lg"
             >
               <Plus className="w-4 h-4" />
               <span>Agendar Novo Culto</span>
@@ -174,14 +174,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <button
           id="main-btn-buscar-musicas"
           onClick={() => onNavigate('biblioteca')}
-          className="bg-[#121212] hover:bg-[#1a1a1a] border border-slate-800 rounded-2xl p-5 flex items-center justify-between text-left transition-all active:scale-[0.98] shadow-lg group"
+          className="bg-surface hover:bg-surface-hover border border-slate-800 rounded-2xl p-5 flex items-center justify-between text-left transition-all active:scale-[0.98] shadow-lg group"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Music2 className="w-6 h-6 text-[#FF4D00]" />
+            <div className="w-12 h-12 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Music2 className="w-6 h-6 text-brand" />
             </div>
             <div>
-              <span className="text-base font-extrabold text-white block group-hover:text-[#FF4D00] transition-colors">
+              <span className="text-base font-extrabold text-white block group-hover:text-brand transition-colors">
                 Buscar Músicas
               </span>
               <span className="text-xs text-slate-400 font-medium">
@@ -195,7 +195,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <button
           id="main-btn-ver-cultos"
           onClick={() => onNavigate('cultos')}
-          className="bg-[#121212] hover:bg-[#1a1a1a] border border-slate-800 rounded-2xl p-5 flex items-center justify-between text-left transition-all active:scale-[0.98] shadow-lg group"
+          className="bg-surface hover:bg-surface-hover border border-slate-800 rounded-2xl p-5 flex items-center justify-between text-left transition-all active:scale-[0.98] shadow-lg group"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -218,14 +218,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {onOpenFeedback && (
         <button
           onClick={onOpenFeedback}
-          className="w-full bg-[#121212] hover:bg-[#181818] border border-slate-800/80 hover:border-[#FF4D00]/30 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 hover:border-brand/30 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <MessageSquarePlus className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-white group-hover:text-[#FF4D00] transition-colors block">
+              <span className="text-xs font-bold text-white group-hover:text-brand transition-colors block">
                 Sugestões ou Problemas no App?
               </span>
               <span className="text-[11px] text-slate-400">

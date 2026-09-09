@@ -66,7 +66,7 @@ const SongDetailModal = lazy(() =>
 function LazyViewFallback() {
   return (
     <div className="flex items-center justify-center py-16 text-slate-500">
-      <RefreshCw className="w-5 h-5 animate-spin text-[#FF4D00]" />
+      <RefreshCw className="w-5 h-5 animate-spin text-brand" />
     </div>
   );
 }
@@ -78,8 +78,8 @@ function LazyViewFallback() {
  * clique. */
 function LazyFullScreenFallback() {
   return (
-    <div className="fixed inset-0 z-50 bg-[#080808] flex items-center justify-center">
-      <RefreshCw className="w-6 h-6 animate-spin text-[#FF4D00]" />
+    <div className="fixed inset-0 z-50 bg-base flex items-center justify-center">
+      <RefreshCw className="w-6 h-6 animate-spin text-brand" />
     </div>
   );
 }
@@ -87,8 +87,8 @@ function LazyFullScreenFallback() {
 /** Tela cheia enquanto o Firebase resolve se já existe uma sessão salva. */
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center">
-      <div className="w-16 h-16 rounded-2xl bg-[#FF4D00]/10 text-[#FF4D00] border border-[#FF4D00]/20 flex items-center justify-center shadow-inner animate-pulse">
+    <div className="min-h-screen bg-base flex items-center justify-center">
+      <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shadow-inner animate-pulse">
         <Flame className="w-8 h-8" />
       </div>
     </div>
@@ -103,8 +103,8 @@ function AuthLoadingScreen() {
  */
 function AccessBlockedScreen({ email, onSignOut }: { email: string | null; onSignOut: () => void }) {
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#121212] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative overflow-hidden">
+    <div className="min-h-screen bg-base flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-surface border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto shadow-inner">
           <ShieldAlert className="w-8 h-8" />
@@ -120,7 +120,7 @@ function AccessBlockedScreen({ email, onSignOut }: { email: string | null; onSig
         </div>
         <button
           onClick={onSignOut}
-          className="w-full py-3 px-4 rounded-xl bg-[#181818] hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+          className="w-full py-3 px-4 rounded-xl bg-surface-hover hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Sair e tentar outra conta</span>
@@ -275,7 +275,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] text-slate-100 font-sans selection:bg-[#FF4D00] selection:text-slate-950">
+    <div className="min-h-screen bg-base text-slate-100 font-sans selection:bg-brand selection:text-slate-950">
       {/* Top Header */}
       <Header
         onNavigateTab={(tab) => setCurrentTab(tab)}
@@ -434,7 +434,7 @@ function AppContent() {
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-4 space-y-3 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#FF4D00]" />
+                <Calendar className="w-4 h-4 text-brand" />
                 Agendar Novo Culto
               </h3>
               <button onClick={() => setShowNewCultoModal(false)} className="text-slate-400 hover:text-white">
@@ -452,7 +452,7 @@ function AppContent() {
                   value={newCultoNome}
                   onChange={(e) => setNewCultoNome(e.target.value)}
                   placeholder="ex: Culto de Domingo - Celebração"
-                  className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+                  className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
                   required
                 />
               </div>
@@ -465,7 +465,7 @@ function AppContent() {
                   type="datetime-local"
                   value={newCultoData}
                   onChange={(e) => setNewCultoData(e.target.value)}
-                  className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+                  className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
                 />
               </div>
 
@@ -478,7 +478,7 @@ function AppContent() {
                   onChange={(e) => setNewCultoObs(e.target.value)}
                   placeholder="ex: Culto com momento especial de Ceia..."
                   rows={2}
-                  className="w-full bg-[#080808] border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#FF4D00]"
+                  className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
                 />
               </div>
 
@@ -492,7 +492,7 @@ function AppContent() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-[#FF4D00] hover:bg-[#e04400] text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all"
+                  className="px-4 py-1.5 rounded-xl bg-brand hover:bg-brand-hover text-slate-950 font-black text-xs shadow-md active:scale-95 transition-all"
                 >
                   Agendar Culto
                 </button>

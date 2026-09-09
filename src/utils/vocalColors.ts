@@ -113,23 +113,23 @@ export const KNOWN_VOCALS: Record<string, VocalConfig> = {
   ministro: {
     name: 'Ministro',
     colorName: 'Laranja',
-    badgeBg: 'bg-[#FF4D00]/20',
-    badgeText: 'text-[#FF4D00]',
-    badgeBorder: 'border-[#FF4D00]/40',
-    lineBorder: 'border-l-[#FF4D00]',
-    activeBg: 'bg-[#FF4D00]/10',
-    glowClass: 'ring-1 ring-[#FF4D00]/30',
+    badgeBg: 'bg-brand/20',
+    badgeText: 'text-brand',
+    badgeBorder: 'border-brand/40',
+    lineBorder: 'border-l-brand',
+    activeBg: 'bg-brand/10',
+    glowClass: 'ring-1 ring-brand/30',
     hexColor: '#FF4D00'
   },
   lead: {
     name: 'Vocal Lead',
     colorName: 'Laranja',
-    badgeBg: 'bg-[#FF4D00]/20',
-    badgeText: 'text-[#FF4D00]',
-    badgeBorder: 'border-[#FF4D00]/40',
-    lineBorder: 'border-l-[#FF4D00]',
-    activeBg: 'bg-[#FF4D00]/10',
-    glowClass: 'ring-1 ring-[#FF4D00]/30',
+    badgeBg: 'bg-brand/20',
+    badgeText: 'text-brand',
+    badgeBorder: 'border-brand/40',
+    lineBorder: 'border-l-brand',
+    activeBg: 'bg-brand/10',
+    glowClass: 'ring-1 ring-brand/30',
     hexColor: '#FF4D00'
   }
 };
