@@ -235,6 +235,28 @@ class StorageService {
     return this.logs;
   }
 
+  /**
+   * Todos os feedbacks, do mais novo ao mais antigo. Os 50 logs em memória não
+   * bastam: cada edição gera um log e empurra os feedbacks para fora da lista.
+   * Se a busca falhar, devolve os que estão em memória com `completo: false`.
+   */
+  public async getFeedbacks(): Promise<{ items: LogItem[]; completo: boolean }> {
+    const locais = this.logs.filter((l) => l.Acao === 'FEEDBACK');
+    let remotos: LogItem[] = [];
+    let completo = true;
+    try {
+      remotos = await fsLogs.getFeedbacksFirestore();
+    } catch (err) {
+      console.warn('[storage] Falha ao buscar feedbacks no Firestore:', err);
+      completo = false;
+    }
+
+    const porId = new Map<string, LogItem>();
+    [...locais, ...remotos].forEach((l) => porId.set(l.ID, l));
+    const items = [...porId.values()].sort((a, b) => (b.Data ?? '').localeCompare(a.Data ?? ''));
+    return { items, completo };
+  }
+
   public addLog(action: string, detail: string, usuario?: string) {
     const id = generateUUID();
     const optimistic: LogItem = {

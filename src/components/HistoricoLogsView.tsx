@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { History, ArrowLeft } from 'lucide-react';
 import { formatKeyDisplay } from '../utils/chordTransposer';
 import { HistoricoItem, LogItem, Versao, Musica, Culto, ViewTab } from '../types';
+import { FeedbacksPanel } from './FeedbacksPanel';
 
 interface HistoricoLogsViewProps {
   historico: HistoricoItem[];
@@ -20,7 +21,7 @@ export const HistoricoLogsView: React.FC<HistoricoLogsViewProps> = ({
   cultos,
   onNavigate
 }) => {
-  const [tab, setTab] = useState<'historico' | 'logs'>('historico');
+  const [tab, setTab] = useState<'historico' | 'feedbacks' | 'logs'>('historico');
 
   return (
     <div className="space-y-4 pb-24">
@@ -49,10 +50,10 @@ export const HistoricoLogsView: React.FC<HistoricoLogsViewProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setTab('historico')}
-          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             tab === 'historico'
               ? 'bg-brand text-slate-950 font-black shadow-md'
               : 'bg-surface text-slate-400 hover:text-white border border-slate-800'
@@ -62,8 +63,19 @@ export const HistoricoLogsView: React.FC<HistoricoLogsViewProps> = ({
         </button>
 
         <button
+          onClick={() => setTab('feedbacks')}
+          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            tab === 'feedbacks'
+              ? 'bg-brand text-slate-950 font-black shadow-md'
+              : 'bg-surface text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          Feedbacks
+        </button>
+
+        <button
           onClick={() => setTab('logs')}
-          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
             tab === 'logs'
               ? 'bg-brand text-slate-950 font-black shadow-md'
               : 'bg-surface text-slate-400 hover:text-white border border-slate-800'
@@ -108,6 +120,8 @@ export const HistoricoLogsView: React.FC<HistoricoLogsViewProps> = ({
             })
           )}
         </div>
+      ) : tab === 'feedbacks' ? (
+        <FeedbacksPanel />
       ) : (
         <div className="bg-surface border border-slate-800/80 rounded-2xl divide-y divide-slate-800/60 overflow-hidden shadow-sm">
           {logs.map((log) => (
@@ -116,10 +130,10 @@ export const HistoricoLogsView: React.FC<HistoricoLogsViewProps> = ({
                 <span className="font-extrabold text-brand uppercase text-[10px] block tracking-wide">
                   {log.Acao}
                 </span>
-                <p className="text-slate-300 text-xs font-medium">{log.Detalhes}</p>
+                <p className="text-slate-300 text-xs font-medium">{log.Registro_Afetado}</p>
               </div>
               <span className="text-[10px] text-slate-500 font-mono shrink-0">
-                {new Date(log.Data_Hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(log.Data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             </div>
           ))}

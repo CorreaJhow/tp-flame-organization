@@ -22,6 +22,7 @@ import {
 import { Culto, RepertorioItem, Versao, Musica } from '../types';
 import { storage } from '../services/storage';
 import { getLastPlayedInfo } from '../utils/songHistory';
+import { sortCultos } from '../utils/cultoOrder';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 
@@ -51,9 +52,10 @@ export const CultosView: React.FC<CultosViewProps> = ({
   const { showToast } = useToast();
   const [cultoToDelete, setCultoToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  const [selectedCultoId, setSelectedCultoId] = useState<string>(
-    cultos.length > 0 ? cultos[0].ID : ''
-  );
+  // Vazio até alguém tocar em um culto: a aba abre no primeiro da ordem
+  const [selectedCultoId, setSelectedCultoId] = useState<string>('');
+
+  const orderedCultos = useMemo(() => sortCultos(cultos), [cultos]);
 
   // View mode: 'detail' (focused repertoire of single culto) or 'list' (grid of all cultos)
   const [viewMode, setViewMode] = useState<'detail' | 'list'>('detail');
@@ -133,9 +135,9 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
   // Filter cultos based on search query
   const filteredCultos = useMemo(() => {
-    if (!searchQuery.trim()) return cultos;
+    if (!searchQuery.trim()) return orderedCultos;
     const q = searchQuery.toLowerCase();
-    return cultos.filter((c) => {
+    return orderedCultos.filter((c) => {
       const nameMatch = c.Nome_Evento.toLowerCase().includes(q);
       const obsMatch = c.Observacoes ? c.Observacoes.toLowerCase().includes(q) : false;
       const dateMatch = c.Data ? c.Data.toLowerCase().includes(q) : false;
@@ -149,10 +151,10 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
       return nameMatch || obsMatch || dateMatch || parsedMatch;
     });
-  }, [cultos, searchQuery]);
+  }, [orderedCultos, searchQuery]);
 
   // Active selected Culto
-  const currentCulto = cultos.find((c) => c.ID === selectedCultoId) || filteredCultos[0] || cultos[0];
+  const currentCulto = cultos.find((c) => c.ID === selectedCultoId) || filteredCultos[0] || orderedCultos[0];
 
   const currentSetlist = currentCulto
     ? repertorio

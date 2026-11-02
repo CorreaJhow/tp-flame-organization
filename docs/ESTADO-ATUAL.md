@@ -102,6 +102,22 @@ painel de administração nem a configuração do Google Sheets. Verificado ao
 vivo: os três chunks carregam sob demanda sem erro de console, `npm test`
 (37/37) e `npm run lint` seguem passando.
 
+### Letra sucinta, ordem dos cultos, feedbacks e novidades (02/11/2026)
+- **Letra sucinta** no Modo Palco (`utils/lyricsSummary.ts`): as regras estão no
+  topo do arquivo. A cifra cadastrada não muda.
+- **Cultos** (`utils/cultoOrder.ts`): próximos, sem data, encerrados. O culto de
+  hoje só encerra amanhã. A aba Cultos e o card da tela inicial usam a mesma regra.
+- **Feedback** continua em Logs (`Acao = 'FEEDBACK'`), com prefixos centralizados
+  em `utils/feedbackLog.ts`: `[SUGESTAO:MELHORIA]`, `[SUGESTAO:OUTRA]`, `[BUG]`,
+  `[MUSICA]` e o antigo `[SUGESTAO]`. Leitura em Mais > Histórico & Registros >
+  Feedbacks, com busca própria, além dos 50 logs em memória.
+- **Aviso de novidades** (`data/novidades.ts`): para avisar uma versão nova, troque
+  o `id` e os itens. Aparece uma vez por aparelho e nunca por cima do Modo Palco.
+- **Acordes** (`utils/chordLine.ts`): definição única de acorde, usada também na
+  detecção de vozes, onde `[E]` e `[C]` eram confundidos com cantores.
+- **Dívida conhecida:** `npm run lint` não acusou campos inexistentes em
+  componentes (`log.Detalhes`). Causa provável: faltam os tipos do React.
+
 ## 3. Decisões explícitas do usuário (não reabrir sem perguntar)
 
 - ~~**Google Sheets fica como backend.** Não é para migrar para outro banco.~~

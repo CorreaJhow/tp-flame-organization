@@ -1,3 +1,5 @@
+import { isChord } from './chordLine';
+
 export interface VocalConfig {
   name: string;
   colorName: string;
@@ -304,9 +306,11 @@ export function extractVocalTag(line: string, knownSingers: string[] = []): Voca
   if (bracketMatch) {
     const candidateRaw = bracketMatch[1].trim();
     const candidates = splitSingers(candidateRaw);
+    // [E] ou [D/F#] são acordes: sem isto, o "e" de Leticia transformava [E] em cantor
+    const isChordTag = candidates.every((c) => isChord(c.replace(/\s+/g, '')));
     const knownLower = ['larissa', 'bianca', 'leticia', 'letícia', 'jhow', 'joey', 'todos', 'unissono', 'dueto', ...knownSingers.map(s => s.toLowerCase())];
 
-    const allAreKnown = candidates.length > 0 && candidates.every(c => knownLower.includes(c.toLowerCase()) || knownLower.some(k => k.includes(c.toLowerCase())));
+    const allAreKnown = !isChordTag && candidates.length > 0 && candidates.every(c => knownLower.includes(c.toLowerCase()) || knownLower.some(k => k.includes(c.toLowerCase())));
 
     if (allAreKnown) {
       return {

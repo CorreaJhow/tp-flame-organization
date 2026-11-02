@@ -1,21 +1,20 @@
 import React from 'react';
 import { transposeChord } from '../utils/chordTransposer';
 import { extractVocalTag, getVocalConfig, isVoiceMatching, VocalConfig } from '../utils/vocalColors';
+import { CHORD_REGEX, classifyLine } from '../utils/chordLine';
+import { summarizeLyrics } from '../utils/lyricsSummary';
 import { Mic, Users } from 'lucide-react';
 
 interface ChordViewerProps {
   text?: string | null | any;
   semitones?: number;
-  displayMode?: 'cifra' | 'letra';
+  displayMode?: 'cifra' | 'letra' | 'sucinta';
   fontSizeStep?: number; // e.g. -1, 0, 1, 2, 3
   focusVoice?: string | null; // e.g. 'Larissa', 'Bianca', 'Leticia', 'Jhow', or null
   showVocalHighlights?: boolean;
   knownSingers?: string[];
   className?: string;
 }
-
-// Regex to check if a token looks like a chord (e.g., C, C#m, Db7, G/B, F#m7(b5), Bbadd9, Dsus4)
-const CHORD_REGEX = /^[A-G][#b]?(m|maj|min|dim|aug|sus|add|[0-9])*(?:\/[A-G][#b]?)?$/i;
 
 // Common section names that should be styled as section headers
 const SECTION_KEYWORDS = [
@@ -41,7 +40,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     return <p className="text-slate-500 italic text-xs">Nenhuma letra ou cifra cadastrada.</p>;
   }
 
-  const isLetraMode = displayMode === 'letra';
+  const isLetraMode = displayMode !== 'cifra';
 
   // Base font sizing classes depending on mode and font step
   const getFontSizeClass = () => {
@@ -149,32 +148,25 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     }
 
     // 1. Check for Section Headers like [Intro], [Refrão], [Verso 1], # Intro, ## Ponte
-    const bracketHeaderMatch = trimmedLine.match(/^\[(.*)\]$/);
-    const markdownHeaderMatch = trimmedLine.match(/^#{1,4}\s*(.*)$/);
+    const { kind, headerText } = classifyLine(trimmedLine);
 
-    if (bracketHeaderMatch || markdownHeaderMatch) {
-      const headerText = bracketHeaderMatch ? bracketHeaderMatch[1] : markdownHeaderMatch![1];
-
-      // Check if it's a section tag or just a single chord in brackets e.g. [C]
-      const isSingleChord = CHORD_REGEX.test(headerText.replace(/\s+/g, ''));
-      if (!isSingleChord) {
-        currentActiveSingers = []; // Section header resets active singer block
-        return (
-          <div
-            key={lineIndex}
-            className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-brand/25 via-brand/10 to-transparent border-l-4 border-brand text-brand font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
-              isLetraMode ? 'text-sm sm:text-base my-4' : 'text-xs sm:text-sm'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
-            <span>{headerText}</span>
-          </div>
-        );
-      }
+    if (kind === 'header') {
+      currentActiveSingers = []; // Section header resets active singer block
+      return (
+        <div
+          key={lineIndex}
+          className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-brand/25 via-brand/10 to-transparent border-l-4 border-brand text-brand font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
+            isLetraMode ? 'text-sm sm:text-base my-4' : 'text-xs sm:text-sm'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
+          <span>{headerText}</span>
+        </div>
+      );
     }
 
     // 2. Check for Annotations / Parenthetical Notes like (2x), (Cantar 2x), (Entra Bateria), (Suave)
-    if (trimmedLine.startsWith('(') && trimmedLine.endsWith(')')) {
+    if (kind === 'annotation') {
       return (
         <div key={lineIndex} className={`my-1.5 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand/20 text-brand border border-brand/40 font-bold italic shadow-sm ${
@@ -187,7 +179,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     }
 
     // 3. Check for Comments / Notes starting with // or *
-    if (trimmedLine.startsWith('//') || trimmedLine.startsWith('* ')) {
+    if (kind === 'comment') {
       return (
         <div key={lineIndex} className={`my-1 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
           <span className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-semibold text-xs italic">
@@ -198,11 +190,12 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     }
 
     // 4. Check if the entire line is a Cifra line (mostly chords separated by spaces e.g. C   G/B   Am7   F)
-    const tokens = trimmedLine.split(/\s+/).filter(Boolean);
-    const validChordCount = tokens.filter(t => CHORD_REGEX.test(t)).length;
-    const isChordLine = tokens.length > 0 && validChordCount / tokens.length >= 0.6;
+    // Linha só de acordes entre colchetes, como [Dm] [C] [A#]: sem letra para mostrar
+    if (kind === 'bracketChords' && isLetraMode) {
+      return null;
+    }
 
-    if (isChordLine) {
+    if (kind === 'chords') {
       // In Modo Letra, hide pure chord lines completely!
       if (isLetraMode) {
         return null;
@@ -340,6 +333,34 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
       </div>
     );
   };
+
+  if (displayMode === 'sucinta') {
+    const blocks = summarizeLyrics(safeText, knownSingers);
+    if (blocks.length === 0) {
+      return <p className="text-slate-500 italic text-xs">Esta música ainda não tem letra para mostrar.</p>;
+    }
+
+    return (
+      <div className={`space-y-4 ${className}`}>
+        {blocks.map((block, blockIdx) => {
+          currentActiveSingers = [];
+          const countLabel = block.count > 1 ? `(${block.count}x)` : '';
+          return (
+            <div key={blockIdx} className="space-y-1">
+              {block.header ? (
+                renderLine(`[${block.header}${countLabel ? ` ${countLabel}` : ''}]`, -1)
+              ) : countLabel ? (
+                <div className="py-1.5 px-3 rounded-xl bg-brand/15 border-l-4 border-brand text-brand font-black uppercase tracking-wider text-sm sm:text-base">
+                  Repetir {countLabel}
+                </div>
+              ) : null}
+              {block.lines.map((line, lineIdx) => renderLine(line, lineIdx))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-1 ${className}`}>

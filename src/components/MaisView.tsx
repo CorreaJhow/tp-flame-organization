@@ -1,10 +1,11 @@
 import React from 'react';
-import { Users, History, Shield, Activity, Music2, FileSpreadsheet, Calendar, ChevronRight, MessageSquarePlus, Smartphone } from 'lucide-react';
+import { Users, History, Shield, Activity, Music2, FileSpreadsheet, Calendar, ChevronRight, MessageSquarePlus, Smartphone, Sparkles } from 'lucide-react';
 import { ViewTab } from '../types';
 
 interface MaisViewProps {
   onNavigate: (tab: ViewTab) => void;
   onOpenFeedback: () => void;
+  onOpenNovidades?: () => void;
   onOpenPwaModal?: () => void;
   totalMusicas: number;
   totalVersoes: number;
@@ -15,6 +16,7 @@ interface MaisViewProps {
 export const MaisView: React.FC<MaisViewProps> = ({
   onNavigate,
   onOpenFeedback,
+  onOpenNovidades,
   onOpenPwaModal,
   totalMusicas,
   totalVersoes,
@@ -69,15 +71,35 @@ export const MaisView: React.FC<MaisViewProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
-                Caixa de Sugestões & Reportar Bug
+                Sugestão, bug ou música
               </h3>
               <p className="text-xs text-slate-400">
-                Envie ideias ou informe quando algo der problema no sistema
+                Envie uma ideia, avise de um problema ou sugira uma música
               </p>
             </div>
           </div>
           <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
         </button>
+
+        {onOpenNovidades && (
+          <button
+            onClick={onOpenNovidades}
+            className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
+                  O que mudou no app
+                </h3>
+                <p className="text-xs text-slate-400">Veja de novo as novidades desta versão</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+          </button>
+        )}
 
         <button
           onClick={() => onNavigate('integrantes')}

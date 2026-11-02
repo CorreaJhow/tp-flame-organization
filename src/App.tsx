@@ -7,7 +7,10 @@ import { SongFormModal } from './components/SongFormModal';
 import { CultosView } from './components/CultosView';
 import { IntegrantesView } from './components/IntegrantesView';
 import { MaisView } from './components/MaisView';
-import { FeedbackModal } from './components/FeedbackModal';
+import { FeedbackModal, FeedbackMode } from './components/FeedbackModal';
+import { NovidadesModal } from './components/NovidadesModal';
+import { marcarNovidadesVistas, novidadesPendentes } from './data/novidades';
+import { sortCultos } from './utils/cultoOrder';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { LoginScreen } from './components/LoginScreen';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -151,7 +154,8 @@ function AppContent() {
   const [pendingCount, setPendingCount] = useState(0);
 
   // Modals & Active Selections
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackMode, setFeedbackMode] = useState<FeedbackMode | null>(null);
+  const [showNovidades, setShowNovidades] = useState(novidadesPendentes);
   const [showPwaModal, setShowPwaModal] = useState(false);
   const [showNewSongModal, setShowNewSongModal] = useState(false);
   const [showNewCultoModal, setShowNewCultoModal] = useState(false);
@@ -236,9 +240,7 @@ function AppContent() {
   }, [refreshData, showToast]);
 
   // Compute upcoming Culto
-  const upcomingCulto = cultos.find(
-    (c) => c.Status === 'Em Preparação' || c.Status === 'Agendado'
-  ) || cultos[0];
+  const upcomingCulto = sortCultos(cultos)[0];
 
   const upcomingRepertorio = upcomingCulto
     ? repertorio
@@ -294,7 +296,7 @@ function AppContent() {
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
             onSelectSong={(musica) => setSelectedSongForDetail(musica)}
-            onOpenFeedback={() => setShowFeedbackModal(true)}
+            onOpenFeedback={(mode) => setFeedbackMode(mode)}
           />
         )}
 
@@ -326,7 +328,8 @@ function AppContent() {
         {currentTab === 'mais' && (
           <MaisView
             onNavigate={(tab) => setCurrentTab(tab)}
-            onOpenFeedback={() => setShowFeedbackModal(true)}
+            onOpenFeedback={() => setFeedbackMode('menu')}
+            onOpenNovidades={() => setShowNovidades(true)}
             onOpenPwaModal={() => setShowPwaModal(true)}
             totalMusicas={musicas.length}
             totalVersoes={versoes.length}
@@ -418,9 +421,20 @@ function AppContent() {
 
       {/* Feedback & Bug Report Modal */}
       <FeedbackModal
-        isOpen={showFeedbackModal}
-        onClose={() => setShowFeedbackModal(false)}
+        mode={feedbackMode}
+        defaultName={user?.displayName ?? ''}
+        onClose={() => setFeedbackMode(null)}
       />
+
+      {/* Nunca por cima do Modo Palco: quem está tocando não pode ser interrompido */}
+      {showNovidades && !stageModeCulto && (
+        <NovidadesModal
+          onClose={() => {
+            marcarNovidadesVistas();
+            setShowNovidades(false);
+          }}
+        />
+      )}
 
       {/* PWA Install Modal */}
       <PwaInstallModal

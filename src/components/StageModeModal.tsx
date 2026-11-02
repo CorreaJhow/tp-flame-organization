@@ -12,6 +12,7 @@ import {
   Type,
   Music2,
   FileText,
+  ListCollapse,
   Minus,
   Plus,
   Mic,
@@ -42,7 +43,7 @@ interface StageModeModalProps {
 const STAGE_PREFS_KEY = 'tp_flame_stage_prefs_v1';
 
 interface StagePrefs {
-  displayMode: 'cifra' | 'letra';
+  displayMode: 'cifra' | 'letra' | 'sucinta';
   fontSizeStep: number;
   showVocalHighlights: boolean;
   focusVoice: string | null;
@@ -116,7 +117,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     setExitArmed(true);
     exitArmTimeoutRef.current = setTimeout(() => setExitArmed(false), EXIT_CONFIRM_WINDOW_MS);
   };
-  const [displayMode, setDisplayMode] = useState<'cifra' | 'letra'>(
+  const [displayMode, setDisplayMode] = useState<'cifra' | 'letra' | 'sucinta'>(
     () => loadStagePrefs().displayMode ?? 'cifra'
   );
   const [fontSizeStep, setFontSizeStep] = useState(
@@ -474,6 +475,18 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Letra</span>
+              </button>
+              <button
+                onClick={() => setDisplayMode('sucinta')}
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all min-h-[36px] ${
+                  displayMode === 'sucinta'
+                    ? 'bg-brand text-slate-950 shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Letra Sucinta (cada parte repetida aparece uma vez, com a contagem)"
+              >
+                <ListCollapse className="w-3.5 h-3.5" />
+                <span>Sucinta</span>
               </button>
             </div>
 

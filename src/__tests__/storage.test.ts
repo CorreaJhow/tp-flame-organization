@@ -81,7 +81,8 @@ vi.mock('../services/firestoreHistorico', () => ({
 }));
 vi.mock('../services/firestoreLogs', () => ({
   addLogFirestore: vi.fn().mockResolvedValue(undefined),
-  getLogsFirestore: vi.fn().mockResolvedValue([])
+  getLogsFirestore: vi.fn().mockResolvedValue([]),
+  getFeedbacksFirestore: vi.fn().mockResolvedValue([])
 }));
 
 import { storage } from '../services/storage';
@@ -91,6 +92,36 @@ import * as fsNotas from '../services/firestoreNotas';
 import * as fsArquivos from '../services/firestoreArquivos';
 import * as fsCultos from '../services/firestoreCultos';
 import * as fsRepertorio from '../services/firestoreRepertorio';
+import * as fsLogs from '../services/firestoreLogs';
+
+describe('Feedbacks (aba própria, além dos 50 logs em memória)', () => {
+  const log = (ID: string, Data: string) => ({ ID, Data, Usuario: 'x', Acao: 'FEEDBACK', Registro_Afetado: '[BUG] y' });
+
+  it('ordena do mais novo ao mais antigo e não repete o registro que está em memória', async () => {
+    storage.addLog('FEEDBACK', '[BUG] local');
+    const local = storage.getLogs()[0];
+    vi.mocked(fsLogs.getFeedbacksFirestore).mockResolvedValueOnce([
+      log('antigo', '2026-01-01T00:00:00.000Z'),
+      { ...local, Usuario: 'Jhow' }
+    ]);
+
+    const { items, completo } = await storage.getFeedbacks();
+
+    expect(completo).toBe(true);
+    expect(items.map((i) => i.ID)).toEqual([local.ID, 'antigo']);
+    expect(items[0].Usuario).toBe('Jhow');
+  });
+
+  it('sem conexão, avisa que a lista está incompleta e mostra o que tem em memória', async () => {
+    storage.addLog('FEEDBACK', '[BUG] offline');
+    vi.mocked(fsLogs.getFeedbacksFirestore).mockRejectedValueOnce(new Error('offline'));
+
+    const { items, completo } = await storage.getFeedbacks();
+
+    expect(completo).toBe(false);
+    expect(items[0].Registro_Afetado).toBe('[BUG] offline');
+  });
+});
 
 describe('2. Admin (senha local do painel)', () => {
   beforeEach(() => {

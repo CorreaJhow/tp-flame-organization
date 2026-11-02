@@ -16,7 +16,8 @@ import {
   setDoc,
   query,
   orderBy,
-  limit
+  limit,
+  where
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { LogItem } from '../types';
@@ -28,6 +29,15 @@ const LIMITE_LOGS = 50;
 export async function getLogsFirestore(): Promise<LogItem[]> {
   const q = query(collection(db, COLLECTION), orderBy('Data', 'desc'), limit(LIMITE_LOGS));
   const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as LogItem);
+}
+
+/**
+ * Só filtra por Acao, sem orderBy: assim não precisa de índice composto no
+ * Firestore. A ordenação fica com quem chama. Só roda ao abrir a aba Feedbacks.
+ */
+export async function getFeedbacksFirestore(): Promise<LogItem[]> {
+  const snap = await getDocs(query(collection(db, COLLECTION), where('Acao', '==', 'FEEDBACK')));
   return snap.docs.map((d) => d.data() as LogItem);
 }
 

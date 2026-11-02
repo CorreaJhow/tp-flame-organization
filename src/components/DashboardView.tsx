@@ -9,7 +9,8 @@ import {
   Plus, 
   Sparkles,
   FileText,
-  MessageSquarePlus
+  Lightbulb,
+  Bug
 } from 'lucide-react';
 import { Culto, Musica, Versao, RepertorioItem, ViewTab } from '../types';
 
@@ -20,7 +21,7 @@ interface DashboardViewProps {
   onOpenStageMode: (culto: Culto) => void;
   onOpenNewCultoModal: () => void;
   onSelectSong?: (musica: Musica) => void;
-  onOpenFeedback?: () => void;
+  onOpenFeedback?: (mode: 'sugestao' | 'bug' | 'musica') => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -214,27 +215,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </button>
       </section>
 
-      {/* SUGGESTION / BUG REPORT BANNER */}
+      {/* SUGESTÃO, BUG E MÚSICA */}
       {onOpenFeedback && (
-        <button
-          onClick={onOpenFeedback}
-          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 hover:border-brand/30 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
-        >
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <MessageSquarePlus className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-white group-hover:text-brand transition-colors block">
-                Sugestões ou Problemas no App?
+        <section aria-label="Fale com a gente" className="grid grid-cols-3 gap-2">
+          {[
+            { mode: 'sugestao' as const, label: 'Sugestão', Icon: Lightbulb },
+            { mode: 'bug' as const, label: 'Reportar bug', Icon: Bug },
+            { mode: 'musica' as const, label: 'Sugerir música', Icon: Music2 }
+          ].map(({ mode, label, Icon }) => (
+            <button
+              key={mode}
+              onClick={() => onOpenFeedback(mode)}
+              className="bg-surface hover:bg-surface-hover border border-slate-800/80 hover:border-brand/30 rounded-2xl p-3 min-h-[76px] flex flex-col items-center justify-center gap-1.5 text-center transition-all active:scale-[0.98] group shadow-md"
+            >
+              <Icon className="w-5 h-5 text-brand" />
+              <span className="text-[11px] font-bold text-white group-hover:text-brand transition-colors leading-tight">
+                {label}
               </span>
-              <span className="text-[11px] text-slate-400">
-                Clique aqui para nos enviar uma ideia ou reportar um bug
-              </span>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" />
-        </button>
+            </button>
+          ))}
+        </section>
       )}
     </div>
   );
