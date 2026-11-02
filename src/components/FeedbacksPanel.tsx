@@ -57,8 +57,8 @@ export const FeedbacksPanel: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
+      <div className="flex items-start gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 flex-1">
           {FILTROS.map(({ id, label }) => (
             <button
               key={id}
