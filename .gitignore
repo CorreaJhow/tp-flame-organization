@@ -19,3 +19,9 @@ firestore.rules
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+
+# Estudos de letras: material pessoal do Jhow, so local (contem letras completas)
+docs/estudos-letras/
+
+# Skills são produto, ficam só local
+.claude/skills/
