@@ -220,6 +220,22 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                 <Layers className="w-3.5 h-3.5 text-brand" />
                 Versões Disponíveis ({versoes.length})
               </span>
+              {currentVersao && (
+                <button
+                  onClick={() => {
+                    const nova = storage.duplicateVersao(currentVersao.ID, `Cópia de ${currentVersao.Nome_Versao}`);
+                    if (!nova) return;
+                    onDataChanged();
+                    setSelectedVersaoId(nova.ID);
+                    showToast('Versão duplicada. Toque em Editar para ajustar nome, tom e cifra.', 'success');
+                  }}
+                  className="text-[11px] font-bold text-brand flex items-center gap-1 active:scale-95"
+                  title="Duplicar esta versão"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Duplicar versão
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">

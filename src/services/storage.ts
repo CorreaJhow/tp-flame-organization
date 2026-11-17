@@ -345,6 +345,31 @@ class StorageService {
     return { musica: newMusica, versao: newVersao };
   }
 
+  /** Duplica uma versão (só letra/tom/BPM; notas e arquivos não vão junto). */
+  public duplicateVersao(versaoId: string, nomeVersao: string, data: Partial<Versao> = {}): Versao | null {
+    const orig = this.versoes.find((v) => v.ID === versaoId);
+    if (!orig) return null;
+    const novo: Versao = { ...orig, ...data, Nome_Versao: nomeVersao, ID: generateUUID() };
+    this.versoes = [...this.versoes, novo];
+    this.notify();
+    fsVersoes.addVersaoFirestore(
+      {
+        ID_Musica: novo.ID_Musica,
+        Nome_Versao: novo.Nome_Versao,
+        Tom: novo.Tom,
+        Modo: novo.Modo,
+        BPM: novo.BPM,
+        Compasso: novo.Compasso,
+        Letra: novo.Letra,
+        Estrutura: novo.Estrutura,
+        Obs: novo.Obs
+      },
+      novo.ID
+    ).catch((err) => console.warn('[storage] Falha ao duplicar versão no Firestore:', err));
+    this.addLog('INSERT_VERSAO', `Versão "${nomeVersao}" criada`);
+    return novo;
+  }
+
   public addNota(notaData: Omit<Nota, 'ID'>): Nota {
     const id = generateUUID();
     const newNota: Nota = { ...notaData, ID: id };

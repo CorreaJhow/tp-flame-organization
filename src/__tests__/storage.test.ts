@@ -159,6 +159,29 @@ describe('2. Admin (senha local do painel)', () => {
  * toda mutação aparece instantaneamente no cache local (síncrono, sem
  * esperar a rede) e a exclusão em cascata continua funcionando.
  */
+describe('duplicateVersao', () => {
+  it('copia letra/tom na hora, com ID novo, na mesma música, e grava no Firestore', () => {
+    storage.stopRealtimeSync();
+    const { musica, versao } = storage.addMusicaWithVersao(
+      { Nome: 'Abraça-me (teste)', Artista: 'X', Categoria: 'Adoração' },
+      { Nome_Versao: 'Versão Principal', Tom: 'G', Letra: '[G] teste', Estrutura: 'V1', Obs: '' }
+    );
+    const nova = storage.duplicateVersao(versao.ID, 'Meio tom abaixo (F#)', { Tom: 'F#' });
+
+    expect(nova).not.toBeNull();
+    expect(nova!.ID).not.toBe(versao.ID);
+    expect(nova!.ID_Musica).toBe(musica.ID);
+    expect(nova!.Letra).toBe('[G] teste');
+    expect(nova!.Tom).toBe('F#');
+    expect(storage.getVersoes().filter((v) => v.ID_Musica === musica.ID)).toHaveLength(2);
+    expect(fsVersoes.addVersaoFirestore).toHaveBeenCalledWith(
+      expect.objectContaining({ Nome_Versao: 'Meio tom abaixo (F#)', Tom: 'F#' }),
+      nova!.ID
+    );
+    expect(storage.duplicateVersao('nao-existe', 'x')).toBeNull();
+  });
+});
+
 describe('3. Cache local otimista (contrato que a UI depende)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
