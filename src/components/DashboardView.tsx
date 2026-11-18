@@ -20,7 +20,7 @@ interface DashboardViewProps {
   onNavigate: (tab: ViewTab) => void;
   onOpenStageMode: (culto: Culto) => void;
   onOpenNewCultoModal: () => void;
-  onSelectSong?: (musica: Musica) => void;
+  onSelectSong?: (musica: Musica, ctx?: { versaoId: string; tom?: string }) => void;
   onOpenFeedback?: (mode: 'sugestao' | 'bug' | 'musica') => void;
 }
 
@@ -109,7 +109,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {upcomingRepertorio.slice(0, 4).map(({ item, versao, musica }, idx) => (
                     <div
                       key={item.ID}
-                      onClick={() => musica && onSelectSong?.(musica)}
+                      onClick={() => musica && onSelectSong?.(musica, { versaoId: item.ID_Versao, tom: item.Tom_Culto })}
                       className={`flex items-center justify-between text-xs bg-surface px-3 py-2 rounded-xl border border-slate-800/80 transition-all ${
                         musica ? 'cursor-pointer hover:border-slate-700 hover:bg-surface-hover group' : ''
                       }`}
