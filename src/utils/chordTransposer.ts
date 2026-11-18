@@ -28,6 +28,13 @@ export function getNextKey(currentKey: string, semitones: number): string {
   return CHROMATIC_SCALE_SHARPS[newIndex];
 }
 
+/** Semitons de `from` até `to` (0 se algum tom for desconhecido/vazio). */
+export function keyOffset(from: string, to?: string): number {
+  const a = KEY_MAPPINGS[(from || '').trim()];
+  const b = KEY_MAPPINGS[(to || '').trim()];
+  return a === undefined || b === undefined ? 0 : (b - a + 12) % 12;
+}
+
 // Simple chord transposer inside lyrics lines bracketed or inline
 export function transposeChord(chord: string, semitones: number): string {
   if (!chord || semitones === 0) return typeof chord === 'string' ? chord : String(chord || '');

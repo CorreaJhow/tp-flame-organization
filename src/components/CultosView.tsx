@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { formatKeyDisplay } from '../utils/chordTransposer';
+import { formatKeyDisplay, ALL_KEYS } from '../utils/chordTransposer';
 import { 
   Calendar, 
   Plus, 
@@ -34,7 +34,7 @@ interface CultosViewProps {
   onOpenStageMode: (culto: Culto) => void;
   onOpenNewCultoModal: () => void;
   onDataChanged: () => void;
-  onSelectSong?: (musica: Musica) => void;
+  onSelectSong?: (musica: Musica, ctx?: { versaoId: string; tom?: string }) => void;
   onNavigate?: (tab: string) => void;
 }
 
@@ -523,7 +523,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                     className="bg-surface border border-slate-800/80 hover:border-slate-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm transition-all"
                   >
                     <div
-                      onClick={() => musica && onSelectSong?.(musica)}
+                      onClick={() => musica && onSelectSong?.(musica, { versaoId: rep.ID_Versao, tom: rep.Tom_Culto })}
                       className={`flex items-center gap-3 min-w-0 flex-1 ${musica ? 'cursor-pointer group' : ''}`}
                       title={musica ? 'Clique para abrir detalhes, cifra e observações' : ''}
                     >
@@ -541,8 +541,25 @@ export const CultosView: React.FC<CultosViewProps> = ({
                           </h4>
                           {versao && (
                             <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-base text-amber-400 border border-slate-800">
-                              Tom {formatKeyDisplay(versao.Tom, versao.Modo)}
+                              Tom {formatKeyDisplay(rep.Tom_Culto || versao.Tom, versao.Modo)}
+                              {rep.Tom_Culto && rep.Tom_Culto !== versao.Tom && (
+                                <span className="text-slate-500 font-medium"> (orig. {formatKeyDisplay(versao.Tom, versao.Modo)})</span>
+                              )}
                             </span>
+                          )}
+                          {versao && (
+                            <select
+                              value={rep.Tom_Culto || ''}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => storage.setRepertorioTom(rep.ID, e.target.value)}
+                              className="text-[10px] font-bold rounded bg-base text-slate-300 border border-slate-800 px-1 py-0.5"
+                              title="Tom cantado neste culto (a música continua salva no tom original)"
+                            >
+                              <option value="">Tom do culto: original</option>
+                              {ALL_KEYS.map((k) => (
+                                <option key={k} value={k}>{formatKeyDisplay(k, versao.Modo)}</option>
+                              ))}
+                            </select>
                           )}
                           {versao?.BPM && (
                             <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-base text-slate-300 border border-slate-800">
@@ -586,7 +603,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                     <div className="flex items-center gap-1 shrink-0">
                       {musica && (
                         <button
-                          onClick={() => onSelectSong?.(musica)}
+                          onClick={() => onSelectSong?.(musica, { versaoId: rep.ID_Versao, tom: rep.Tom_Culto })}
                           className="p-1.5 rounded-lg bg-base hover:bg-brand/20 text-slate-300 hover:text-brand border border-slate-800 transition-colors flex items-center gap-1"
                           title="Ver Cifra e Detalhes da Música"
                         >

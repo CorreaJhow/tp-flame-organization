@@ -72,6 +72,8 @@ export interface RepertorioItem extends Auditavel {
   Ordem: number;
   Dirigente?: string;
   Observacao_Culto?: string;
+  // Tom em que a música foi cantada NESTE culto. Vazio/ausente = tom original da versão.
+  Tom_Culto?: string;
 }
 
 export interface Integrante extends Auditavel {

@@ -22,7 +22,7 @@ import {
   Check
 } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
-import { formatKeyDisplay } from '../utils/chordTransposer';
+import { formatKeyDisplay, keyOffset } from '../utils/chordTransposer';
 import { storage } from '../services/storage';
 import { ChordViewer } from './ChordViewer';
 import { SongFormModal } from './SongFormModal';
@@ -33,6 +33,8 @@ import { getVocalConfig } from '../utils/vocalColors';
 
 interface SongDetailModalProps {
   musica: Musica;
+  initialVersaoId?: string;
+  initialTom?: string; // tom salvo no culto de onde a ficha foi aberta
   versoes: Versao[];
   arquivos: Arquivo[];
   notas: Nota[];
@@ -42,6 +44,8 @@ interface SongDetailModalProps {
 
 export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   musica,
+  initialVersaoId,
+  initialTom,
   versoes,
   arquivos,
   notas,
@@ -52,9 +56,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const [showConfirmDeleteMusica, setShowConfirmDeleteMusica] = useState(false);
 
   const [selectedVersaoId, setSelectedVersaoId] = useState<string>(
-    versoes.length > 0 ? versoes[0].ID : ''
+    versoes.find((v) => v.ID === initialVersaoId)?.ID ?? (versoes.length > 0 ? versoes[0].ID : '')
   );
-  const [semitones, setSemitones] = useState<number>(0);
+  const [semitones, setSemitones] = useState<number>(() => {
+    const v = versoes.find((x) => x.ID === initialVersaoId);
+    return v ? keyOffset(v.Tom, initialTom) : 0;
+  });
   const [activeTab, setActiveTab] = useState<'letra' | 'notas' | 'arquivos'>('letra');
 
   // Edit Song Modal State

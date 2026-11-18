@@ -21,7 +21,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
-import { formatKeyDisplay } from '../utils/chordTransposer';
+import { formatKeyDisplay, keyOffset } from '../utils/chordTransposer';
 import { ChordViewer } from './ChordViewer';
 import { storage } from '../services/storage';
 import { getVocalConfig } from '../utils/vocalColors';
@@ -188,7 +188,9 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
     return currentVersao.Letra;
   }, [currentVersao, selectedLayerId, currentNotas]);
 
-  const currentKeyDisplay = currentVersao ? formatKeyDisplay(currentVersao.Tom, currentVersao.Modo, semitones) : 'C';
+  // Tom salvo para este culto + ajuste manual feito na hora (semitones).
+  const totalSemitones = (currentVersao ? keyOffset(currentVersao.Tom, currentRep?.Tom_Culto) : 0) + semitones;
+  const currentKeyDisplay = currentVersao ? formatKeyDisplay(currentVersao.Tom, currentVersao.Modo, totalSemitones) : 'C';
 
   // Sync BPM when current version changes
   useEffect(() => {
@@ -717,7 +719,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         <div className="w-full bg-base border border-slate-800/80 rounded-3xl p-4 sm:p-8 shadow-inner">
           <ChordViewer 
             text={currentDisplayText} 
-            semitones={semitones} 
+            semitones={totalSemitones}
             displayMode={displayMode}
             fontSizeStep={fontSizeStep}
             focusVoice={focusVoice}

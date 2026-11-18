@@ -161,6 +161,8 @@ function AppContent() {
   const [showNewCultoModal, setShowNewCultoModal] = useState(false);
   const [showNewMemberModal, setShowNewMemberModal] = useState(false);
   const [selectedSongForDetail, setSelectedSongForDetail] = useState<Musica | null>(null);
+  // Versão/tom do culto de onde a ficha foi aberta (vazio quando vem da biblioteca).
+  const [songDetailCtx, setSongDetailCtx] = useState<{ versaoId: string; tom?: string } | undefined>();
   const [stageModeCulto, setStageModeCulto] = useState<Culto | null>(null);
 
   // New Culto Form State
@@ -295,7 +297,7 @@ function AppContent() {
             onNavigate={(tab) => setCurrentTab(tab)}
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
-            onSelectSong={(musica) => setSelectedSongForDetail(musica)}
+            onSelectSong={(musica, ctx) => { setSelectedSongForDetail(musica); setSongDetailCtx(ctx); }}
             onOpenFeedback={(mode) => setFeedbackMode(mode)}
           />
         )}
@@ -306,7 +308,7 @@ function AppContent() {
             versoes={versoes}
             arquivos={arquivos}
             notas={notas}
-            onSelectSong={(musica) => setSelectedSongForDetail(musica)}
+            onSelectSong={(musica, ctx) => { setSelectedSongForDetail(musica); setSongDetailCtx(ctx); }}
             onOpenNewSongModal={() => setShowNewSongModal(true)}
           />
         )}
@@ -320,7 +322,7 @@ function AppContent() {
             onOpenStageMode={(culto) => setStageModeCulto(culto)}
             onOpenNewCultoModal={() => setShowNewCultoModal(true)}
             onDataChanged={refreshData}
-            onSelectSong={(musica) => setSelectedSongForDetail(musica)}
+            onSelectSong={(musica, ctx) => { setSelectedSongForDetail(musica); setSongDetailCtx(ctx); }}
             onNavigate={(tab) => setCurrentTab(tab)}
           />
         )}
@@ -388,6 +390,8 @@ function AppContent() {
         <Suspense fallback={<LazyFullScreenFallback />}>
           <SongDetailModal
             musica={selectedSongForDetail}
+            initialVersaoId={songDetailCtx?.versaoId}
+            initialTom={songDetailCtx?.tom}
             versoes={versoes.filter((v) => v.ID_Musica === selectedSongForDetail.ID)}
             arquivos={arquivos}
             notas={notas}

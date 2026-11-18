@@ -590,6 +590,15 @@ class StorageService {
     return newItem;
   }
 
+  /** Define o tom do culto neste item ('' = voltar ao tom original). */
+  public setRepertorioTom(repertorioId: string, tom: string) {
+    this.repertorio = this.repertorio.map((r) => (r.ID === repertorioId ? { ...r, Tom_Culto: tom } : r));
+    this.notify();
+    fsRepertorio.updateRepertorioItemFirestore(repertorioId, { Tom_Culto: tom }).catch((err) =>
+      console.warn('[storage] Falha ao salvar tom do culto:', err)
+    );
+  }
+
   public removeSongFromRepertorio(repertorioId: string) {
     this.repertorio = this.repertorio.filter((r) => r.ID !== repertorioId);
     this.notify();

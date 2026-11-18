@@ -24,7 +24,7 @@ export async function getRepertorioFirestore(): Promise<RepertorioItem[]> {
 
 type CamposEditaveisRepertorio = Pick<
   RepertorioItem,
-  'ID_Culto' | 'ID_Versao' | 'Ordem' | 'Dirigente' | 'Observacao_Culto'
+  'ID_Culto' | 'ID_Versao' | 'Ordem' | 'Dirigente' | 'Observacao_Culto' | 'Tom_Culto'
 >;
 
 export async function addRepertorioItemFirestore(
