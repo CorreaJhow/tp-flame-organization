@@ -113,7 +113,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
     const cultosList = storage.getCultos();
     const repList = storage.getRepertorio();
     const histList = storage.getHistorico();
-    return getLastPlayedInfo(currentVersao.ID, cultosList, repList, histList);
+    return getLastPlayedInfo(currentVersao.ID, cultosList, repList, histList, versoes);
   }, [currentVersao, versoes]);
 
   const handleStartCifrarBase = () => {

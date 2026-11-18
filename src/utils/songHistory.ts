@@ -12,14 +12,18 @@ export function getLastPlayedInfo(
   versaoId: string,
   cultos: Culto[],
   repertorio: RepertorioItem[],
-  historico: HistoricoItem[] = []
+  historico: HistoricoItem[] = [],
+  // Todas as versões cadastradas: a música conta como tocada em qualquer versão/tom dela.
+  todasVersoes: Versao[] = []
 ): LastPlayedInfo {
+  const musicaId = todasVersoes.find((v) => v.ID === versaoId)?.ID_Musica;
+  const ids = new Set([versaoId, ...todasVersoes.filter((v) => musicaId && v.ID_Musica === musicaId).map((v) => v.ID)]);
   const now = new Date();
   let mostRecentTimestamp: number | null = null;
   let matchedCultoName: string | undefined = undefined;
 
   // 1. Check in Repertório of Cultos that are either completed or occurred in the past
-  const setlistEntries = repertorio.filter((r) => r.ID_Versao === versaoId);
+  const setlistEntries = repertorio.filter((r) => ids.has(r.ID_Versao));
 
   for (const entry of setlistEntries) {
     const culto = cultos.find((c) => c.ID === entry.ID_Culto);
@@ -36,7 +40,7 @@ export function getLastPlayedInfo(
   }
 
   // 2. Check in Historico
-  const histEntries = historico.filter((h) => h.ID_Versao === versaoId);
+  const histEntries = historico.filter((h) => ids.has(h.ID_Versao));
   for (const h of histEntries) {
     if (h.Data_Execucao) {
       const hDate = new Date(h.Data_Execucao);

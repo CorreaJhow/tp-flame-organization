@@ -576,7 +576,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
                         {/* Last Played Badge on Card */}
                         {versao && (() => {
-                          const lp = getLastPlayedInfo(versao.ID, cultos, repertorio, storage.getHistorico());
+                          const lp = getLastPlayedInfo(versao.ID, cultos, repertorio, storage.getHistorico(), versoes);
                           if (lp.daysAgo === undefined) return null;
                           return (
                             <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1 mt-0.5">
@@ -897,7 +897,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                     return matchMusica(m, mv, songPickerQuery) ? mv : mv.filter((v) => v.ID === selectedVersaoIdToAdd);
                   }).map((v) => {
                     const m = musicas.find((item) => item.ID === v.ID_Musica);
-                    const lastPlayed = getLastPlayedInfo(v.ID, cultos, repertorio, storage.getHistorico());
+                    const lastPlayed = getLastPlayedInfo(v.ID, cultos, repertorio, storage.getHistorico(), versoes);
                     const flag = lastPlayed.isRecent ? ' ⚠️ (Tocada Recentemente)' : '';
                     return (
                       <option key={v.ID} value={v.ID}>
@@ -914,7 +914,8 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   selectedVersaoIdToAdd,
                   cultos,
                   repertorio,
-                  storage.getHistorico()
+                  storage.getHistorico(),
+                  versoes
                 );
                 return (
                   <div
