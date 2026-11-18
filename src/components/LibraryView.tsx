@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, Music2, Filter, Layers, FileText, ChevronRight } from 'lucide-react';
 import { Musica, Versao, Arquivo, Nota } from '../types';
 import { formatKeyDisplay } from '../utils/chordTransposer';
+import { matchMusica, sortMusicasAZ } from '../utils/songSearch';
 
 interface LibraryViewProps {
   musicas: Musica[];
@@ -27,8 +28,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const availableKeys = ['Todos', 'C', 'C#', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
   // Filter songs based on search, category, and key
+  // Cada item traz o trecho da letra quando o termo só foi achado nela.
   const filteredMusicas = useMemo(() => {
-    return musicas.filter((musica) => {
+    const trechos = new Map<string, string>();
+    const lista = sortMusicasAZ(musicas).filter((musica) => {
       const songVersoes = versoes.filter((v) => v.ID_Musica === musica.ID);
       
       // Category check
@@ -43,18 +46,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       }
 
       // Query check (Search in Name, Artist, Category, or Key in versions)
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = musica.Nome.toLowerCase().includes(q);
-        const matchesArtist = musica.Artista.toLowerCase().includes(q);
-        const matchesCat = musica.Categoria.toLowerCase().includes(q);
-        const matchesVersaoTom = songVersoes.some(v => v.Tom.toLowerCase().includes(q) || v.Nome_Versao.toLowerCase().includes(q));
-
-        return matchesName || matchesArtist || matchesCat || matchesVersaoTom;
-      }
-
+      const m = matchMusica(musica, songVersoes, searchQuery);
+      if (!m) return false;
+      if (m.trecho) trechos.set(musica.ID, m.trecho);
       return true;
     });
+    return { lista, trechos };
   }, [musicas, versoes, searchQuery, selectedCategory, selectedKey]);
 
   return (
@@ -89,7 +86,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Pesquisar por Nome, Artista, Categoria ou Tom (ex: Adoração, E)..."
+          placeholder="Pesquisar por nome, artista, tom ou trecho da letra..."
           className="w-full bg-surface border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand transition-colors"
         />
         {searchQuery && (
@@ -167,7 +164,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
       {/* Songs List */}
       <div className="space-y-2.5 pt-1">
-        {filteredMusicas.length === 0 ? (
+        {filteredMusicas.lista.length === 0 ? (
           <div className="text-center py-12 bg-surface rounded-2xl border border-slate-800/80 p-6 space-y-3">
             <Music2 className="w-10 h-10 text-slate-600 mx-auto" />
             <div>
@@ -185,7 +182,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             </button>
           </div>
         ) : (
-          filteredMusicas.map((musica) => {
+          filteredMusicas.lista.map((musica) => {
             const songVersoes = versoes.filter((v) => v.ID_Musica === musica.ID);
             const mainVersao = songVersoes[0];
             const songArquivosCount = songVersoes.reduce((acc, v) => acc + arquivos.filter(a => a.ID_Versao === v.ID).length, 0);
@@ -215,6 +212,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   <p className="text-xs text-slate-400 truncate font-medium">
                     {musica.Artista}
                   </p>
+                  {filteredMusicas.trechos.get(musica.ID) && (
+                    <p className="text-[11px] text-brand/90 italic truncate mt-0.5">
+                      Na letra: {filteredMusicas.trechos.get(musica.ID)}
+                    </p>
+                  )}
 
                   <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-2">
                     <span className="flex items-center gap-1">

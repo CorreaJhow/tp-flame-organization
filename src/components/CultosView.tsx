@@ -23,6 +23,7 @@ import { Culto, RepertorioItem, Versao, Musica } from '../types';
 import { storage } from '../services/storage';
 import { getLastPlayedInfo } from '../utils/songHistory';
 import { sortCultos } from '../utils/cultoOrder';
+import { matchMusica, sortMusicasAZ } from '../utils/songSearch';
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from '../context/ToastContext';
 
@@ -68,6 +69,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
   const [selectedVersaoIdToAdd, setSelectedVersaoIdToAdd] = useState('');
   const [dirigenteToAdd, setDirigenteToAdd] = useState('');
   const [obsToAdd, setObsToAdd] = useState('');
+  const [songPickerQuery, setSongPickerQuery] = useState('');
 
   // Edit culto modal state
   const [showEditCultoModal, setShowEditCultoModal] = useState(false);
@@ -487,7 +489,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
               <button
                 id="add-song-to-setlist-button"
-                onClick={() => setShowAddSongModal(true)}
+                onClick={() => { setSongPickerQuery(""); setShowAddSongModal(true); }}
                 className="py-1.5 px-3 rounded-xl bg-brand/10 text-brand hover:bg-brand/20 text-xs font-bold flex items-center gap-1 border border-brand/30 transition-all active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -504,7 +506,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 Nenhuma música no repertório deste culto.
               </p>
               <button
-                onClick={() => setShowAddSongModal(true)}
+                onClick={() => { setSongPickerQuery(""); setShowAddSongModal(true); }}
                 className="py-2 px-3.5 rounded-xl bg-brand text-slate-950 font-bold text-xs inline-flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -875,6 +877,13 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 <label className="text-xs font-bold text-slate-300 block mb-1">
                   Selecione a Versão da Música *
                 </label>
+                <input
+                  type="text"
+                  value={songPickerQuery}
+                  onChange={(e) => setSongPickerQuery(e.target.value)}
+                  placeholder="Buscar por nome, artista ou trecho da letra..."
+                  className="w-full bg-base border border-slate-800 rounded-xl p-3 mb-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                />
                 <select
                   value={selectedVersaoIdToAdd}
                   onChange={(e) => setSelectedVersaoIdToAdd(e.target.value)}
@@ -882,7 +891,11 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   required
                 >
                   <option value="">-- Escolha uma versão --</option>
-                  {versoes.map((v) => {
+                  {sortMusicasAZ(musicas).flatMap((m) => {
+                    const mv = versoes.filter((v) => v.ID_Musica === m.ID);
+                    // a versão já escolhida fica na lista mesmo se a busca não bater
+                    return matchMusica(m, mv, songPickerQuery) ? mv : mv.filter((v) => v.ID === selectedVersaoIdToAdd);
+                  }).map((v) => {
                     const m = musicas.find((item) => item.ID === v.ID_Musica);
                     const lastPlayed = getLastPlayedInfo(v.ID, cultos, repertorio, storage.getHistorico());
                     const flag = lastPlayed.isRecent ? ' ⚠️ (Tocada Recentemente)' : '';
