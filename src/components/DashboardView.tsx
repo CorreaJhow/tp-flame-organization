@@ -126,7 +126,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="flex items-center gap-2 shrink-0">
                         {versao?.Tom && (
                           <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#1f1f1f] text-amber-400 border border-amber-500/30">
-                            Tom {formatKeyDisplay(versao.Tom, versao.Modo)}
+                            Tom {formatKeyDisplay(item.Tom_Culto || versao.Tom, versao.Modo)}
                           </span>
                         )}
                         {musica && (
