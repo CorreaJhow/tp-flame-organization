@@ -10,7 +10,7 @@ Este arquivo reúne todas as convenções, arquitetura, padrões de código e in
 ---
 
 ## 🎯 Propósito do Projeto
-O **TP Flame** é uma plataforma Progressive Web App (PWA) para equipes de louvor e ministérios de música. Ele combina transposição instantânea de cifras, gestão de repertório e cultos, com suporte a funcionamento 100% offline no palco e sincronização serverless com o **Google Sheets** via **Google Sheets API v4 (Direto com OAuth)** e fallback via **Google Apps Script (GAS)**.
+O **TP Flame** é uma plataforma Progressive Web App (PWA) para equipes de louvor e ministérios de música. Ele combina transposição instantânea de cifras, gestão de repertório e cultos, com suporte a funcionamento 100% offline no palco e sincronização em tempo real com o **Firebase (Firestore + Authentication)**. O backend era Google Sheets/Apps Script até 09/2026; esse código (`gasScript.ts`, `googleSheetsApi.ts`, `googleAuth.ts`) é legado.
 
 ---
 
@@ -18,10 +18,10 @@ O **TP Flame** é uma plataforma Progressive Web App (PWA) para equipes de louvo
 
 - **Framework:** React 18 (TypeScript)
 - **Build Tool:** Vite
-- **Estilização:** Tailwind CSS (Dark Mode nativo `#080808` / `#121212` com acentos em Laranja Chama `#FF4D00`)
+- **Estilização:** Tailwind CSS v4. Tema **escuro (padrão, `#080808` / `#121212`)** e **claro (opção)**, acento Laranja Chama `#FF4D00`. Cores só por **tokens semânticos** de `src/index.css`: `text-fg`, `text-fg-muted`, `border-line`, `bg-canvas`, `bg-surface`, `bg-inset`, `text-brand-ink`. **Nunca** `text-white`, `text-slate-*`, `bg-slate-*`, `border-slate-*` ou hex solto de neutro (quebra o tema claro). Cor nova de token: nunca nomear `base`, `sm`, `lg` etc. (colide com classes de tamanho). Mexeu em cor? Rode `npm test` (contraste AA em `themeContrast.test.ts`) e confira nos dois temas.
 - **Ícones:** `lucide-react`
-- **Google Workspace Integration:** Google OAuth 2.0 (`googleAuth.ts`), Google Drive API v3 + Google Sheets API v4 (`googleSheetsApi.ts`)
-- **Armazenamento:** `localStorage` (Persistência Offline Local) + Fila de Sincronização (`SyncQueue`) + Dual Sync (Direct Sheets API / GAS Web App fallback)
+- **Backend:** Firebase Authentication (Google ou e-mail/senha, acesso só para a equipe) + Cloud Firestore (`src/services/firestore*.ts`). Ver `docs/PLANO-FASE4-MIGRACAO-FIREBASE.md`.
+- **Armazenamento:** cache em memória/`localStorage` + listeners em tempo real do Firestore (com cache offline do Firebase)
 - **PWA:** Service Worker nativo (`/public/sw.js`) + Manifest (`/public/manifest.json`)
 - **Testes:** Vitest + React Testing Library + JSDOM
 
@@ -35,24 +35,21 @@ O **TP Flame** é uma plataforma Progressive Web App (PWA) para equipes de louvo
 - Não introduza gerenciadores de estado externos pesados (Redux/Zustand) sem necessidade — o `storageService` unificado atende à persistência local de forma reativa.
 
 ### **2. Camada de Dados & Sincronização Resiliente (`/src/services/storage.ts`)**
-- Toda comunicação com o `localStorage`, Google Sheets API e Google Apps Script **deve obrigatoriamente passar por `storage` (`StorageService`)**.
-- As tabelas seguem o padrão da planilha Google:
+- Toda leitura/escrita de dados (Firestore e cache local) **deve obrigatoriamente passar por `storage` (`StorageService`)**, que usa os módulos `firestore*.ts`.
+- As coleções (herdadas do desenho da planilha original):
   - `Musicas`, `Versoes`, `Cultos`, `Repertorio`, `Integrantes`, `Arquivos`, `Notas`, `Historico`, `Logs`, `Config`.
-- **Fila de Sincronização Local (Sync Queue):** Todas as criações, edições e exclusões geram itens na fila persistente `tp_flame_sync_queue_v1`.
-- **Dual-Sync Strategy:**
-  1. **Primário:** Google Sheets API v4 direta (`https://sheets.googleapis.com/v4/spreadsheets/...`) com token OAuth ativo em memória.
-  2. **Fallback:** Google Apps Script Web App executável (`mode: 'no-cors'`).
-- **Merge Inteligente (Zero Data Loss):** Ao sincronizar com o Google Sheets, a aplicação processa a fila de mutações pendentes antes de efetuar o pull, e funde os dados locais e remotos garantindo que registros criados localmente nunca sejam sobrescritos ou apagados.
+- **Escrita:** otimista (atualiza a memória e notifica a tela na hora) e depois grava no Firestore; falha de gravação vai para `console.warn`. Exclusão é *soft-delete* (`Excluido_Em`). Toda gravação carimba `Atualizado_Em/Atualizado_Por`.
+- **Regras de segurança:** `firestore.rules` (fora do git; modelo em `firestore.rules.example`) só deixa ler/escrever quem está na lista de e-mails da equipe. Só o administrador publica as regras, no Firebase Console. Não validam campos: campo novo não precisa de mudança nelas.
+- **Tom por culto:** a música fica no tom original (`Versao.Tom`); o tom cantado em cada culto vai em `RepertorioItem.Tom_Culto` (vazio = original). Modo Palco, tela inicial e ficha usam `keyOffset(versao.Tom, Tom_Culto)`. **Não duplicar versão só para trocar de tom.** A última execução (`getLastPlayedInfo`) vale para a música inteira, não por versão.
 
 ### **3. Motor de Transposição Musical (`/src/utils/chordTransposer.ts`)**
 - Cifras no texto são representadas entre colchetes, por exemplo: `[E] Sobre o trono [B] Tu estás [C#m]`.
 - Ao modificar o algoritmo de transposição de acordes, **garanta compatibilidade com acordes invertidos (Slash Chords ex: `D/F#`) e extensões (ex: `7M`, `m7(b5)`, `add9`)**.
 - Sempre execute `npm test` para validar regressão na transposição cromática.
 
-### **4. Google Workspace OAuth & Sheets Hub**
-- Acesso à conta Google gerenciado via `/src/services/googleAuth.ts`.
-- Criação com 1 clique de planilhas formatadas de 10 abas no Drive do usuário via `/src/services/googleSheetsApi.ts`.
-- Listagem e seleção de planilhas existentes no Google Drive do usuário.
+### **4. Login (Firebase Auth)**
+- Estado de login em `/src/context/AuthContext.tsx`; sem usuário, o app mostra `LoginScreen`; usuário fora da lista da equipe vê a tela de acesso não autorizado.
+- Escrever dados por fora do app (SDK direto, scripts) só para migração/manutenção explícita; o fluxo normal é sempre pelo app.
 
 ### **5. PWA & Offline First**
 - O arquivo `/public/sw.js` deve utilizar a versão atualizada do cache (ex: `tp-flame-cache-v2`).

@@ -7,7 +7,8 @@
 > em [`INSTALAR-PLANILHA.md`](./INSTALAR-PLANILHA.md). Este arquivo é só o resumo
 > executivo: o que já foi feito, o que foi decidido, o que falta.
 >
-> Atualizado em: 08/09/2026 — **mudança grande**: o backend deixou de ser
+> Última atualização: 18/11/2026 (tom por culto, busca A–Z, tema claro/escuro — ver seção 2).
+> Mudança grande anterior (08/09/2026) — **mudança grande**: o backend deixou de ser
 > Google Sheets/Apps Script e passou a ser Firebase (Firestore + Auth), com
 > login obrigatório. Ver [`PLANO-FASE4-MIGRACAO-FIREBASE.md`](./PLANO-FASE4-MIGRACAO-FIREBASE.md)
 > pro relato completo — o resto deste arquivo ainda descreve a arquitetura
@@ -208,8 +209,8 @@ Em ordem aproximada de impacto:
    dias sem consulta ao banco — risco real dado o padrão de uso
    intermitente desta equipe.
 2. **OAuth token renewal** (Fase 2 item 3, adiado por decisão do usuário).
-3. **Consolidação de design tokens** — 11 valores hexadecimais de
-   cinza/preto usados ad-hoc sem sistema de tokens.
+3. ~~Consolidação de design tokens~~ — **concluído** (paleta em tokens; em 18/11/2026
+   virou também a base do tema claro, ver seção 2).
 4. ~~Code-splitting~~ — **concluído**, ver seção 2.
 5. **Cobertura de testes de componente** — 19 de 20 componentes sem teste
    nenhum (a lógica crítica do motor de sync está bem coberta; a UI não).

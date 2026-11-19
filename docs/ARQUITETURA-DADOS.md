@@ -56,7 +56,7 @@ próximo `syncWithGas()` o apaga do dispositivo.
 | `Arquivos` | ID, ID_Versao, Tipo, URL, Nome, +auditoria | → Versoes |
 | `Notas` | ID, ID_Versao, Instrumento, Observacao, **Autor, Titulo, TipoNota**, +auditoria | → Versoes |
 | `Cultos` | ID, Data, Nome_Evento, Status, Observacoes, +auditoria | — |
-| `Repertorio` | ID, ID_Culto, ID_Versao, Ordem, Dirigente, Observacao_Culto, +auditoria | → Cultos, Versoes |
+| `Repertorio` | ID, ID_Culto, ID_Versao, Ordem, Dirigente, Observacao_Culto, Tom_Culto (opcional: tom cantado no culto; vazio = tom da versão), +auditoria | → Cultos, Versoes |
 | `Integrantes` | ID, Nome, Funcao, Email, Telefone, Ativo, +auditoria | — |
 | `Historico` | ID, ID_Versao, ID_Culto, Data_Execucao, +auditoria | → Versoes, Cultos |
 | `Logs` | ID, Data, Usuario, Acao, Registro_Afetado | — (log e imutavel) |
