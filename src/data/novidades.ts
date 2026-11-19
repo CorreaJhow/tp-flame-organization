@@ -8,28 +8,23 @@ export interface NovidadeItem {
 }
 
 export const NOVIDADES: { id: string; itens: NovidadeItem[] } = {
-  id: '2026-11-letra-sucinta',
+  id: '2026-11-tema-e-tom-do-culto',
   itens: [
     {
-      titulo: 'Letra sucinta para quem canta',
-      texto:
-        'No Modo Palco, toque em "Sucinta". Cada parte repetida aparece uma vez só, com quantas vezes cantar. Exemplo: "Refrão (4x)".'
+      titulo: 'Tema claro e escuro',
+      texto: 'Toque no sol/lua no topo da tela (ou em Mais > Aparência, ou dentro do Modo Palco) para trocar. O escuro continua sendo o padrão.'
     },
     {
-      titulo: 'Cultos em ordem',
-      texto: 'O próximo culto vem primeiro. Os que já passaram ficam no fim da lista.'
+      titulo: 'Tom de cada culto',
+      texto: 'No card da música, em Cultos, escolha o "Tom do culto". A música continua salva no tom original e o Modo Palco já abre no tom escolhido.'
     },
     {
-      titulo: 'Sugerir uma música',
-      texto: 'Na tela inicial, envie o nome da música e o link do YouTube ou do Spotify.'
+      titulo: 'Músicas em ordem A–Z com busca',
+      texto: 'Na Biblioteca e ao adicionar música ao culto, a busca acha pelo nome, artista ou por um trecho da letra.'
     },
     {
-      titulo: 'Sugestão e bug separados',
-      texto: 'Agora cada um tem seu botão na tela inicial, o que facilita mandar sua ideia ou avisar de um problema.'
-    },
-    {
-      titulo: 'Mais acordes reconhecidos',
-      texto: 'Acordes como Gm7(11) e Am7(5+) agora mudam de tom junto com a música e não aparecem mais no meio da letra.'
+      titulo: 'Última vez tocada',
+      texto: 'Agora vale para a música inteira, em qualquer versão ou tom. Duplicar uma versão não zera mais essa informação.'
     }
   ]
 };

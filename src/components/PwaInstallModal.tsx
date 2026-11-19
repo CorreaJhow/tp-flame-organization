@@ -52,21 +52,21 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-surface border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-surface border border-line rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between bg-surface-hover">
+        <div className="p-5 border-b border-line/80 flex items-center justify-between bg-surface-hover">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shrink-0">
               <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white">Instalar App no Celular</h2>
-              <p className="text-xs text-slate-400">Tenha o TP Flame na sua tela inicial</p>
+              <h2 className="text-base font-extrabold text-fg">Instalar App no Celular</h2>
+              <p className="text-xs text-fg-muted">Tenha o TP Flame na sua tela inicial</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-base hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-canvas hover:bg-inset-2 text-fg-muted hover:text-fg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -79,8 +79,8 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({ isOpen, onClos
               <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-base font-bold text-white">App já Instalado!</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-base font-bold text-fg">App já Instalado!</h3>
+              <p className="text-xs text-fg-muted">
                 Você já está utilizando o TP Flame em modo aplicativo nativo.
               </p>
             </div>
@@ -90,8 +90,8 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({ isOpen, onClos
               {deferredPrompt && (
                 <div className="p-4 bg-gradient-to-r from-brand/20 to-transparent border border-brand/40 rounded-2xl space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-white">Instalação Rápida Detectada</span>
-                    <Download className="w-4 h-4 text-brand" />
+                    <span className="text-xs font-extrabold text-fg">Instalação Rápida Detectada</span>
+                    <Download className="w-4 h-4 text-brand-ink" />
                   </div>
                   <button
                     onClick={handleNativeInstall}
@@ -105,65 +105,65 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({ isOpen, onClos
 
               {/* Step-by-Step Instructions */}
               <div className="space-y-3">
-                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-fg-soft uppercase tracking-wider">
                   {deviceType === 'ios' ? '📱 Como Instalar no iPhone (iOS):' : '📱 Como Instalar no Android / Navegador:'}
                 </h3>
 
                 {deviceType === 'ios' ? (
-                  <ol className="space-y-2.5 text-xs text-slate-300">
-                    <li className="flex items-start gap-3 bg-base p-3 rounded-xl border border-slate-800">
-                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand font-black text-xs flex items-center justify-center shrink-0">1</span>
+                  <ol className="space-y-2.5 text-xs text-fg-soft">
+                    <li className="flex items-start gap-3 bg-canvas p-3 rounded-xl border border-line">
+                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand-ink font-black text-xs flex items-center justify-center shrink-0">1</span>
                       <div>
-                        <span className="font-bold text-white block">Abra no Safari</span>
-                        <span className="text-slate-400 text-[11px]">Certifique-se de estar usando o navegador Safari do seu iPhone.</span>
+                        <span className="font-bold text-fg block">Abra no Safari</span>
+                        <span className="text-fg-muted text-[11px]">Certifique-se de estar usando o navegador Safari do seu iPhone.</span>
                       </div>
                     </li>
 
-                    <li className="flex items-start gap-3 bg-base p-3 rounded-xl border border-slate-800">
-                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand font-black text-xs flex items-center justify-center shrink-0">2</span>
+                    <li className="flex items-start gap-3 bg-canvas p-3 rounded-xl border border-line">
+                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand-ink font-black text-xs flex items-center justify-center shrink-0">2</span>
                       <div>
-                        <span className="font-bold text-white flex items-center gap-1.5">
-                          Toque no botão Compartilhar <Share className="w-3.5 h-3.5 text-brand" />
+                        <span className="font-bold text-fg flex items-center gap-1.5">
+                          Toque no botão Compartilhar <Share className="w-3.5 h-3.5 text-brand-ink" />
                         </span>
-                        <span className="text-slate-400 text-[11px]">Localizado na barra inferior central do Safari.</span>
+                        <span className="text-fg-muted text-[11px]">Localizado na barra inferior central do Safari.</span>
                       </div>
                     </li>
 
-                    <li className="flex items-start gap-3 bg-base p-3 rounded-xl border border-slate-800">
-                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand font-black text-xs flex items-center justify-center shrink-0">3</span>
+                    <li className="flex items-start gap-3 bg-canvas p-3 rounded-xl border border-line">
+                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand-ink font-black text-xs flex items-center justify-center shrink-0">3</span>
                       <div>
-                        <span className="font-bold text-white flex items-center gap-1.5">
-                          Selecione "Adicionar à Tela de Início" <PlusSquare className="w-3.5 h-3.5 text-brand" />
+                        <span className="font-bold text-fg flex items-center gap-1.5">
+                          Selecione "Adicionar à Tela de Início" <PlusSquare className="w-3.5 h-3.5 text-brand-ink" />
                         </span>
-                        <span className="text-slate-400 text-[11px]">Role o menu para baixo até encontrar essa opção.</span>
+                        <span className="text-fg-muted text-[11px]">Role o menu para baixo até encontrar essa opção.</span>
                       </div>
                     </li>
                   </ol>
                 ) : (
-                  <ol className="space-y-2.5 text-xs text-slate-300">
-                    <li className="flex items-start gap-3 bg-base p-3 rounded-xl border border-slate-800">
-                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand font-black text-xs flex items-center justify-center shrink-0">1</span>
+                  <ol className="space-y-2.5 text-xs text-fg-soft">
+                    <li className="flex items-start gap-3 bg-canvas p-3 rounded-xl border border-line">
+                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand-ink font-black text-xs flex items-center justify-center shrink-0">1</span>
                       <div>
-                        <span className="font-bold text-white block">Menu do Navegador (3 Pontinhos)</span>
-                        <span className="text-slate-400 text-[11px]">Toque nos 3 pontinhos no canto superior direito do Chrome.</span>
+                        <span className="font-bold text-fg block">Menu do Navegador (3 Pontinhos)</span>
+                        <span className="text-fg-muted text-[11px]">Toque nos 3 pontinhos no canto superior direito do Chrome.</span>
                       </div>
                     </li>
 
-                    <li className="flex items-start gap-3 bg-base p-3 rounded-xl border border-slate-800">
-                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand font-black text-xs flex items-center justify-center shrink-0">2</span>
+                    <li className="flex items-start gap-3 bg-canvas p-3 rounded-xl border border-line">
+                      <span className="w-6 h-6 rounded-lg bg-brand/20 text-brand-ink font-black text-xs flex items-center justify-center shrink-0">2</span>
                       <div>
-                        <span className="font-bold text-white flex items-center gap-1.5">
+                        <span className="font-bold text-fg flex items-center gap-1.5">
                           Toque em "Instalar Aplicativo" ou "Adicionar à Tela Inicial"
                         </span>
-                        <span className="text-slate-400 text-[11px]">O ícone do TP Flame será adicionado diretamente à tela inicial.</span>
+                        <span className="text-fg-muted text-[11px]">O ícone do TP Flame será adicionado diretamente à tela inicial.</span>
                       </div>
                     </li>
                   </ol>
                 )}
               </div>
 
-              <div className="p-3 bg-base border border-slate-800 rounded-xl text-[11px] text-slate-400 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-brand shrink-0" />
+              <div className="p-3 bg-canvas border border-line rounded-xl text-[11px] text-fg-muted flex items-center gap-2">
+                <Flame className="w-4 h-4 text-brand-ink shrink-0" />
                 <span>O app roda em tela cheia, abre em 1 toque e recebe todas as atualizações automaticamente!</span>
               </div>
             </>

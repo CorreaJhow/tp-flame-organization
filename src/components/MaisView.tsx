@@ -1,3 +1,4 @@
+import { ThemeChoice } from './ThemeToggle';
 import React from 'react';
 import { Users, History, Shield, Activity, Music2, FileSpreadsheet, Calendar, ChevronRight, MessageSquarePlus, Smartphone, Sparkles } from 'lucide-react';
 import { ViewTab } from '../types';
@@ -26,10 +27,10 @@ export const MaisView: React.FC<MaisViewProps> = ({
   return (
     <div className="space-y-6 pb-28">
       <div>
-        <h2 className="text-xl font-extrabold text-white tracking-tight">
+        <h2 className="text-xl font-extrabold text-fg tracking-tight">
           Mais Opções
         </h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-fg-muted">
           Gerenciamento avançado, equipe de louvor e configurações do sistema
         </p>
       </div>
@@ -39,158 +40,163 @@ export const MaisView: React.FC<MaisViewProps> = ({
         {onOpenPwaModal && (
           <button
             onClick={onOpenPwaModal}
-            className="w-full bg-gradient-to-r from-surface-hover via-[#1a1512] to-[#251508] hover:from-[#202020] hover:to-[#2c180a] border border-brand/40 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-lg"
+            className="w-full bg-gradient-to-r from-surface-hover via-brand/5 to-brand/15 hover:from-chip hover:to-brand/20 border border-brand/40 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-lg"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-brand/20 text-brand border border-brand/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-11 h-11 rounded-xl bg-brand/20 text-brand-ink border border-brand/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Smartphone className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors flex items-center gap-2">
+                <h3 className="text-sm font-bold text-fg group-hover:text-brand-ink transition-colors flex items-center gap-2">
                   <span>Instalar App no Celular (PWA)</span>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     RECOMENDADO
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-fg-muted">
                   Adicione o ícone na tela inicial do iOS/Android para abrir em 1 toque
                 </p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+            <ChevronRight className="w-5 h-5 text-fg-subtle group-hover:text-fg transition-colors" />
           </button>
         )}
 
         <button
           onClick={onOpenFeedback}
-          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-line/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <MessageSquarePlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
+              <h3 className="text-sm font-bold text-fg group-hover:text-brand-ink transition-colors">
                 Sugestão, bug ou música
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-fg-muted">
                 Envie uma ideia, avise de um problema ou sugira uma música
               </p>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+          <ChevronRight className="w-5 h-5 text-fg-subtle group-hover:text-fg transition-colors" />
         </button>
 
         {onOpenNovidades && (
           <button
             onClick={onOpenNovidades}
-            className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+            className="w-full bg-surface hover:bg-surface-hover border border-line/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
+                <h3 className="text-sm font-bold text-fg group-hover:text-brand-ink transition-colors">
                   O que mudou no app
                 </h3>
-                <p className="text-xs text-slate-400">Veja de novo as novidades desta versão</p>
+                <p className="text-xs text-fg-muted">Veja de novo as novidades desta versão</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+            <ChevronRight className="w-5 h-5 text-fg-subtle group-hover:text-fg transition-colors" />
           </button>
         )}
 
         <button
           onClick={() => onNavigate('integrantes')}
-          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-line/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
+              <h3 className="text-sm font-bold text-fg group-hover:text-brand-ink transition-colors">
                 Equipe de Louvor
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-fg-muted">
                 {totalIntegrantes} integrantes cadastrados (vocalistas e instrumentistas)
               </p>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+          <ChevronRight className="w-5 h-5 text-fg-subtle group-hover:text-fg transition-colors" />
         </button>
 
         <button
           onClick={() => onNavigate('historico')}
-          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-line/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+              <h3 className="text-sm font-bold text-fg group-hover:text-blue-400 transition-colors">
                 Histórico & Registros
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-fg-muted">
                 Histórico de músicas executadas em cultos e auditoria
               </p>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+          <ChevronRight className="w-5 h-5 text-fg-subtle group-hover:text-fg transition-colors" />
         </button>
 
         <button
           onClick={() => onNavigate('admin')}
-          className="w-full bg-surface hover:bg-surface-hover border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
+          className="w-full bg-surface hover:bg-surface-hover border border-line/80 rounded-2xl p-4 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-md"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-brand transition-colors">
+              <h3 className="text-sm font-bold text-fg group-hover:text-brand-ink transition-colors">
                 Painel de Administração
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-fg-muted">
                 Configurações avançadas e status do banco de dados
               </p>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition-colors" />
+          <ChevronRight className="w-5 h-5 text-fg-subtle group-hover:text-fg transition-colors" />
         </button>
       </div>
 
       {/* Ministry Metrics Summary */}
-      <section className="bg-surface border border-slate-800/80 rounded-2xl p-4 shadow-md space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-brand" />
+      <section className="bg-surface border border-line/80 rounded-2xl p-4 shadow-md space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-fg-muted">Aparência</h3>
+        <ThemeChoice />
+      </section>
+
+      <section className="bg-surface border border-line/80 rounded-2xl p-4 shadow-md space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-fg-muted flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5 text-brand-ink" />
           Estatísticas do Ministério
         </h3>
         <div className="grid grid-cols-4 gap-2">
-          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
-            <Music2 className="w-4 h-4 text-brand mx-auto mb-1" />
-            <span className="text-base font-extrabold text-white block leading-none">{totalMusicas}</span>
-            <span className="text-[10px] text-slate-400">Músicas</span>
+          <div className="bg-canvas border border-line rounded-xl p-2.5 text-center">
+            <Music2 className="w-4 h-4 text-brand-ink mx-auto mb-1" />
+            <span className="text-base font-extrabold text-fg block leading-none">{totalMusicas}</span>
+            <span className="text-[10px] text-fg-muted">Músicas</span>
           </div>
 
-          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
+          <div className="bg-canvas border border-line rounded-xl p-2.5 text-center">
             <FileSpreadsheet className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-            <span className="text-base font-extrabold text-white block leading-none">{totalVersoes}</span>
-            <span className="text-[10px] text-slate-400">Versões</span>
+            <span className="text-base font-extrabold text-fg block leading-none">{totalVersoes}</span>
+            <span className="text-[10px] text-fg-muted">Versões</span>
           </div>
 
-          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
+          <div className="bg-canvas border border-line rounded-xl p-2.5 text-center">
             <Calendar className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-            <span className="text-base font-extrabold text-white block leading-none">{totalCultos}</span>
-            <span className="text-[10px] text-slate-400">Cultos</span>
+            <span className="text-base font-extrabold text-fg block leading-none">{totalCultos}</span>
+            <span className="text-[10px] text-fg-muted">Cultos</span>
           </div>
 
-          <div className="bg-base border border-slate-800 rounded-xl p-2.5 text-center">
+          <div className="bg-canvas border border-line rounded-xl p-2.5 text-center">
             <Users className="w-4 h-4 text-purple-400 mx-auto mb-1" />
-            <span className="text-base font-extrabold text-white block leading-none">{totalIntegrantes}</span>
-            <span className="text-[10px] text-slate-400">Equipe</span>
+            <span className="text-base font-extrabold text-fg block leading-none">{totalIntegrantes}</span>
+            <span className="text-[10px] text-fg-muted">Equipe</span>
           </div>
         </div>
       </section>

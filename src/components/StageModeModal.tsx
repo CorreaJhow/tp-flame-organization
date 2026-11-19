@@ -21,6 +21,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { Culto, RepertorioItem, Versao, Musica, Nota } from '../types';
+import { ThemeToggle } from './ThemeToggle';
 import { formatKeyDisplay, keyOffset } from '../utils/chordTransposer';
 import { ChordViewer } from './ChordViewer';
 import { storage } from '../services/storage';
@@ -369,9 +370,9 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
   if (!currentRep || !currentVersao || !currentMusica) {
     return (
-      <div className="fixed inset-0 z-50 bg-base flex items-center justify-center p-4 text-white">
+      <div className="fixed inset-0 z-50 bg-canvas flex items-center justify-center p-4 text-fg">
         <div className="text-center space-y-3">
-          <p className="text-sm text-slate-400">Nenhuma música no repertório para o Modo Palco.</p>
+          <p className="text-sm text-fg-muted">Nenhuma música no repertório para o Modo Palco.</p>
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl bg-brand text-slate-950 font-bold text-xs">
             Fechar
           </button>
@@ -381,9 +382,9 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-base text-white flex flex-col font-sans overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-canvas text-fg flex flex-col font-sans overflow-hidden">
       {/* Top Fixed Controls Bar */}
-      <div className="bg-surface border-b border-slate-800 px-3 py-2 sticky top-0 z-40 shadow-2xl space-y-2">
+      <div className="bg-surface border-b border-line px-3 py-2 sticky top-0 z-40 shadow-2xl space-y-2">
         {/* Linha 1: navegação entre músicas + sair. Sempre visível e sem
             disputar espaço com as ferramentas — é o que mais precisa estar
             fácil de acertar no meio de uma música, no palco. */}
@@ -392,14 +393,14 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             <button
               onClick={handlePrevSong}
               disabled={currentIndex === 0}
-              className="p-2.5 rounded-xl bg-surface-hover hover:bg-[#222] disabled:opacity-20 transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
+              className="p-2.5 rounded-xl bg-surface-hover hover:bg-chip disabled:opacity-20 transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
               title="Música Anterior (Seta Esquerda)"
             >
-              <ChevronLeft className="w-5 h-5 text-brand" />
+              <ChevronLeft className="w-5 h-5 text-brand-ink" />
             </button>
 
             <div className="min-w-0 flex-1">
-              <span className="text-[11px] font-black text-brand uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-[11px] font-black text-brand-ink uppercase tracking-wider flex items-center gap-1.5">
                 {currentIndex + 1} DE {setlist.length}
                 {!isOnline && (
                   <span
@@ -411,7 +412,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                   </span>
                 )}
               </span>
-              <h2 className="text-xs sm:text-sm font-extrabold text-white leading-tight truncate">
+              <h2 className="text-xs sm:text-sm font-extrabold text-fg leading-tight truncate">
                 {currentMusica.Nome}
               </h2>
             </div>
@@ -435,8 +436,8 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             onClick={handleExitTap}
             className={`py-2.5 px-3 rounded-xl text-white font-extrabold text-xs flex items-center gap-1 shrink-0 shadow-lg active:scale-95 transition-all border min-h-[40px] ${
               exitArmed
-                ? 'bg-red-500 border-red-300 ring-2 ring-red-400/60 animate-pulse'
-                : 'bg-red-600 hover:bg-red-700 border-red-400/30'
+                ? 'bg-red-600 border-red-300 ring-2 ring-red-400/60 animate-pulse'
+                : 'bg-red-700 hover:bg-red-800 border-red-400/30'
             }`}
             title={exitArmed ? 'Toque de novo pra confirmar' : 'Sair do Modo Palco (Esc)'}
           >
@@ -453,13 +454,13 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         <div className="relative -mx-3 px-3">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {/* Display Mode Toggle (Cifra / Letra) */}
-            <div className="bg-base p-1 border border-slate-800 rounded-xl flex items-center gap-1 shrink-0">
+            <div className="bg-canvas p-1 border border-line rounded-xl flex items-center gap-1 shrink-0">
               <button
                 onClick={() => setDisplayMode('cifra')}
                 className={`px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all min-h-[36px] ${
                   displayMode === 'cifra'
                     ? 'bg-brand text-slate-950 shadow-md'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-fg-muted hover:text-fg'
                 }`}
                 title="Modo Cifra (para Instrumentistas)"
               >
@@ -471,7 +472,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                 className={`px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all min-h-[36px] ${
                   displayMode === 'letra'
                     ? 'bg-brand text-slate-950 shadow-md'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-fg-muted hover:text-fg'
                 }`}
                 title="Modo Letra (para Vocais - Fonte Grande)"
               >
@@ -483,7 +484,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                 className={`px-2.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all min-h-[36px] ${
                   displayMode === 'sucinta'
                     ? 'bg-brand text-slate-950 shadow-md'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-fg-muted hover:text-fg'
                 }`}
                 title="Letra Sucinta (cada parte repetida aparece uma vez, com a contagem)"
               >
@@ -493,20 +494,20 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             </div>
 
             {/* Font Sizing Controls (A- / A+) */}
-            <div className="bg-base p-1 border border-slate-800 rounded-xl flex items-center gap-0.5 shrink-0">
+            <div className="bg-canvas p-1 border border-line rounded-xl flex items-center gap-0.5 shrink-0">
               <button
                 onClick={() => setFontSizeStep((s) => Math.max(-1, s - 1))}
                 disabled={fontSizeStep <= -1}
-                className="p-2 rounded text-slate-400 hover:text-white disabled:opacity-30 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                className="p-2 rounded text-fg-muted hover:text-fg disabled:opacity-30 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Diminuir Fonte"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[12px] font-bold text-slate-300 px-1">A</span>
+              <span className="text-[12px] font-bold text-fg-soft px-1">A</span>
               <button
                 onClick={() => setFontSizeStep((s) => Math.min(3, s + 1))}
                 disabled={fontSizeStep >= 3}
-                className="p-2 rounded text-slate-400 hover:text-white disabled:opacity-30 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                className="p-2 rounded text-fg-muted hover:text-fg disabled:opacity-30 min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Aumentar Fonte"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -515,18 +516,18 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
             {/* Transposer (Only in Cifra mode or when applicable) */}
             {displayMode === 'cifra' && (
-              <div className="flex items-center gap-1 bg-base border border-slate-800 p-1 rounded-xl shrink-0">
+              <div className="flex items-center gap-1 bg-canvas border border-line p-1 rounded-xl shrink-0">
                 <button
                   onClick={() => setSemitones((s) => s - 1)}
-                  className="p-2 rounded text-brand hover:bg-surface-hover min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  className="p-2 rounded text-brand-ink hover:bg-surface-hover min-w-[36px] min-h-[36px] flex items-center justify-center"
                   title="Baixar 1 Tom"
                 >
                   <ArrowDown className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-xs font-black text-brand px-1">{currentKeyDisplay}</span>
+                <span className="text-xs font-black text-brand-ink px-1">{currentKeyDisplay}</span>
                 <button
                   onClick={() => setSemitones((s) => s + 1)}
-                  className="p-2 rounded text-brand hover:bg-surface-hover min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  className="p-2 rounded text-brand-ink hover:bg-surface-hover min-w-[36px] min-h-[36px] flex items-center justify-center"
                   title="Subir 1 Tom"
                 >
                   <ArrowUp className="w-3.5 h-3.5" />
@@ -534,12 +535,14 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               </div>
             )}
 
+            <ThemeToggle className="shrink-0 min-h-[36px]" />
+
             <button
               onClick={() => setShowNotes(!showNotes)}
               className={`p-2.5 rounded-xl border transition-colors shrink-0 min-w-[40px] min-h-[36px] flex items-center justify-center ${
                 showNotes
                   ? 'bg-brand text-slate-950 border-brand font-bold'
-                  : 'bg-surface-hover text-slate-300 border-slate-800'
+                  : 'bg-surface-hover text-fg-soft border-line'
               }`}
               title="Ver Observações de Arranjo"
             >
@@ -567,29 +570,29 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header Info Banner */}
-        <div className="bg-surface border border-slate-800/80 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
+        <div className="bg-surface border border-line/80 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
           <div>
-            <span className="text-slate-400 block font-medium">{currentMusica.Artista}</span>
+            <span className="text-fg-muted block font-medium">{currentMusica.Artista}</span>
             {currentRep.Dirigente && (
-              <span className="text-brand font-bold block mt-0.5">
+              <span className="text-brand-ink font-bold block mt-0.5">
                 Ministro: {currentRep.Dirigente}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="bg-base border border-slate-800 px-2.5 py-1 rounded-xl text-center">
-              <span className="text-[12px] text-slate-500 uppercase font-bold block">Tom</span>
+            <div className="bg-canvas border border-line px-2.5 py-1 rounded-xl text-center">
+              <span className="text-[12px] text-fg-subtle uppercase font-bold block">Tom</span>
               <span className="text-xs font-black text-amber-400">{currentKeyDisplay}</span>
             </div>
 
-            <div className="bg-base border border-slate-800 px-2.5 py-1 rounded-xl text-center">
-              <span className="text-[12px] text-slate-500 uppercase font-bold block">Tempo</span>
-              <span className="text-xs font-black text-slate-200">{customBpm} BPM</span>
+            <div className="bg-canvas border border-line px-2.5 py-1 rounded-xl text-center">
+              <span className="text-[12px] text-fg-subtle uppercase font-bold block">Tempo</span>
+              <span className="text-xs font-black text-fg-2">{customBpm} BPM</span>
             </div>
 
             {currentVersao.Estrutura && (
-              <div className="text-[12px] text-slate-300 font-mono bg-base px-2.5 py-1 rounded-xl border border-slate-800">
+              <div className="text-[12px] text-fg-soft font-mono bg-canvas px-2.5 py-1 rounded-xl border border-line">
                 {currentVersao.Estrutura}
               </div>
             )}
@@ -597,15 +600,15 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         </div>
 
         {/* Vocal Division & Voice Focus Mode Bar */}
-        <div className="bg-surface border border-slate-800/80 rounded-2xl p-3 space-y-2 shadow-sm">
+        <div className="bg-surface border border-line/80 rounded-2xl p-3 space-y-2 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowVocalHighlights(!showVocalHighlights)}
                 className={`px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
                   showVocalHighlights
-                    ? 'bg-brand/20 text-brand border border-brand/40'
-                    : 'bg-base text-slate-500 border border-slate-800'
+                    ? 'bg-brand/20 text-brand-ink border border-brand/40'
+                    : 'bg-canvas text-fg-subtle border border-line'
                 }`}
                 title="Ativar/Desativar Destaques de Vozes"
               >
@@ -623,9 +626,9 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
             {/* Custom Musician Chord Layer Selector (if any member has custom notes/cifras) */}
             {customChordLayers.length > 0 && (
-              <div className="flex items-center gap-1 bg-base p-1 rounded-xl border border-slate-800 text-xs">
-                <span className="text-[12px] text-slate-400 font-bold px-1 flex items-center gap-1">
-                  <Layers className="w-3 h-3 text-brand" />
+              <div className="flex items-center gap-1 bg-canvas p-1 rounded-xl border border-line text-xs">
+                <span className="text-[12px] text-fg-muted font-bold px-1 flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-brand-ink" />
                   Camada:
                 </span>
                 <button
@@ -633,7 +636,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                   className={`px-2 py-0.5 rounded-lg text-[13px] font-bold transition-colors ${
                     selectedLayerId === 'oficial'
                       ? 'bg-brand text-slate-950'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-fg-muted hover:text-fg'
                   }`}
                 >
                   Oficial
@@ -645,7 +648,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                     className={`px-2 py-0.5 rounded-lg text-[13px] font-bold transition-colors ${
                       selectedLayerId === layer.ID
                         ? 'bg-brand text-slate-950'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-fg-muted hover:text-fg'
                     }`}
                   >
                     {layer.Instrumento}
@@ -657,17 +660,17 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
           {/* Quick Voice Focus Filter Chips */}
           {showVocalHighlights && (
-            <div className="relative pt-1 border-t border-slate-800/60">
+            <div className="relative pt-1 border-t border-line/60">
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[12px] font-bold text-slate-500 uppercase shrink-0">
+                <span className="text-[12px] font-bold text-fg-subtle uppercase shrink-0">
                   Filtrar Foco:
                 </span>
                 <button
                   onClick={() => setFocusVoice(null)}
                   className={`px-2.5 py-1.5 rounded-xl text-[13px] font-bold shrink-0 transition-all ${
                     focusVoice === null
-                      ? 'bg-white text-slate-950 shadow-md font-extrabold scale-105'
-                      : 'bg-surface-hover text-slate-400 hover:text-white border border-slate-800'
+                      ? 'bg-fg text-canvas shadow-md font-extrabold scale-105'
+                      : 'bg-surface-hover text-fg-muted hover:text-fg border border-line'
                   }`}
                 >
                   Todas as Vozes
@@ -682,8 +685,8 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
                       onClick={() => setFocusVoice(isSelected ? null : vocal)}
                       className={`px-2.5 py-1.5 rounded-xl text-[13px] font-extrabold border shrink-0 transition-all ${
                         isSelected
-                          ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105 shadow-md`
-                          : 'bg-surface-hover border-slate-800 text-slate-400 hover:text-slate-200'
+                          ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-fg/50 scale-105 shadow-md`
+                          : 'bg-surface-hover border-line text-fg-muted hover:text-fg-2'
                       }`}
                     >
                       {isSelected ? `✓ ${vocal}` : vocal}
@@ -700,15 +703,15 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         {/* Instrument Notes Box */}
         {showNotes && (
           <div className="bg-surface border border-brand/40 rounded-2xl p-4 space-y-2 animate-in fade-in">
-            <span className="text-xs font-black text-brand uppercase tracking-wider block">
+            <span className="text-xs font-black text-brand-ink uppercase tracking-wider block">
               Observações do Arranjo
             </span>
             {currentNotas.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">Nenhuma observação cadastrada.</p>
+              <p className="text-xs text-fg-subtle italic">Nenhuma observação cadastrada.</p>
             ) : (
               currentNotas.map((n) => (
-                <div key={n.ID} className="text-xs text-slate-200">
-                  <strong className="text-brand">[{n.Instrumento}]</strong>: {n.Observacao}
+                <div key={n.ID} className="text-xs text-fg-2">
+                  <strong className="text-brand-ink">[{n.Instrumento}]</strong>: {n.Observacao}
                 </div>
               ))
             )}
@@ -716,7 +719,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
         )}
 
         {/* 100% Width Formatted Cifra & Letra Display */}
-        <div className="w-full bg-base border border-slate-800/80 rounded-3xl p-4 sm:p-8 shadow-inner">
+        <div className="w-full bg-canvas border border-line/80 rounded-3xl p-4 sm:p-8 shadow-inner">
           <ChordViewer 
             text={currentDisplayText} 
             semitones={totalSemitones}
@@ -730,7 +733,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
       </div>
 
       {/* Bottom Floating Bar: Auto-Scroll Speed Controls & Quick Toggles */}
-      <div className="bg-surface border-t border-slate-800/80 p-3 flex flex-wrap items-center justify-between gap-2 sticky bottom-0 z-40">
+      <div className="bg-surface border-t border-line/80 p-3 flex flex-wrap items-center justify-between gap-2 sticky bottom-0 z-40">
         <div className="flex items-center gap-2">
           {/* Play/Pause Auto-Scroll */}
           <button
@@ -738,7 +741,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             className={`py-2 px-4 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-md ${
               isAutoScrolling
                 ? 'bg-brand text-slate-950 ring-2 ring-brand/50'
-                : 'bg-surface-hover text-slate-300 border border-slate-700 hover:bg-[#222]'
+                : 'bg-surface-hover text-fg-soft border border-line-strong hover:bg-chip'
             }`}
           >
             {isAutoScrolling ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
@@ -747,14 +750,14 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
 
           {/* Speed Selector Presets */}
           <div className="relative min-w-0">
-            <div className="flex items-center gap-1 bg-base p-1 rounded-xl border border-slate-800 text-xs font-black overflow-x-auto no-scrollbar">
-              <span className="text-[12px] text-slate-500 px-1 font-bold shrink-0">VEL:</span>
+            <div className="flex items-center gap-1 bg-canvas p-1 rounded-xl border border-line text-xs font-black overflow-x-auto no-scrollbar">
+              <span className="text-[12px] text-fg-subtle px-1 font-bold shrink-0">VEL:</span>
               {[0.5, 1, 1.5, 2, 3, 4].map((speed) => (
                 <button
                   key={speed}
                   onClick={() => setScrollSpeed(speed)}
                   className={`px-2.5 py-2 rounded-lg text-[13px] shrink-0 min-h-[36px] transition-colors ${
-                    scrollSpeed === speed ? 'bg-brand text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                    scrollSpeed === speed ? 'bg-brand text-slate-950 font-bold' : 'text-fg-muted hover:text-fg'
                   }`}
                 >
                   {speed}x
@@ -762,14 +765,14 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
               ))}
             </div>
             {/* Sombra indicando que a linha rola pra direita */}
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-base to-transparent rounded-r-xl" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-canvas to-transparent rounded-r-xl" />
           </div>
         </div>
 
         {/* Shortcuts Hint & Exit */}
         <div className="flex items-center gap-2">
-          <span className="hidden lg:inline-block text-[12px] text-slate-500 font-mono bg-base px-2 py-1 rounded-lg border border-slate-800">
-            Atalhos: <span className="text-slate-300">Espaço</span> (Play/Pause) | <span className="text-slate-300">L</span> (Letra/Cifra) | <span className="text-slate-300">Seta</span> (Músicas)
+          <span className="hidden lg:inline-block text-[12px] text-fg-subtle font-mono bg-canvas px-2 py-1 rounded-lg border border-line">
+            Atalhos: <span className="text-fg-soft">Espaço</span> (Play/Pause) | <span className="text-fg-soft">L</span> (Letra/Cifra) | <span className="text-fg-soft">Seta</span> (Músicas)
           </span>
 
           <button
@@ -779,7 +782,7 @@ export const StageModeModal: React.FC<StageModeModalProps> = ({
             className={`py-2 px-3.5 rounded-xl font-bold text-xs flex items-center gap-1.5 border transition-all active:scale-95 ${
               exitArmed
                 ? 'bg-red-950/80 text-red-400 border-red-500/50 animate-pulse'
-                : 'bg-slate-800 hover:bg-red-950/80 text-slate-300 hover:text-red-400 border-slate-700'
+                : 'bg-inset-2 hover:bg-red-950/80 text-fg-soft hover:text-red-400 border-line-strong'
             }`}
           >
             <LogOut className="w-3.5 h-3.5" />

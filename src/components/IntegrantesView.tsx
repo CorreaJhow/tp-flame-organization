@@ -107,7 +107,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
       {onNavigate && (
         <button
           onClick={() => onNavigate('mais')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline bg-surface border border-slate-800/80 px-3 py-2 rounded-xl transition-all active:scale-95"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-ink hover:underline bg-surface border border-line/80 px-3 py-2 rounded-xl transition-all active:scale-95"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para Mais</span>
@@ -117,11 +117,11 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Users className="w-5 h-5 text-brand" />
+          <h2 className="text-xl font-extrabold text-fg tracking-tight flex items-center gap-2">
+            <Users className="w-5 h-5 text-brand-ink" />
             Equipe de Louvor
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-fg-muted">
             {integrantes.length} integrantes com funções flexíveis e multi-instrumentistas
           </p>
         </div>
@@ -138,11 +138,11 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
 
       {/* Team Cards Grid */}
       {integrantes.length === 0 ? (
-        <div className="text-center py-12 bg-surface rounded-2xl border border-slate-800/80 p-6 space-y-3">
-          <Users className="w-10 h-10 text-slate-600 mx-auto" />
+        <div className="text-center py-12 bg-surface rounded-2xl border border-line/80 p-6 space-y-3">
+          <Users className="w-10 h-10 text-fg-faint mx-auto" />
           <div>
-            <h3 className="text-sm font-bold text-white">Nenhum integrante cadastrado</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-sm font-bold text-fg">Nenhum integrante cadastrado</h3>
+            <p className="text-xs text-fg-muted">
               Cadastre os vocalistas e instrumentistas da sua equipe para montar escalas de louvor.
             </p>
           </div>
@@ -162,15 +162,15 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
             return (
               <div
                 key={member.ID}
-                className="bg-surface border border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-md relative group hover:border-slate-700 transition-colors"
+                className="bg-surface border border-line/80 rounded-2xl p-4 space-y-3 shadow-md relative group hover:border-line-strong transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand font-black text-sm flex items-center justify-center border border-brand/20 shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand-ink font-black text-sm flex items-center justify-center border border-brand/20 shrink-0">
                       {member.Nome.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white leading-tight">
+                      <h3 className="text-sm font-bold text-fg leading-tight">
                         {member.Nome}
                       </h3>
 
@@ -179,7 +179,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                         {roles.map((r) => (
                           <span
                             key={r}
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand/10 text-brand border border-brand/20 inline-block"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand/10 text-brand-ink border border-brand/20 inline-block"
                           >
                             {r}
                           </span>
@@ -192,14 +192,14 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEdit(member)}
-                      className="p-1.5 text-slate-400 hover:text-brand hover:bg-[#1f1f1f] rounded-lg transition-colors"
+                      className="p-1.5 text-fg-muted hover:text-brand-ink hover:bg-chip rounded-lg transition-colors"
                       title="Editar Integrante"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteMember(member.ID, member.Nome)}
-                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors"
+                      className="p-1.5 text-fg-muted hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors"
                       title="Remover Integrante"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -207,16 +207,16 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                   </div>
                 </div>
 
-                <div className="text-xs space-y-1 pt-2 text-slate-400 border-t border-slate-800/60">
+                <div className="text-xs space-y-1 pt-2 text-fg-muted border-t border-line/60">
                   {member.Email && (
                     <div className="flex items-center gap-1.5 truncate">
-                      <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <Mail className="w-3.5 h-3.5 text-fg-subtle shrink-0" />
                       <span className="truncate">{member.Email}</span>
                     </div>
                   )}
                   {member.Telefone && (
                     <div className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <Phone className="w-3.5 h-3.5 text-fg-subtle shrink-0" />
                       <span>{member.Telefone}</span>
                     </div>
                   )}
@@ -230,19 +230,19 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
       {/* New / Edit Member Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-slate-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="text-sm font-bold text-white">
+          <div className="bg-surface border border-line w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-line pb-2">
+              <h3 className="text-sm font-bold text-fg">
                 {editingMember ? 'Editar Integrante' : 'Novo Integrante'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowModal(false)} className="text-fg-muted hover:text-fg">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Nome Completo *
                 </label>
                 <input
@@ -250,17 +250,17 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="ex: Davi Silva"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               {/* Multi-Instrument Selection Chips */}
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Funções & Instrumentos (Selecione todas que se aplicam)
                 </label>
-                <div className="flex flex-wrap gap-1.5 bg-base p-3 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap gap-1.5 bg-canvas p-3 rounded-xl border border-line">
                   {AVAILABLE_ROLES.map((role) => {
                     const isSelected = selectedFuncoes.includes(role);
                     return (
@@ -271,7 +271,7 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                         className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
                           isSelected
                             ? 'bg-brand text-slate-950 font-extrabold shadow-sm'
-                            : 'bg-surface-hover text-slate-400 border border-slate-800 hover:text-white'
+                            : 'bg-surface-hover text-fg-muted border border-line hover:text-fg'
                         }`}
                       >
                         {isSelected && <Check className="w-3 h-3" />}
@@ -280,13 +280,13 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[10px] text-fg-subtle mt-1">
                   Selecione múltiplos instrumentos para o mesmo integrante (ex: Ministro + Baixo + Violão).
                 </p>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   E-mail
                 </label>
                 <input
@@ -294,12 +294,12 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="ex: davi@tpflame.org"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Telefone / WhatsApp
                 </label>
                 <input
@@ -307,15 +307,15 @@ export const IntegrantesView: React.FC<IntegrantesViewProps> = ({
                   value={telefone}
                   onChange={(e) => setTelefone(e.target.value)}
                   placeholder="(11) 98765-4321"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-2 text-xs text-slate-400"
+                  className="px-3 py-2 text-xs text-fg-muted"
                 >
                   Cancelar
                 </button>

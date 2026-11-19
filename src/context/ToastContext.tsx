@@ -53,19 +53,19 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               key={toast.id}
               className={`pointer-events-auto flex items-center justify-between gap-3 p-3.5 rounded-2xl border shadow-2xl backdrop-blur-md transition-all animate-in slide-in-from-bottom-5 duration-200 ${
                 isSuccess
-                  ? 'bg-[#0e1f17]/95 border-emerald-500/40 text-emerald-200'
+                  ? 'bg-emerald-950/95 border-emerald-500/40 text-emerald-200'
                   : isError
-                  ? 'bg-[#220c0e]/95 border-red-500/40 text-red-200'
+                  ? 'bg-red-950/95 border-red-500/40 text-red-200'
                   : isWarning
-                  ? 'bg-[#241708]/95 border-amber-500/40 text-amber-200'
-                  : 'bg-surface/95 border-slate-700/80 text-slate-200'
+                  ? 'bg-amber-950/95 border-amber-500/40 text-amber-200'
+                  : 'bg-surface/95 border-line-strong/80 text-fg-2'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
                 {isError && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
                 {isWarning && <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
-                {!isSuccess && !isError && !isWarning && <Info className="w-4 h-4 text-brand shrink-0" />}
+                {!isSuccess && !isError && !isWarning && <Info className="w-4 h-4 text-brand-ink shrink-0" />}
 
                 <span className="text-xs font-bold leading-snug break-words">
                   {toast.message}
@@ -74,7 +74,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
               <button
                 onClick={() => removeToast(toast.id)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+                className="p-1 rounded-lg text-fg-muted hover:text-fg hover:bg-fg/10 transition-colors shrink-0"
                 title="Fechar"
               >
                 <X className="w-3.5 h-3.5" />

@@ -19,7 +19,7 @@ const TITULOS: Record<FeedbackMode, { titulo: string; subtitulo: string }> = {
 };
 
 const INPUT_CLASS =
-  'w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand';
+  'w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg placeholder-fg-faint focus:outline-none focus:border-brand';
 
 export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName = '', onClose }) => {
   const [currentMode, setCurrentMode] = useState<FeedbackMode>('menu');
@@ -93,32 +93,32 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-surface border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between bg-surface-hover">
+      <div className="bg-surface border border-line rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="p-5 border-b border-line/80 flex items-center justify-between bg-surface-hover">
           <div className="flex items-center gap-3">
             {mode === 'menu' && currentMode !== 'menu' && !submitted ? (
               <button
                 type="button"
                 onClick={() => setCurrentMode('menu')}
                 aria-label="Voltar"
-                className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center"
+                className="w-10 h-10 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center">
                 <MessageSquarePlus className="w-5 h-5" />
               </div>
             )}
             <div>
-              <h2 className="text-base font-extrabold text-white">{titulo}</h2>
-              <p className="text-xs text-slate-400">{subtitulo}</p>
+              <h2 className="text-base font-extrabold text-fg">{titulo}</h2>
+              <p className="text-xs text-fg-muted">{subtitulo}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="p-2 rounded-xl bg-base hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-canvas hover:bg-inset-2 text-fg-muted hover:text-fg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -130,8 +130,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
               <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto animate-bounce">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-bold text-white">Obrigado!</h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto">Recebemos sua mensagem.</p>
+              <h3 className="text-lg font-bold text-fg">Obrigado!</h3>
+              <p className="text-xs text-fg-muted max-w-xs mx-auto">Recebemos sua mensagem.</p>
             </div>
           ) : currentMode === 'menu' ? (
             <div className="space-y-2">
@@ -140,12 +140,12 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
                   key={id}
                   type="button"
                   onClick={() => setCurrentMode(id)}
-                  className="w-full bg-base hover:bg-surface-hover border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3 text-left transition-all active:scale-[0.99]"
+                  className="w-full bg-canvas hover:bg-surface-hover border border-line rounded-2xl p-3.5 flex items-center gap-3 text-left transition-all active:scale-[0.99]"
                 >
-                  <Icon className="w-5 h-5 text-brand shrink-0" />
+                  <Icon className="w-5 h-5 text-brand-ink shrink-0" />
                   <span>
-                    <span className="text-xs font-bold text-white block">{label}</span>
-                    <span className="text-[11px] text-slate-400">{detalhe}</span>
+                    <span className="text-xs font-bold text-fg block">{label}</span>
+                    <span className="text-[11px] text-fg-muted">{detalhe}</span>
                   </span>
                 </button>
               ))}
@@ -154,7 +154,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
             <form onSubmit={handleSubmit} className="space-y-4">
               {currentMode === 'sugestao' && (
                 <div>
-                  <span className="text-xs font-bold text-slate-300 block mb-1.5">Tipo de sugestão</span>
+                  <span className="text-xs font-bold text-fg-soft block mb-1.5">Tipo de sugestão</span>
                   <div className="grid grid-cols-2 gap-2">
                     {([
                       ['melhoria', 'Melhoria'],
@@ -168,7 +168,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
                         className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
                           tipoSugestao === valor
                             ? 'bg-brand text-slate-950 border-brand shadow-md'
-                            : 'bg-base text-slate-400 border-slate-800 hover:text-white'
+                            : 'bg-canvas text-fg-muted border-line hover:text-fg'
                         }`}
                       >
                         {rotulo}
@@ -181,8 +181,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
               {currentMode === 'musica' && (
                 <>
                   <div>
-                    <label htmlFor="feedback-musica" className="text-xs font-bold text-slate-300 block mb-1">
-                      Nome da música <span className="text-brand">*</span>
+                    <label htmlFor="feedback-musica" className="text-xs font-bold text-fg-soft block mb-1">
+                      Nome da música <span className="text-brand-ink">*</span>
                     </label>
                     <input
                       id="feedback-musica"
@@ -195,8 +195,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
                     />
                   </div>
                   <div>
-                    <label htmlFor="feedback-link" className="text-xs font-bold text-slate-300 block mb-1">
-                      Link do YouTube ou Spotify <span className="text-brand">*</span>
+                    <label htmlFor="feedback-link" className="text-xs font-bold text-fg-soft block mb-1">
+                      Link do YouTube ou Spotify <span className="text-brand-ink">*</span>
                     </label>
                     <input
                       id="feedback-link"
@@ -223,14 +223,14 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
               )}
 
               <div>
-                <label htmlFor="feedback-nome" className="text-xs font-bold text-slate-300 block mb-1">
+                <label htmlFor="feedback-nome" className="text-xs font-bold text-fg-soft block mb-1">
                   {currentMode === 'musica' ? (
                     <>
-                      Quem sugeriu <span className="text-brand">*</span>
+                      Quem sugeriu <span className="text-brand-ink">*</span>
                     </>
                   ) : (
                     <>
-                      Seu nome <span className="text-slate-500 font-normal">(opcional)</span>
+                      Seu nome <span className="text-fg-subtle font-normal">(opcional)</span>
                     </>
                   )}
                 </label>
@@ -247,9 +247,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ mode, defaultName 
 
               {currentMode !== 'musica' && (
                 <div>
-                  <label htmlFor="feedback-mensagem" className="text-xs font-bold text-slate-300 block mb-1">
+                  <label htmlFor="feedback-mensagem" className="text-xs font-bold text-fg-soft block mb-1">
                     {currentMode === 'bug' ? 'O que aconteceu?' : 'Qual é a sua ideia?'}{' '}
-                    <span className="text-brand">*</span>
+                    <span className="text-brand-ink">*</span>
                   </label>
                   <textarea
                     id="feedback-mensagem"

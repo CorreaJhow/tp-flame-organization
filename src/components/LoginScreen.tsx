@@ -98,15 +98,15 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-surface border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-surface border border-line rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-brand" />
 
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center mx-auto shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center mx-auto shadow-inner">
             <Flame className="w-8 h-8" />
           </div>
-          <h1 className="text-xl font-bold text-white">TP Flame</h1>
+          <h1 className="text-xl font-bold text-fg">TP Flame</h1>
         </div>
 
         {/* ESTADO: e-mail de verificação enviado após criar conta */}
@@ -114,9 +114,9 @@ export const LoginScreen: React.FC = () => {
           <div className="text-center space-y-4">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
             <div>
-              <p className="text-sm font-bold text-white">Confirme seu e-mail</p>
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                Mandamos um link de confirmação pra <strong className="text-slate-300">{email}</strong>.
+              <p className="text-sm font-bold text-fg">Confirme seu e-mail</p>
+              <p className="text-xs text-fg-muted mt-1.5 leading-relaxed">
+                Mandamos um link de confirmação pra <strong className="text-fg-soft">{email}</strong>.
                 Clique nele e depois volte aqui pra entrar.
               </p>
             </div>
@@ -134,9 +134,9 @@ export const LoginScreen: React.FC = () => {
           <div className="text-center space-y-4">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
             <div>
-              <p className="text-sm font-bold text-white">E-mail enviado</p>
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                Mandamos um link pra redefinir a senha de <strong className="text-slate-300">{email}</strong>.
+              <p className="text-sm font-bold text-fg">E-mail enviado</p>
+              <p className="text-xs text-fg-muted mt-1.5 leading-relaxed">
+                Mandamos um link pra redefinir a senha de <strong className="text-fg-soft">{email}</strong>.
                 Verifique também a caixa de spam.
               </p>
             </div>
@@ -155,12 +155,12 @@ export const LoginScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => resetFormAndGoTo('login')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-fg-muted hover:text-fg"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Voltar
             </button>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-fg-muted">
               Digite o e-mail da sua conta — mandamos um link pra você criar uma senha nova.
             </p>
             <input
@@ -170,7 +170,7 @@ export const LoginScreen: React.FC = () => {
               placeholder="seu.email@exemplo.com"
               required
               autoFocus
-              className="w-full bg-base border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+              className="w-full bg-canvas border border-line rounded-xl px-3.5 py-3 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
             />
             {errorMsg && <p className="text-xs text-red-400 font-medium bg-red-950/40 border border-red-500/30 p-2.5 rounded-xl text-center">{errorMsg}</p>}
             <button
@@ -202,31 +202,31 @@ export const LoginScreen: React.FC = () => {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-slate-800" />
-              <span className="text-[11px] text-slate-500 font-bold">OU</span>
-              <div className="flex-1 h-px bg-slate-800" />
+              <div className="flex-1 h-px bg-inset-2" />
+              <span className="text-[11px] text-fg-subtle font-bold">OU</span>
+              <div className="flex-1 h-px bg-inset-2" />
             </div>
 
             <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">E-mail</label>
+                <label className="text-xs font-semibold text-fg-soft block mb-1.5">E-mail</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu.email@exemplo.com"
                     required
-                    className="w-full bg-base border border-slate-800 rounded-xl pl-9 pr-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                    className="w-full bg-canvas border border-line rounded-xl pl-9 pr-3.5 py-3 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">Senha</label>
+                <label className="text-xs font-semibold text-fg-soft block mb-1.5">Senha</label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-fg-subtle absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
@@ -234,12 +234,12 @@ export const LoginScreen: React.FC = () => {
                     placeholder="Digite sua senha..."
                     required
                     minLength={6}
-                    className="w-full bg-base border border-slate-800 rounded-xl pl-9 pr-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                    className="w-full bg-canvas border border-line rounded-xl pl-9 pr-10 py-3 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-2"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -248,7 +248,7 @@ export const LoginScreen: React.FC = () => {
 
               {mode === 'signup' && (
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1.5">Confirmar senha</label>
+                  <label className="text-xs font-semibold text-fg-soft block mb-1.5">Confirmar senha</label>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
@@ -256,7 +256,7 @@ export const LoginScreen: React.FC = () => {
                     placeholder="Digite a senha de novo..."
                     required
                     minLength={6}
-                    className="w-full bg-base border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                    className="w-full bg-canvas border border-line rounded-xl px-3.5 py-3 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                   />
                 </div>
               )}
@@ -265,7 +265,7 @@ export const LoginScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => resetFormAndGoTo('forgot')}
-                  className="text-xs font-bold text-brand hover:underline cursor-pointer"
+                  className="text-xs font-bold text-brand-ink hover:underline cursor-pointer"
                 >
                   Esqueci minha senha
                 </button>
@@ -283,11 +283,11 @@ export const LoginScreen: React.FC = () => {
               </button>
             </form>
 
-            <p className="text-center text-xs text-slate-500">
+            <p className="text-center text-xs text-fg-subtle">
               {mode === 'login' ? (
-                <>Não tem conta? <button onClick={() => resetFormAndGoTo('signup')} className="text-brand font-bold hover:underline cursor-pointer">Criar conta</button></>
+                <>Não tem conta? <button onClick={() => resetFormAndGoTo('signup')} className="text-brand-ink font-bold hover:underline cursor-pointer">Criar conta</button></>
               ) : (
-                <>Já tem conta? <button onClick={() => resetFormAndGoTo('login')} className="text-brand font-bold hover:underline cursor-pointer">Entrar</button></>
+                <>Já tem conta? <button onClick={() => resetFormAndGoTo('login')} className="text-brand-ink font-bold hover:underline cursor-pointer">Entrar</button></>
               )}
             </p>
           </div>

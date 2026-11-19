@@ -236,24 +236,24 @@ export const CultosView: React.FC<CultosViewProps> = ({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-brand" />
+          <h2 className="text-xl font-extrabold text-fg tracking-tight flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-brand-ink" />
             Escala & Agenda de Cultos
           </h2>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-xs text-fg-muted font-medium">
             {cultos.length} cultos agendados • Seleção rápida e controle de louvor
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {/* View Toggle (Repertório Detalhado vs Quadradinhos/Lista Completa) */}
-          <div className="flex items-center bg-surface p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center bg-surface p-1 rounded-xl border border-line">
             <button
               onClick={() => setViewMode('detail')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
                 viewMode === 'detail'
                   ? 'bg-brand text-slate-950 font-black shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-fg-muted hover:text-fg'
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -263,7 +263,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
                 viewMode === 'list'
                   ? 'bg-brand text-slate-950 font-black shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-fg-muted hover:text-fg'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -283,18 +283,18 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
       {/* Clean Single Search Field */}
       <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+        <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-3.5 pointer-events-none" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Buscar por data, dia da semana ou nome do culto (ex: 10/08, Domingo, Celebração)..."
-          className="w-full bg-surface border border-slate-800 rounded-xl pl-10 pr-8 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand transition-colors"
+          className="w-full bg-surface border border-line rounded-xl pl-10 pr-8 py-3 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand transition-colors"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-3 text-slate-500 hover:text-white text-xs font-bold"
+            className="absolute right-3 top-3 text-fg-subtle hover:text-fg text-xs font-bold"
           >
             <X className="w-4 h-4" />
           </button>
@@ -319,14 +319,14 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border text-left shrink-0 active:scale-95 ${
                   isSelected
                     ? 'bg-brand text-slate-950 border-brand shadow-lg ring-2 ring-brand/30 font-black'
-                    : 'bg-surface text-slate-300 border-slate-800/80 hover:border-slate-700 hover:text-white'
+                    : 'bg-surface text-fg-soft border-line/80 hover:border-line-strong hover:text-fg'
                 }`}
               >
                 {/* Large Date Badge Header */}
                 <div className="flex items-center justify-between gap-2">
                   <span
                     className={`text-[11px] font-black tracking-wide uppercase flex items-center gap-1 ${
-                      isSelected ? 'text-slate-950' : 'text-brand'
+                      isSelected ? 'text-slate-950' : 'text-brand-ink'
                     }`}
                   >
                     <Clock className="w-3 h-3" />
@@ -336,8 +336,8 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   <span
                     className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
                       isSelected
-                        ? 'bg-slate-950/20 text-slate-950'
-                        : 'bg-base text-slate-400 border border-slate-800'
+                        ? 'bg-white/30 text-slate-950'
+                        : 'bg-canvas text-fg-muted border border-line'
                     }`}
                   >
                     {songCount}m
@@ -347,7 +347,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 {/* Culto Title */}
                 <div
                   className={`text-xs mt-1 truncate max-w-[170px] ${
-                    isSelected ? 'font-black text-slate-950' : 'font-medium text-slate-300'
+                    isSelected ? 'font-black text-slate-950' : 'font-medium text-fg-soft'
                   }`}
                 >
                   {culto.Nome_Evento}
@@ -360,11 +360,11 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
       {/* VIEW MODE 1: REPERTOIRE DETAIL VIEW FOR SELECTED CULTO */}
       {viewMode === 'detail' && (!currentCulto ? (
-        <div className="text-center py-12 bg-surface rounded-2xl border border-slate-800/80 p-6 space-y-3">
-          <Calendar className="w-10 h-10 text-slate-600 mx-auto" />
+        <div className="text-center py-12 bg-surface rounded-2xl border border-line/80 p-6 space-y-3">
+          <Calendar className="w-10 h-10 text-fg-faint mx-auto" />
           <div>
-            <h3 className="text-sm font-bold text-white">Nenhum culto agendado</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-sm font-bold text-fg">Nenhum culto agendado</h3>
+            <p className="text-xs text-fg-muted">
               Agende um novo culto ou evento para montar repertórios e acionar o Modo Palco.
             </p>
           </div>
@@ -382,7 +382,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
           {(() => {
             const dateInfo = parseCultoDate(currentCulto.Data);
             return (
-              <div className="bg-surface border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+              <div className="bg-surface border border-line/80 rounded-3xl p-5 space-y-4 shadow-xl relative overflow-hidden">
                 {/* Top Date Highlight Banner */}
                 <div className="bg-surface-hover border border-brand/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3.5">
@@ -401,13 +401,13 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-brand" />
-                        <span className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                        <Clock className="w-4 h-4 text-brand-ink" />
+                        <span className="text-sm sm:text-base font-extrabold text-fg tracking-tight">
                           {dateInfo.fullTitle}
                         </span>
                       </div>
 
-                      <h3 className="text-lg font-black text-brand tracking-tight mt-0.5">
+                      <h3 className="text-lg font-black text-brand-ink tracking-tight mt-0.5">
                         {currentCulto.Nome_Evento}
                       </h3>
                     </div>
@@ -420,7 +420,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                         currentCulto.Status === 'Confirmado'
                           ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
                           : currentCulto.Status === 'Concluído'
-                          ? 'bg-slate-900 text-slate-400 border-slate-700'
+                          ? 'bg-inset text-fg-muted border-line-strong'
                           : 'bg-teal-950/60 text-teal-400 border-teal-500/30'
                       }`}
                     >
@@ -438,7 +438,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
                     <button
                       onClick={() => handleOpenEditModal(currentCulto)}
-                      className="p-2.5 rounded-xl text-slate-300 bg-surface-hover hover:text-brand hover:bg-[#202020] border border-slate-700 transition-colors"
+                      className="p-2.5 rounded-xl text-fg-soft bg-surface-hover hover:text-brand-ink hover:bg-chip border border-line-strong transition-colors"
                       title="Editar Culto"
                     >
                       <Edit className="w-4 h-4" />
@@ -448,7 +448,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                       onClick={() => {
                         setCultoToDelete({ id: currentCulto.ID, name: currentCulto.Nome_Evento });
                       }}
-                      className="p-2.5 rounded-xl text-slate-400 bg-surface-hover hover:text-red-400 hover:bg-red-950/40 border border-slate-700 transition-colors"
+                      className="p-2.5 rounded-xl text-fg-muted bg-surface-hover hover:text-red-400 hover:bg-red-950/40 border border-line-strong transition-colors"
                       title="Excluir Culto"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -457,8 +457,8 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 </div>
 
                 {currentCulto.Observacoes && (
-                  <p className="text-xs text-slate-300 bg-base p-3 rounded-xl border border-slate-800/80 leading-relaxed">
-                    <span className="font-bold text-brand block text-[10px] uppercase mb-0.5">
+                  <p className="text-xs text-fg-soft bg-canvas p-3 rounded-xl border border-line/80 leading-relaxed">
+                    <span className="font-bold text-brand-ink block text-[10px] uppercase mb-0.5">
                       Observações para o Louvor:
                     </span>
                     {currentCulto.Observacoes}
@@ -470,8 +470,8 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
           {/* Setlist Header */}
           <div className="flex items-center justify-between pt-1">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Music2 className="w-3.5 h-3.5 text-brand" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-fg-muted flex items-center gap-1.5">
+              <Music2 className="w-3.5 h-3.5 text-brand-ink" />
               Repertório ({currentSetlist.length} Músicas)
             </h3>
 
@@ -479,10 +479,10 @@ export const CultosView: React.FC<CultosViewProps> = ({
               {onNavigate && (
                 <button
                   onClick={() => onNavigate('biblioteca')}
-                  className="py-1.5 px-3 rounded-xl bg-base hover:bg-surface-hover text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1 border border-slate-800 transition-all"
+                  className="py-1.5 px-3 rounded-xl bg-canvas hover:bg-surface-hover text-fg-soft hover:text-fg text-xs font-bold flex items-center gap-1 border border-line transition-all"
                   title="Ir para Biblioteca de Músicas"
                 >
-                  <Music2 className="w-3.5 h-3.5 text-slate-400" />
+                  <Music2 className="w-3.5 h-3.5 text-fg-muted" />
                   <span className="hidden sm:inline">Biblioteca</span>
                 </button>
               )}
@@ -490,7 +490,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
               <button
                 id="add-song-to-setlist-button"
                 onClick={() => { setSongPickerQuery(""); setShowAddSongModal(true); }}
-                className="py-1.5 px-3 rounded-xl bg-brand/10 text-brand hover:bg-brand/20 text-xs font-bold flex items-center gap-1 border border-brand/30 transition-all active:scale-95"
+                className="py-1.5 px-3 rounded-xl bg-brand/10 text-brand-ink hover:bg-brand/20 text-xs font-bold flex items-center gap-1 border border-brand/30 transition-all active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Adicionar Música</span>
@@ -500,9 +500,9 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
           {/* Setlist Items */}
           {currentSetlist.length === 0 ? (
-            <div className="text-center py-10 bg-surface rounded-2xl border border-slate-800/80 p-4 space-y-3">
-              <Music2 className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">
+            <div className="text-center py-10 bg-surface rounded-2xl border border-line/80 p-4 space-y-3">
+              <Music2 className="w-8 h-8 text-fg-faint mx-auto" />
+              <p className="text-xs text-fg-muted">
                 Nenhuma música no repertório deste culto.
               </p>
               <button
@@ -522,30 +522,30 @@ export const CultosView: React.FC<CultosViewProps> = ({
                 return (
                   <div
                     key={rep.ID}
-                    className="bg-surface border border-slate-800/80 hover:border-slate-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm transition-all"
+                    className="bg-surface border border-line/80 hover:border-line-strong rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm transition-all"
                   >
                     <div
                       onClick={() => musica && onSelectSong?.(musica, { versaoId: rep.ID_Versao, tom: rep.Tom_Culto })}
                       className={`flex items-center gap-3 min-w-0 flex-1 ${musica ? 'cursor-pointer group' : ''}`}
                       title={musica ? 'Clique para abrir detalhes, cifra e observações' : ''}
                     >
-                      <div className="w-7 h-7 rounded-lg bg-brand/10 text-brand font-black text-xs flex items-center justify-center shrink-0 border border-brand/20 group-hover:scale-105 transition-transform">
+                      <div className="w-7 h-7 rounded-lg bg-brand/10 text-brand-ink font-black text-xs flex items-center justify-center shrink-0 border border-brand/20 group-hover:scale-105 transition-transform">
                         {index + 1}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="text-xs font-bold text-white truncate group-hover:text-brand transition-colors flex items-center gap-1">
+                          <h4 className="text-xs font-bold text-fg truncate group-hover:text-brand-ink transition-colors flex items-center gap-1">
                             <span>{musica?.Nome || 'Música'}</span>
                             {musica && (
-                              <ExternalLink className="w-3 h-3 text-brand opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <ExternalLink className="w-3 h-3 text-brand-ink opacity-0 group-hover:opacity-100 transition-opacity" />
                             )}
                           </h4>
                           {versao && (
-                            <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-base text-amber-400 border border-slate-800">
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-canvas text-amber-400 border border-line">
                               Tom {formatKeyDisplay(rep.Tom_Culto || versao.Tom, versao.Modo)}
                               {rep.Tom_Culto && rep.Tom_Culto !== versao.Tom && (
-                                <span className="text-slate-500 font-medium"> (orig. {formatKeyDisplay(versao.Tom, versao.Modo)})</span>
+                                <span className="text-fg-subtle font-medium"> (orig. {formatKeyDisplay(versao.Tom, versao.Modo)})</span>
                               )}
                             </span>
                           )}
@@ -554,7 +554,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                               value={rep.Tom_Culto || ''}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => storage.setRepertorioTom(rep.ID, e.target.value)}
-                              className="text-[10px] font-bold rounded bg-base text-slate-300 border border-slate-800 px-1 py-0.5"
+                              className="text-[10px] font-bold rounded bg-canvas text-fg-soft border border-line px-1 py-0.5"
                               title="Tom cantado neste culto (a música continua salva no tom original)"
                             >
                               <option value="">Tom do culto: original</option>
@@ -564,13 +564,13 @@ export const CultosView: React.FC<CultosViewProps> = ({
                             </select>
                           )}
                           {versao?.BPM && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-base text-slate-300 border border-slate-800">
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-canvas text-fg-soft border border-line">
                               {versao.BPM} BPM
                             </span>
                           )}
                         </div>
 
-                        <p className="text-[11px] text-slate-400 truncate">
+                        <p className="text-[11px] text-fg-muted truncate">
                           {musica?.Artista} • {versao?.Nome_Versao}
                         </p>
 
@@ -579,22 +579,22 @@ export const CultosView: React.FC<CultosViewProps> = ({
                           const lp = getLastPlayedInfo(versao.ID, cultos, repertorio, storage.getHistorico(), versoes);
                           if (lp.daysAgo === undefined) return null;
                           return (
-                            <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3 text-brand" />
+                            <span className="text-[10px] font-medium text-fg-muted flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3 text-brand-ink" />
                               {lp.formattedBadge}
                             </span>
                           );
                         })()}
 
                         {rep.Dirigente && (
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <User className="w-3 h-3 text-brand" />
+                          <span className="text-[10px] text-fg-muted flex items-center gap-1 mt-0.5">
+                            <User className="w-3 h-3 text-brand-ink" />
                             Ministro: {rep.Dirigente}
                           </span>
                         )}
 
                         {rep.Observacao_Culto && (
-                          <span className="text-[10px] text-brand italic block mt-0.5">
+                          <span className="text-[10px] text-brand-ink italic block mt-0.5">
                             Obs: {rep.Observacao_Culto}
                           </span>
                         )}
@@ -606,17 +606,17 @@ export const CultosView: React.FC<CultosViewProps> = ({
                       {musica && (
                         <button
                           onClick={() => onSelectSong?.(musica, { versaoId: rep.ID_Versao, tom: rep.Tom_Culto })}
-                          className="p-1.5 rounded-lg bg-base hover:bg-brand/20 text-slate-300 hover:text-brand border border-slate-800 transition-colors flex items-center gap-1"
+                          className="p-1.5 rounded-lg bg-canvas hover:bg-brand/20 text-fg-soft hover:text-brand-ink border border-line transition-colors flex items-center gap-1"
                           title="Ver Cifra e Detalhes da Música"
                         >
-                          <FileText className="w-3.5 h-3.5 text-brand" />
+                          <FileText className="w-3.5 h-3.5 text-brand-ink" />
                           <span className="hidden sm:inline text-[10px] font-bold">Cifra</span>
                         </button>
                       )}
                       <button
                         onClick={() => handleMove(index, 'up')}
                         disabled={index === 0}
-                        className="p-1.5 rounded-lg bg-base text-slate-400 hover:text-white border border-slate-800 disabled:opacity-30"
+                        className="p-1.5 rounded-lg bg-canvas text-fg-muted hover:text-fg border border-line disabled:opacity-30"
                         title="Mover para cima"
                       >
                         <ChevronUp className="w-3.5 h-3.5" />
@@ -624,14 +624,14 @@ export const CultosView: React.FC<CultosViewProps> = ({
                       <button
                         onClick={() => handleMove(index, 'down')}
                         disabled={index === currentSetlist.length - 1}
-                        className="p-1.5 rounded-lg bg-base text-slate-400 hover:text-white border border-slate-800 disabled:opacity-30"
+                        className="p-1.5 rounded-lg bg-canvas text-fg-muted hover:text-fg border border-line disabled:opacity-30"
                         title="Mover para baixo"
                       >
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleRemoveSong(rep.ID)}
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-950/50 border border-slate-800"
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-950/50 border border-line"
                         title="Remover do Repertório"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -648,14 +648,14 @@ export const CultosView: React.FC<CultosViewProps> = ({
       {/* VIEW MODE 2: ALL CULTOS GRID/QUADRADINHOS (Easy for 10-20+ Cultos) */}
       {viewMode === 'list' && (
         <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <div className="flex items-center justify-between text-xs text-fg-muted font-medium">
             <span>Exibindo {filteredCultos.length} cultos agendados:</span>
           </div>
 
           {filteredCultos.length === 0 ? (
-            <div className="text-center py-12 bg-surface rounded-2xl border border-slate-800 p-6 space-y-3">
-              <Calendar className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">Nenhum culto encontrado com o termo buscado.</p>
+            <div className="text-center py-12 bg-surface rounded-2xl border border-line p-6 space-y-3">
+              <Calendar className="w-8 h-8 text-fg-faint mx-auto" />
+              <p className="text-xs text-fg-muted">Nenhum culto encontrado com o termo buscado.</p>
               <button
                 onClick={onOpenNewCultoModal}
                 className="py-2 px-3.5 rounded-xl bg-brand text-slate-950 font-bold text-xs inline-flex items-center gap-1"
@@ -675,18 +675,18 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   <div
                     key={culto.ID}
                     className={`bg-surface border rounded-2xl p-4 transition-all shadow-md flex flex-col justify-between space-y-3 ${
-                      isSelected ? 'border-brand ring-1 ring-brand' : 'border-slate-800/80 hover:border-slate-700'
+                      isSelected ? 'border-brand ring-1 ring-brand' : 'border-line/80 hover:border-line-strong'
                     }`}
                   >
                     <div>
                       {/* Prominent Date Banner Header inside Card */}
-                      <div className="bg-surface-hover border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 mb-3">
+                      <div className="bg-surface-hover border border-line rounded-xl p-2.5 flex items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2">
                           <div className="bg-brand text-slate-950 font-black px-2 py-0.5 rounded-lg text-xs">
                             {dateInfo.dayOfWeek} {dateInfo.day}/{dateInfo.month}
                           </div>
-                          <span className="text-xs font-bold text-white flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-brand" />
+                          <span className="text-xs font-bold text-fg flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-brand-ink" />
                             {dateInfo.time}
                           </span>
                         </div>
@@ -696,7 +696,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
                             culto.Status === 'Confirmado'
                               ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
                               : culto.Status === 'Concluído'
-                              ? 'bg-slate-900 text-slate-400 border-slate-700'
+                              ? 'bg-inset text-fg-muted border-line-strong'
                               : 'bg-teal-950/60 text-teal-400 border-teal-500/30'
                           }`}
                         >
@@ -704,30 +704,30 @@ export const CultosView: React.FC<CultosViewProps> = ({
                         </span>
                       </div>
 
-                      <h4 className="text-sm font-extrabold text-white leading-snug">
+                      <h4 className="text-sm font-extrabold text-fg leading-snug">
                         {culto.Nome_Evento}
                       </h4>
 
-                      <div className="text-xs text-brand font-bold mt-1">
+                      <div className="text-xs text-brand-ink font-bold mt-1">
                         {dateInfo.fullTitle}
                       </div>
 
                       {culto.Observacoes && (
-                        <p className="text-[11px] text-slate-400 line-clamp-2 mt-2 bg-base p-2 rounded-lg border border-slate-800/80">
+                        <p className="text-[11px] text-fg-muted line-clamp-2 mt-2 bg-canvas p-2 rounded-lg border border-line/80">
                           {culto.Observacoes}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-line/60">
                       <button
                         onClick={() => {
                           setSelectedCultoId(culto.ID);
                           setViewMode('detail');
                         }}
-                        className="py-1.5 px-3 rounded-xl bg-surface-hover hover:bg-[#222] text-white font-bold text-xs flex items-center gap-1 border border-slate-700"
+                        className="py-1.5 px-3 rounded-xl bg-surface-hover hover:bg-chip text-fg font-bold text-xs flex items-center gap-1 border border-line-strong"
                       >
-                        <Music2 className="w-3.5 h-3.5 text-brand" />
+                        <Music2 className="w-3.5 h-3.5 text-brand-ink" />
                         <span>Ver Repertório ({songsCount})</span>
                       </button>
 
@@ -742,7 +742,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
                         <button
                           onClick={() => handleOpenEditModal(culto)}
-                          className="p-1.5 rounded-xl bg-surface-hover text-slate-300 hover:text-brand border border-slate-700"
+                          className="p-1.5 rounded-xl bg-surface-hover text-fg-soft hover:text-brand-ink border border-line-strong"
                           title="Editar Culto"
                         >
                           <Edit className="w-3.5 h-3.5" />
@@ -750,7 +750,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
                         <button
                           onClick={() => setCultoToDelete({ id: culto.ID, name: culto.Nome_Evento })}
-                          className="p-1.5 rounded-xl bg-surface-hover text-slate-400 hover:text-red-400 border border-slate-700"
+                          className="p-1.5 rounded-xl bg-surface-hover text-fg-muted hover:text-red-400 border border-line-strong"
                           title="Excluir Culto"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -768,15 +768,15 @@ export const CultosView: React.FC<CultosViewProps> = ({
       {/* EDIT CULTO MODAL */}
       {showEditCultoModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-slate-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
-                <Edit className="w-4 h-4 text-brand" />
+          <div className="bg-surface border border-line w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-2 border-b border-line">
+              <h3 className="text-sm font-extrabold text-fg flex items-center gap-2">
+                <Edit className="w-4 h-4 text-brand-ink" />
                 Editar Culto / Evento
               </h3>
               <button
                 onClick={() => setShowEditCultoModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-fg-muted hover:text-fg"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -784,7 +784,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
             <form onSubmit={handleSaveEditCulto} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Nome do Evento / Culto *
                 </label>
                 <input
@@ -792,31 +792,31 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   value={editCultoName}
                   onChange={(e) => setEditCultoName(e.target.value)}
                   placeholder="ex: Culto de Domingo - Celebração"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Data e Hora do Evento
                 </label>
                 <input
                   type="datetime-local"
                   value={editCultoData}
                   onChange={(e) => setEditCultoData(e.target.value)}
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Status
                 </label>
                 <select
                   value={editCultoStatus}
                   onChange={(e) => setEditCultoStatus(e.target.value as any)}
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none focus:border-brand"
                 >
                   <option value="Confirmado">Confirmado</option>
                   <option value="Planejamento">Planejamento</option>
@@ -825,22 +825,22 @@ export const CultosView: React.FC<CultosViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Observações
                 </label>
                 <textarea
                   value={editCultoObs}
                   onChange={(e) => setEditCultoObs(e.target.value)}
                   placeholder="Instruções para os músicos, dirigente, observações..."
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white h-20 focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg h-20 focus:outline-none focus:border-brand"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowEditCultoModal(false)}
-                  className="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
+                  className="px-3 py-2 rounded-xl text-xs text-fg-muted hover:text-fg"
                 >
                   Cancelar
                 </button>
@@ -859,14 +859,14 @@ export const CultosView: React.FC<CultosViewProps> = ({
       {/* ADD SONG TO SETLIST MODAL */}
       {showAddSongModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-slate-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white">
+          <div className="bg-surface border border-line w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-line">
+              <h3 className="text-sm font-bold text-fg">
                 Adicionar Música ao Repertório
               </h3>
               <button
                 onClick={() => setShowAddSongModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-fg-muted hover:text-fg"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -874,7 +874,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
 
             <form onSubmit={handleAddSongToSetlist} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Selecione a Versão da Música *
                 </label>
                 <input
@@ -882,12 +882,12 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   value={songPickerQuery}
                   onChange={(e) => setSongPickerQuery(e.target.value)}
                   placeholder="Buscar por nome, artista ou trecho da letra..."
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 mb-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 mb-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                 />
                 <select
                   value={selectedVersaoIdToAdd}
                   onChange={(e) => setSelectedVersaoIdToAdd(e.target.value)}
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg focus:outline-none focus:border-brand"
                   required
                 >
                   <option value="">-- Escolha uma versão --</option>
@@ -922,14 +922,14 @@ export const CultosView: React.FC<CultosViewProps> = ({
                     className={`p-3 rounded-xl border text-xs leading-relaxed transition-all ${
                       lastPlayed.isRecent
                         ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                        : 'bg-base border-slate-800 text-slate-300'
+                        : 'bg-canvas border-line text-fg-soft'
                     }`}
                   >
                     <div className="flex items-start gap-2">
                       {lastPlayed.isRecent ? (
                         <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                       ) : (
-                        <Clock className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+                        <Clock className="w-4 h-4 text-brand-ink shrink-0 mt-0.5" />
                       )}
                       <div>
                         <strong className="block font-bold">
@@ -951,7 +951,7 @@ export const CultosView: React.FC<CultosViewProps> = ({
               })()}
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Ministro / Dirigente do Louvor
                 </label>
                 <input
@@ -959,12 +959,12 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   value={dirigenteToAdd}
                   onChange={(e) => setDirigenteToAdd(e.target.value)}
                   placeholder="ex: Davi Silva"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Observações para este Culto
                 </label>
                 <input
@@ -972,15 +972,15 @@ export const CultosView: React.FC<CultosViewProps> = ({
                   value={obsToAdd}
                   onChange={(e) => setObsToAdd(e.target.value)}
                   placeholder="ex: Iniciar em tom menor suave"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowAddSongModal(false)}
-                  className="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
+                  className="px-3 py-2 rounded-xl text-xs text-fg-muted hover:text-fg"
                 >
                   Cancelar
                 </button>

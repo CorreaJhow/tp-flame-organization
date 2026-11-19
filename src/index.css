@@ -13,13 +13,92 @@
  * usados uma única vez (gradientes de fundo, por exemplo) continuam como
  * hex literal — não fazem parte da paleta repetida, tokenizar não ajuda.
  */
+/*
+ * TEMA (escuro = padrão, claro = opção). Cada cor do app é um token semântico
+ * (`text-fg`, `border-line`, `bg-inset`...) cujo valor vem de variáveis `--c-*`.
+ * `:root` = escuro (valores de sempre, nada muda); `[data-theme="light"]` = claro.
+ * Quem troca é `utils/theme.ts` (atributo no <html>; o index.html aplica antes do React).
+ * Os valores do escuro são os da escala slate do Tailwind que o app já usava.
+ * Contraste dos dois temas: `npm test` (src/utils/themeContrast.test.ts).
+ */
+:root {
+  color-scheme: dark;
+  --c-base: #080808;
+  --c-header: #0c0c0c;
+  --c-surface: #121212;
+  --c-surface-hover: #181818;
+  --c-fg: #ffffff;
+  --c-fg-2: #e2e8f0;
+  --c-fg-soft: #cbd5e1;
+  --c-fg-muted: #94a3b8;
+  --c-fg-subtle: #64748b;
+  --c-fg-faint: #475569;
+  --c-line: #1e293b;
+  --c-line-strong: #334155;
+  --c-inset: #0f172a;
+  --c-inset-2: #1e293b;
+  --c-inset-3: #334155;
+  --c-chip: #222222;
+  --c-brand-ink: #ff4d00; /* laranja usado como TEXTO/ícone */
+  --c-scroll-track: #0d0d0d;
+  --c-scroll-thumb: #2a2a2a;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --c-base: #f4f4f5;
+  --c-header: #ffffff;
+  --c-surface: #ffffff;
+  --c-surface-hover: #efeff1;
+  --c-fg: #0f0f10;
+  --c-fg-2: #1f1f23;
+  --c-fg-soft: #3b3b42;
+  --c-fg-muted: #46464f;
+  --c-fg-subtle: #50505a;
+  --c-fg-faint: #5a5a64;
+  --c-line: #e0e0e5;
+  --c-line-strong: #c9c9d0;
+  --c-inset: #ececef;
+  --c-inset-2: #e2e2e7;
+  --c-inset-3: #d4d4da;
+  --c-chip: #e8e8ec;
+  --c-brand-ink: #a02f00;
+  --c-scroll-track: #ebebee;
+  --c-scroll-thumb: #c4c4cc;
+
+  /* Cores de status/vozes: no claro, fundo escuro (-950/-900) vira tom claro
+     e texto claro (-200/-300/-400) vira tom escuro (-950/-900/-800). Os -500/-600 (botões,
+     bordas, bolinhas) não mudam. */
+  --color-red-950: #fee2e2; --color-red-400: #991b1b; --color-red-300: #7f1d1d; --color-red-200: #450a0a;
+  --color-amber-950: #fef3c7; --color-amber-400: #92400e; --color-amber-300: #78350f; --color-amber-200: #451a03;
+  --color-emerald-950: #d1fae5; --color-emerald-400: #065f46; --color-emerald-300: #064e3b; --color-emerald-200: #022c22;
+  --color-cyan-950: #cffafe; --color-cyan-400: #155e75; --color-cyan-300: #164e63; --color-cyan-200: #083344;
+  --color-blue-950: #dbeafe; --color-blue-400: #1e40af; --color-blue-300: #1e3a8a; --color-blue-200: #172554;
+  --color-teal-950: #ccfbf1; --color-teal-400: #115e59; --color-teal-300: #134e4a; --color-teal-200: #042f2e;
+  --color-purple-950: #f3e8ff; --color-purple-400: #6b21a8; --color-purple-300: #581c87; --color-purple-200: #3b0764;
+  --color-pink-950: #fce7f3; --color-pink-400: #9d174d; --color-pink-300: #831843; --color-pink-200: #500724;
+}
+
 @theme {
   --color-brand: #FF4D00;
   --color-brand-hover: #e04400;
-  --color-base: #080808;
-  --color-header: #0c0c0c;
-  --color-surface: #121212;
-  --color-surface-hover: #181818;
+  --color-brand-ink: var(--c-brand-ink);
+  --color-canvas: var(--c-base);
+  --color-header: var(--c-header);
+  --color-surface: var(--c-surface);
+  --color-surface-hover: var(--c-surface-hover);
+  --color-fg: var(--c-fg);
+  --color-fg-2: var(--c-fg-2);
+  --color-fg-soft: var(--c-fg-soft);
+  --color-fg-muted: var(--c-fg-muted);
+  --color-fg-subtle: var(--c-fg-subtle);
+  --color-fg-faint: var(--c-fg-faint);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-inset: var(--c-inset);
+  --color-inset-2: var(--c-inset-2);
+  --color-inset-3: var(--c-inset-3);
+  --color-chip: var(--c-chip);
 }
 
 @layer utilities {
@@ -41,11 +120,11 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d0d0d;
+  background: var(--c-scroll-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: var(--c-scroll-thumb);
   border-radius: 9999px;
 }
 

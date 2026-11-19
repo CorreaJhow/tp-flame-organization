@@ -13,24 +13,24 @@ export const NovidadesModal: React.FC<NovidadesModalProps> = ({ onClose }) => (
     aria-labelledby="novidades-titulo"
     className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
   >
-    <div className="bg-surface border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-      <div className="p-5 border-b border-slate-800/80 flex items-center gap-3 bg-surface-hover">
-        <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0">
+    <div className="bg-surface border border-line rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="p-5 border-b border-line/80 flex items-center gap-3 bg-surface-hover">
+        <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shrink-0">
           <Sparkles className="w-5 h-5" />
         </div>
         <div>
-          <h2 id="novidades-titulo" className="text-base font-extrabold text-white">
+          <h2 id="novidades-titulo" className="text-base font-extrabold text-fg">
             O que mudou no app
           </h2>
-          <p className="text-xs text-slate-400">Veja o que há de novo nesta versão</p>
+          <p className="text-xs text-fg-muted">Veja o que há de novo nesta versão</p>
         </div>
       </div>
 
       <ul className="p-5 overflow-y-auto space-y-4">
         {NOVIDADES.itens.map((item) => (
           <li key={item.titulo}>
-            <h3 className="text-sm font-bold text-white">{item.titulo}</h3>
-            <p className="text-xs text-slate-300 leading-relaxed mt-0.5">{item.texto}</p>
+            <h3 className="text-sm font-bold text-fg">{item.titulo}</h3>
+            <p className="text-xs text-fg-soft leading-relaxed mt-0.5">{item.texto}</p>
           </li>
         ))}
       </ul>

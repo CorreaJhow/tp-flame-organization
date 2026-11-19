@@ -172,25 +172,25 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-surface border border-slate-800 w-full max-w-xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-surface border border-line w-full max-w-xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-surface">
+        <div className="p-4 border-b border-line flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-brand/15 text-brand flex items-center justify-center border border-brand/30">
+            <div className="w-8 h-8 rounded-xl bg-brand/15 text-brand-ink flex items-center justify-center border border-brand/30">
               {isEditing ? <Edit3 className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white">
+              <h2 className="text-base font-extrabold text-fg">
                 {isEditing ? 'Editar Música e Cifra' : 'Cadastrar Nova Música'}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-fg-muted">
                 {isEditing ? 'Altere o tom, letra, versão e arranjo' : 'Insira a música e sua versão principal'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            className="p-1.5 rounded-lg text-fg-muted hover:text-fg hover:bg-inset-2"
           >
             <X className="w-5 h-5" />
           </button>
@@ -201,7 +201,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
           {/* Song Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-fg-soft block mb-1">
                 Nome da Música *
               </label>
               <input
@@ -209,13 +209,13 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="ex: Ruja o Leão"
-                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                 required
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-fg-soft block mb-1">
                 Artista / Ministério *
               </label>
               <input
@@ -223,7 +223,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 value={artista}
                 onChange={(e) => setArtista(e.target.value)}
                 placeholder="ex: FHOP"
-                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+                className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
                 required
               />
             </div>
@@ -231,13 +231,13 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-fg-soft block mb-1">
                 Categoria
               </label>
               <select
                 value={categoria}
                 onChange={(e) => setCategoria(e.target.value)}
-                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
+                className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg focus:outline-none focus:border-brand"
               >
                 <option value="Adoração">Adoração</option>
                 <option value="Celebração">Celebração</option>
@@ -248,14 +248,14 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-fg-soft block mb-1">
                 Tom Original *
               </label>
               <div className="flex gap-1.5">
                 <select
                   value={tom}
                   onChange={(e) => setTom(e.target.value)}
-                  className="flex-1 min-w-0 bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white font-bold focus:outline-none focus:border-brand"
+                  className="flex-1 min-w-0 bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg font-bold focus:outline-none focus:border-brand"
                 >
                   {ALL_KEYS.map((k) => (
                     <option key={k} value={k}>
@@ -267,12 +267,12 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 {/* Maior/Menor: guardado separado do Tom, nunca como "Bm" em
                     texto livre — é o que permite a transposição e o futuro
                     campo harmônico saberem a qualidade do tom, não só a nota. */}
-                <div className="flex bg-base border border-slate-800 rounded-xl p-1 shrink-0">
+                <div className="flex bg-canvas border border-line rounded-xl p-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => setModo('Maior')}
                     className={`px-2.5 rounded-lg text-xs font-bold transition-all ${
-                      modo === 'Maior' ? 'bg-brand text-slate-950' : 'text-slate-400 hover:text-white'
+                      modo === 'Maior' ? 'bg-brand text-slate-950' : 'text-fg-muted hover:text-fg'
                     }`}
                   >
                     Maior
@@ -281,7 +281,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                     type="button"
                     onClick={() => setModo('Menor')}
                     className={`px-2.5 rounded-lg text-xs font-bold transition-all ${
-                      modo === 'Menor' ? 'bg-brand text-slate-950' : 'text-slate-400 hover:text-white'
+                      modo === 'Menor' ? 'bg-brand text-slate-950' : 'text-fg-muted hover:text-fg'
                     }`}
                   >
                     Menor
@@ -294,7 +294,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
           {/* BPM and Compasso */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-fg-soft block mb-1">
                 BPM (Andamento)
               </label>
               <input
@@ -304,18 +304,18 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 placeholder="ex: 128"
                 min="30"
                 max="300"
-                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand font-bold"
+                className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand font-bold"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-fg-soft block mb-1">
                 Compasso (Fórmula de Tempo)
               </label>
               <select
                 value={compasso}
                 onChange={(e) => setCompasso(e.target.value)}
-                className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand font-bold"
+                className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg focus:outline-none focus:border-brand font-bold"
               >
                 <option value="4/4">4/4 (Quaternário)</option>
                 <option value="3/4">3/4 (Ternário / Valsa)</option>
@@ -327,7 +327,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1">
+            <label className="text-xs font-bold text-fg-soft block mb-1">
               Nome da Versão
             </label>
             <input
@@ -335,12 +335,12 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               value={nomeVersao}
               onChange={(e) => setNomeVersao(e.target.value)}
               placeholder="ex: Versão Oficial Ao Vivo"
-              className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+              className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1">
+            <label className="text-xs font-bold text-fg-soft block mb-1">
               Estrutura
             </label>
             <input
@@ -348,26 +348,26 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               value={estrutura}
               onChange={(e) => setEstrutura(e.target.value)}
               placeholder="ex: INTRO - V1 - REFRÃO - V2 - REFRÃO - PONTE - OUTRO"
-              className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand font-mono"
+              className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand font-mono"
             />
           </div>
 
           <div>
             <div className="flex flex-wrap items-center justify-between gap-1 mb-1.5">
-              <label className="text-xs font-bold text-slate-300 block">
+              <label className="text-xs font-bold text-fg-soft block">
                 Letra com Cifras & Divisão de Vozes
               </label>
-              <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-brand" />
+              <span className="text-[10px] text-fg-subtle flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-brand-ink" />
                 Clique nos botões abaixo para marcar vozes
               </span>
             </div>
 
             {/* Vocal & Section Quick Insertion Toolbar */}
-            <div className="bg-header border border-slate-800/80 rounded-xl p-2 mb-2 space-y-2">
+            <div className="bg-header border border-line/80 rounded-xl p-2 mb-2 space-y-2">
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0 flex items-center gap-1 mr-1">
-                  <Mic className="w-3 h-3 text-brand" />
+                <span className="text-[10px] font-bold text-fg-subtle uppercase shrink-0 flex items-center gap-1 mr-1">
+                  <Mic className="w-3 h-3 text-brand-ink" />
                   Vozes:
                 </span>
                 {availableVocals.map((vocal) => {
@@ -398,12 +398,12 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
 
               {/* Duet Builder Panel */}
               {isDuetBuilderOpen && (
-                <div className="p-2.5 rounded-xl bg-[#141414] border border-amber-500/30 space-y-2 animate-in fade-in">
+                <div className="p-2.5 rounded-xl bg-chip border border-amber-500/30 space-y-2 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-amber-300">
                       Selecione quem canta junto nessa estrofe:
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-fg-muted">
                       {selectedDuetVocals.length > 0 ? selectedDuetVocals.join(' & ') : 'Nenhuma selecionada'}
                     </span>
                   </div>
@@ -419,8 +419,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                           onClick={() => toggleDuetVocal(vocal)}
                           className={`px-2 py-0.5 rounded-lg text-xs font-bold border transition-all ${
                             isSelected
-                              ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-white/50 scale-105`
-                              : 'bg-surface-hover border-slate-800 text-slate-400 hover:text-white'
+                              ? `${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText} ring-2 ring-fg/50 scale-105`
+                              : 'bg-surface-hover border-line text-fg-muted hover:text-fg'
                           }`}
                         >
                           {isSelected ? `✓ ${vocal}` : `+ ${vocal}`}
@@ -429,28 +429,28 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                     })}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+                  <div className="flex items-center justify-between pt-1 border-t border-line">
                     {/* Quick presets */}
                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase shrink-0">Atalhos:</span>
+                      <span className="text-[9px] text-fg-subtle font-bold uppercase shrink-0">Atalhos:</span>
                       <button
                         type="button"
                         onClick={() => insertTagAtCursor('[Voz: Larissa & Leticia]')}
-                        className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-pink-300 font-bold hover:bg-slate-800 shrink-0"
+                        className="px-1.5 py-0.5 rounded bg-inset border border-line-strong text-[10px] text-pink-300 font-bold hover:bg-inset-2 shrink-0"
                       >
                         Larissa & Letícia
                       </button>
                       <button
                         type="button"
                         onClick={() => insertTagAtCursor('[Voz: Larissa & Bianca]')}
-                        className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-purple-300 font-bold hover:bg-slate-800 shrink-0"
+                        className="px-1.5 py-0.5 rounded bg-inset border border-line-strong text-[10px] text-purple-300 font-bold hover:bg-inset-2 shrink-0"
                       >
                         Larissa & Bianca
                       </button>
                       <button
                         type="button"
                         onClick={() => insertTagAtCursor('[Voz: Joey & Leticia]')}
-                        className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-amber-300 font-bold hover:bg-slate-800 shrink-0"
+                        className="px-1.5 py-0.5 rounded bg-inset border border-line-strong text-[10px] text-amber-300 font-bold hover:bg-inset-2 shrink-0"
                       >
                         Joey & Letícia
                       </button>
@@ -468,8 +468,8 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-800/60 pt-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0 mr-1">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-line/60 pt-1">
+                <span className="text-[10px] font-bold text-fg-subtle uppercase shrink-0 mr-1">
                   Seções:
                 </span>
                 {['[INTRO]', '[VERSO 1]', '[REFRÃO]', '[PONTE]', '[FINAL]', '(2x)'].map((sec) => (
@@ -477,7 +477,7 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
                     key={sec}
                     type="button"
                     onClick={() => insertTagAtCursor(sec)}
-                    className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-surface-hover hover:bg-[#222] text-slate-300 border border-slate-700 shrink-0 transition-all hover:text-white"
+                    className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-surface-hover hover:bg-chip text-fg-soft border border-line-strong shrink-0 transition-all hover:text-fg"
                   >
                     {sec}
                   </button>
@@ -491,12 +491,12 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               onChange={(e) => setLetra(e.target.value)}
               placeholder={`[INTRO]\n[E] [B] [C#m] [A]\n\n[Voz: Larissa]\n[E] Sobre o trono de glória...\n\n[Voz: Bianca]\n[A] Te exaltamos para sempre...\n\n[Voz: Todos]\n[C#m] Santo, Santo...`}
               rows={9}
-              className="w-full bg-base border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand font-mono leading-relaxed"
+              className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-fg placeholder-fg-faint focus:outline-none focus:border-brand font-mono leading-relaxed"
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1">
+            <label className="text-xs font-bold text-fg-soft block mb-1">
               Observações do Arranjo / Instruções
             </label>
             <input
@@ -504,16 +504,16 @@ export const SongFormModal: React.FC<SongFormModalProps> = ({
               value={obs}
               onChange={(e) => setObs(e.target.value)}
               placeholder="ex: Arranjo acústico de violão na intro"
-              className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand"
+              className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-brand"
             />
           </div>
 
           {/* Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-800">
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-line">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-fg-muted hover:text-fg"
             >
               Cancelar
             </button>

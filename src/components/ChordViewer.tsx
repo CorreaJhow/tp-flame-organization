@@ -37,7 +37,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
 }) => {
   const safeText = typeof text === 'string' ? text : text != null ? String(text) : '';
   if (!safeText.trim()) {
-    return <p className="text-slate-500 italic text-xs">Nenhuma letra ou cifra cadastrada.</p>;
+    return <p className="text-fg-subtle italic text-xs">Nenhuma letra ou cifra cadastrada.</p>;
   }
 
   const isLetraMode = displayMode !== 'cifra';
@@ -101,20 +101,20 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
           key={lineIndex}
           className={`my-2 py-1.5 px-3 rounded-xl border flex flex-wrap items-center justify-between gap-2 transition-all ${
             isDuet 
-              ? 'bg-gradient-to-r from-pink-950/40 via-purple-950/30 to-cyan-950/40 border-slate-700/80 shadow-md'
+              ? 'bg-gradient-to-r from-pink-950/40 via-purple-950/30 to-cyan-950/40 border-line-strong/80 shadow-md'
               : vocalConfigs[0] 
               ? `${vocalConfigs[0].badgeBg} ${vocalConfigs[0].badgeBorder}` 
-              : 'bg-slate-900 border-slate-700'
+              : 'bg-inset border-line-strong'
           } ${isFocused && focusVoice ? 'ring-2 ring-brand/60 scale-[1.01]' : ''} ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
         >
           <div className="flex items-center gap-2 flex-wrap font-black text-xs uppercase tracking-wider">
             {isDuet ? (
               <Users className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             ) : (
-              <Mic className="w-3.5 h-3.5 shrink-0 text-slate-300" />
+              <Mic className="w-3.5 h-3.5 shrink-0 text-fg-soft" />
             )}
 
-            <span className="text-slate-400 text-[13px] font-bold">
+            <span className="text-fg-muted text-[13px] font-bold">
               {isDuet ? 'Dueto / Vozes:' : 'Voz:'}
             </span>
 
@@ -155,7 +155,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
       return (
         <div
           key={lineIndex}
-          className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-brand/25 via-brand/10 to-transparent border-l-4 border-brand text-brand font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
+          className={`my-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-brand/25 via-brand/10 to-transparent border-l-4 border-brand text-brand-ink font-black uppercase tracking-wider flex items-center gap-2 shadow-sm select-none ${
             isLetraMode ? 'text-sm sm:text-base my-4' : 'text-xs sm:text-sm'
           }`}
         >
@@ -169,7 +169,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
     if (kind === 'annotation') {
       return (
         <div key={lineIndex} className={`my-1.5 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand/20 text-brand border border-brand/40 font-bold italic shadow-sm ${
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand/20 text-brand-ink border border-brand/40 font-bold italic shadow-sm ${
             isLetraMode ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'
           }`}>
             💡 {trimmedLine}
@@ -216,7 +216,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
             elements.push(
               <span
                 key={keyCounter++}
-                className="inline-block font-black text-brand bg-brand/15 border border-brand/50 px-1.5 py-0.5 rounded-md mx-0.5 text-xs sm:text-sm tracking-wider shadow-sm ring-1 ring-brand/20"
+                className="inline-block font-black text-brand-ink bg-brand/15 border border-brand/50 px-1.5 py-0.5 rounded-md mx-0.5 text-xs sm:text-sm tracking-wider shadow-sm ring-1 ring-brand/20"
               >
                 {transposed}
               </span>
@@ -273,7 +273,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
       <div
         key={lineIndex}
         className={`leading-relaxed transition-all ${vocalLineStyle} ${fontClass} ${
-          isLetraMode ? 'font-sans text-slate-100 font-medium' : 'font-mono'
+          isLetraMode ? 'font-sans text-fg-2 font-medium' : 'font-mono'
         } ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
       >
         {vocalBadges}
@@ -291,7 +291,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
               return (
                 <span
                   key={pIdx}
-                  className="inline-block mx-1 my-0.5 px-2 py-0.5 rounded-md bg-brand/25 text-brand border border-brand/60 font-black text-xs uppercase tracking-wider shadow-sm"
+                  className="inline-block mx-1 my-0.5 px-2 py-0.5 rounded-md bg-brand/25 text-brand-ink border border-brand/60 font-black text-xs uppercase tracking-wider shadow-sm"
                 >
                   {inner}
                 </span>
@@ -320,7 +320,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
             return (
               <span
                 key={pIdx}
-                className="inline-block mx-1 text-brand font-bold italic bg-brand/10 border border-brand/30 px-1.5 py-0.2 rounded text-xs"
+                className="inline-block mx-1 text-brand-ink font-bold italic bg-brand/10 border border-brand/30 px-1.5 py-0.2 rounded text-xs"
               >
                 {part}
               </span>
@@ -328,7 +328,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
           }
 
           // Normal lyrics text
-          return <span key={pIdx} className={isLetraMode ? "text-slate-100 font-semibold" : "text-slate-100"}>{part}</span>;
+          return <span key={pIdx} className={isLetraMode ? "text-fg-2 font-semibold" : "text-fg-2"}>{part}</span>;
         })}
       </div>
     );
@@ -337,7 +337,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
   if (displayMode === 'sucinta') {
     const blocks = summarizeLyrics(safeText, knownSingers);
     if (blocks.length === 0) {
-      return <p className="text-slate-500 italic text-xs">Esta música ainda não tem letra para mostrar.</p>;
+      return <p className="text-fg-subtle italic text-xs">Esta música ainda não tem letra para mostrar.</p>;
     }
 
     return (
@@ -350,7 +350,7 @@ export const ChordViewer: React.FC<ChordViewerProps> = ({
               {block.header ? (
                 renderLine(`[${block.header}${countLabel ? ` ${countLabel}` : ''}]`, -1)
               ) : countLabel ? (
-                <div className="py-1.5 px-3 rounded-xl bg-brand/15 border-l-4 border-brand text-brand font-black uppercase tracking-wider text-sm sm:text-base">
+                <div className="py-1.5 px-3 rounded-xl bg-brand/15 border-l-4 border-brand text-brand-ink font-black uppercase tracking-wider text-sm sm:text-base">
                   Repetir {countLabel}
                 </div>
               ) : null}

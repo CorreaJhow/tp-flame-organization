@@ -8,6 +8,16 @@
     <!-- PWA Settings -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#080808" />
+    <style>html{background:#080808}html[data-theme="light"]{background:#f4f4f5}</style>
+    <!-- Aplica o tema salvo antes do React carregar (sem piscar o tema errado). Padrão: escuro. -->
+    <script>
+      try {
+        if (localStorage.getItem('tp_flame_theme_v1') === 'light') {
+          document.documentElement.dataset.theme = 'light';
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f4f4f5');
+        }
+      } catch (e) {}
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TP Flame" />

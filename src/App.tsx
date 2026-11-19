@@ -68,8 +68,8 @@ const SongDetailModal = lazy(() =>
 /** Fallback do Suspense: mesmo padrão visual do spinner de sync do Header. */
 function LazyViewFallback() {
   return (
-    <div className="flex items-center justify-center py-16 text-slate-500">
-      <RefreshCw className="w-5 h-5 animate-spin text-brand" />
+    <div className="flex items-center justify-center py-16 text-fg-subtle">
+      <RefreshCw className="w-5 h-5 animate-spin text-brand-ink" />
     </div>
   );
 }
@@ -81,8 +81,8 @@ function LazyViewFallback() {
  * clique. */
 function LazyFullScreenFallback() {
   return (
-    <div className="fixed inset-0 z-50 bg-base flex items-center justify-center">
-      <RefreshCw className="w-6 h-6 animate-spin text-brand" />
+    <div className="fixed inset-0 z-50 bg-canvas flex items-center justify-center">
+      <RefreshCw className="w-6 h-6 animate-spin text-brand-ink" />
     </div>
   );
 }
@@ -90,8 +90,8 @@ function LazyFullScreenFallback() {
 /** Tela cheia enquanto o Firebase resolve se já existe uma sessão salva. */
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center">
-      <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shadow-inner animate-pulse">
+    <div className="min-h-screen bg-canvas flex items-center justify-center">
+      <div className="w-16 h-16 rounded-2xl bg-brand/10 text-brand-ink border border-brand/20 flex items-center justify-center shadow-inner animate-pulse">
         <Flame className="w-8 h-8" />
       </div>
     </div>
@@ -106,24 +106,24 @@ function AuthLoadingScreen() {
  */
 function AccessBlockedScreen({ email, onSignOut }: { email: string | null; onSignOut: () => void }) {
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-surface border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative overflow-hidden">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-surface border border-line rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto shadow-inner">
           <ShieldAlert className="w-8 h-8" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white mb-1.5">Acesso não autorizado</h1>
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <h1 className="text-xl font-bold text-fg mb-1.5">Acesso não autorizado</h1>
+          <p className="text-xs text-fg-muted leading-relaxed">
             O login funcionou, mas o e-mail{' '}
-            <strong className="text-slate-300">{email || 'desta conta'}</strong> ainda não tem
+            <strong className="text-fg-soft">{email || 'desta conta'}</strong> ainda não tem
             permissão pra usar o TP Flame. Peça pra um administrador liberar seu e-mail, ou entre
             com a conta certa da equipe.
           </p>
         </div>
         <button
           onClick={onSignOut}
-          className="w-full py-3 px-4 rounded-xl bg-surface-hover hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+          className="w-full py-3 px-4 rounded-xl bg-surface-hover hover:bg-red-950/40 text-fg-soft hover:text-red-400 border border-line-strong font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Sair e tentar outra conta</span>
@@ -279,7 +279,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-base text-slate-100 font-sans selection:bg-brand selection:text-slate-950">
+    <div className="min-h-screen bg-canvas text-fg-2 font-sans selection:bg-brand selection:text-slate-950">
       {/* Top Header */}
       <Header
         onNavigateTab={(tab) => setCurrentTab(tab)}
@@ -449,20 +449,20 @@ function AppContent() {
       {/* New Culto Modal */}
       {showNewCultoModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-4 space-y-3 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-brand" />
+          <div className="bg-inset border border-line w-full max-w-md rounded-2xl p-4 space-y-3 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-line pb-2">
+              <h3 className="text-sm font-bold text-fg flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-brand-ink" />
                 Agendar Novo Culto
               </h3>
-              <button onClick={() => setShowNewCultoModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowNewCultoModal(false)} className="text-fg-muted hover:text-fg">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleCreateCultoSubmit} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Nome do Culto / Evento *
                 </label>
                 <input
@@ -470,25 +470,25 @@ function AppContent() {
                   value={newCultoNome}
                   onChange={(e) => setNewCultoNome(e.target.value)}
                   placeholder="ex: Culto de Domingo - Celebração"
-                  className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Data e Horário
                 </label>
                 <input
                   type="datetime-local"
                   value={newCultoData}
                   onChange={(e) => setNewCultoData(e.target.value)}
-                  className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-fg-soft block mb-1">
                   Observações Gerais
                 </label>
                 <textarea
@@ -496,7 +496,7 @@ function AppContent() {
                   onChange={(e) => setNewCultoObs(e.target.value)}
                   placeholder="ex: Culto com momento especial de Ceia..."
                   rows={2}
-                  className="w-full bg-base border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand"
+                  className="w-full bg-canvas border border-line rounded-xl p-2.5 text-xs text-fg focus:outline-none focus:border-brand"
                 />
               </div>
 
@@ -504,7 +504,7 @@ function AppContent() {
                 <button
                   type="button"
                   onClick={() => setShowNewCultoModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400"
+                  className="px-3 py-1.5 text-xs text-fg-muted"
                 >
                   Cancelar
                 </button>

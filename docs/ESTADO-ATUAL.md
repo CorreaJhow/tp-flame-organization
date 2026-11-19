@@ -118,6 +118,28 @@ vivo: os três chunks carregam sob demanda sem erro de console, `npm test`
 - **Dívida conhecida:** `npm run lint` não acusou campos inexistentes em
   componentes (`log.Detalhes`). Causa provável: faltam os tipos do React.
 
+### Tom por culto, busca A–Z e tema claro/escuro (18/11/2026)
+- **Tom do culto:** `Tom_Culto` no item do repertório (`RepertorioItem`). A música fica
+  salva só no tom original; cada culto guarda o tom cantado. Modo Palco, card do culto,
+  tela inicial e ficha (aberta pelo culto) usam esse tom (`keyOffset` em `chordTransposer.ts`).
+  Não duplicar versão só pra trocar de tom.
+- **Última execução** (`songHistory.ts`) conta a música inteira, em qualquer versão.
+- **Biblioteca e seletor do culto:** A–Z sem acento e busca por nome, artista, tom ou
+  trecho da letra (`utils/songSearch.ts`).
+- **Tema** (`utils/theme.ts`, `ThemeToggle.tsx`): padrão **escuro**; opção **claro**
+  no Header, em Mais > Aparência e no Modo Palco. Salvo em `localStorage`
+  (`tp_flame_theme_v1`), aplicado antes do React (`index.html`, sem piscar).
+  Cores são tokens semânticos em `src/index.css` (`text-fg`, `border-line`, `bg-inset`,
+  `bg-canvas`...); **não usar mais `text-white`, `text-slate-*`, `bg-slate-*`, `border-slate-*`
+  nem hex solto de neutro** — só os tokens. Exceções: `text-slate-950`/`fill-slate-950` sobre
+  laranja, `text-white` sobre vermelho sólido, botão do Google, fundos `bg-black/80` de modal.
+  Cores de status (red/amber/emerald/cyan/blue/teal/purple/pink) viram versões escuras/claras
+  no tema claro por variáveis em `[data-theme="light"]`. Contraste AA dos tokens é testado em
+  `themeContrast.test.ts`.
+- **Armadilha corrigida:** o token `base` colidia com a classe de tamanho `sm:text-base`
+  (cor quase preta em telas ≥640px, ex.: a data do culto no desktop). Renomeado para `canvas`.
+  Nunca criar token de cor chamado `base`, `sm`, `lg`, `xl`...
+
 ## 3. Decisões explícitas do usuário (não reabrir sem perguntar)
 
 - ~~**Google Sheets fica como backend.** Não é para migrar para outro banco.~~

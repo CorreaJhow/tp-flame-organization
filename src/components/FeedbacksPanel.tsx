@@ -66,8 +66,8 @@ export const FeedbacksPanel: React.FC = () => {
               aria-pressed={filtro === id}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all ${
                 filtro === id
-                  ? 'bg-brand/15 text-brand border-brand/40'
-                  : 'bg-surface text-slate-400 border-slate-800 hover:text-white'
+                  ? 'bg-brand/15 text-brand-ink border-brand/40'
+                  : 'bg-surface text-fg-muted border-line hover:text-fg'
               }`}
             >
               {label}
@@ -78,7 +78,7 @@ export const FeedbacksPanel: React.FC = () => {
           onClick={carregar}
           disabled={carregando}
           aria-label="Atualizar feedbacks"
-          className="p-2 rounded-xl bg-surface border border-slate-800 text-slate-400 hover:text-white shrink-0"
+          className="p-2 rounded-xl bg-surface border border-line text-fg-muted hover:text-fg shrink-0"
         >
           <RefreshCw className={`w-4 h-4 ${carregando ? 'animate-spin' : ''}`} />
         </button>
@@ -91,42 +91,42 @@ export const FeedbacksPanel: React.FC = () => {
       )}
 
       {itens.length === 0 ? (
-        <p className="text-xs text-slate-500 italic py-8 text-center bg-surface rounded-2xl border border-slate-800/80">
+        <p className="text-xs text-fg-subtle italic py-8 text-center bg-surface rounded-2xl border border-line/80">
           {carregando ? 'Carregando feedbacks...' : 'Nenhum feedback aqui ainda.'}
         </p>
       ) : (
-        <div className="bg-surface border border-slate-800/80 rounded-2xl divide-y divide-slate-800/60 overflow-hidden shadow-sm">
+        <div className="bg-surface border border-line/80 rounded-2xl divide-y divide-line/60 overflow-hidden shadow-sm">
           {itens.map(({ log, parsed }) => (
             <article key={log.ID} className="p-3.5 space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-extrabold text-brand uppercase text-[10px] tracking-wide">
+                <span className="font-extrabold text-brand-ink uppercase text-[10px] tracking-wide">
                   {ROTULOS[parsed.kind]}
                 </span>
-                <span className="text-[10px] text-slate-500 font-mono shrink-0">{formatarData(log.Data)}</span>
+                <span className="text-[10px] text-fg-subtle font-mono shrink-0">{formatarData(log.Data)}</span>
               </div>
 
               {parsed.kind === 'musica' && parsed.musica ? (
                 <>
-                  <p className="text-xs font-bold text-white">{parsed.musica}</p>
+                  <p className="text-xs font-bold text-fg">{parsed.musica}</p>
                   {parsed.link ? (
                     <a
                       href={parsed.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline inline-flex items-center gap-1 break-all"
+                      className="text-xs text-brand-ink hover:underline inline-flex items-center gap-1 break-all"
                     >
                       <ExternalLink className="w-3 h-3 shrink-0" />
                       {parsed.link}
                     </a>
                   ) : (
-                    <p className="text-xs text-slate-400 break-all">{parsed.mensagem}</p>
+                    <p className="text-xs text-fg-muted break-all">{parsed.mensagem}</p>
                   )}
                 </>
               ) : (
-                <p className="text-xs text-slate-200 whitespace-pre-wrap break-words">{parsed.mensagem}</p>
+                <p className="text-xs text-fg-2 whitespace-pre-wrap break-words">{parsed.mensagem}</p>
               )}
 
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-fg-subtle">
                 {parsed.de || log.Usuario}
               </p>
             </article>

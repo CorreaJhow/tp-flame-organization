@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Flame, Shield, RefreshCw, WifiOff } from 'lucide-react';
 import { ViewTab } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
   onNavigateTab: (tab: ViewTab) => void;
@@ -37,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-header/95 backdrop-blur-md border-b border-slate-800/80 text-white px-4 py-3 shadow-xl">
+    <header className="sticky top-0 z-30 bg-header/95 backdrop-blur-md border-b border-line/80 text-fg px-4 py-3 shadow-xl">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
         {/* Brand */}
         <div
@@ -49,14 +50,14 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-lg tracking-tight text-white leading-none">
+              <h1 className="font-extrabold text-lg tracking-tight text-fg leading-none">
                 TP FLAME
               </h1>
-              <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-brand/20 text-brand border border-brand/30">
+              <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-brand/20 text-brand-ink border border-brand/30">
                 PRO
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium tracking-tight">
+            <p className="text-[11px] text-fg-muted font-medium tracking-tight">
               Louvor & Adoração
             </p>
           </div>
@@ -69,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           {user && (
             <button
               onClick={() => onNavigateTab('admin')}
-              className="flex items-center gap-1.5 pl-1 pr-2 py-1 min-h-[40px] rounded-full bg-surface hover:bg-surface-hover border border-slate-800 transition-all active:scale-95"
+              className="flex items-center gap-1.5 pl-1 pr-2 py-1 min-h-[40px] rounded-full bg-surface hover:bg-surface-hover border border-line transition-all active:scale-95"
               title={user.displayName || user.email || 'Sua conta'}
             >
               {user.photoURL ? (
@@ -80,20 +81,22 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-7 h-7 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-brand/15 text-brand border border-brand/30 flex items-center justify-center text-[11px] font-black shrink-0">
+                <div className="w-7 h-7 rounded-full bg-brand/15 text-brand-ink border border-brand/30 flex items-center justify-center text-[11px] font-black shrink-0">
                   {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="hidden sm:inline text-[11px] font-bold text-slate-300 max-w-[110px] truncate">
+              <span className="hidden sm:inline text-[11px] font-bold text-fg-soft max-w-[110px] truncate">
                 {(user.displayName || user.email || '').split(' ')[0]}
               </span>
             </button>
           )}
 
+          <ThemeToggle />
+
           {/* Offline Mode Indicator */}
           {!isOnline && (
             <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 text-[11px] font-bold shadow-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-inset-2/90 border border-line-strong text-fg-soft text-[11px] font-bold shadow-sm"
               title="Sem conexão de internet. Todas as cifras e dados locais continuam disponíveis!"
             >
               <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -109,10 +112,10 @@ export const Header: React.FC<HeaderProps> = ({
               disabled={isSyncing || !isOnline}
               className={`relative p-2 rounded-xl transition-all border ${
                 isSyncing
-                  ? 'bg-surface-hover text-brand border-brand/40'
+                  ? 'bg-surface-hover text-brand-ink border-brand/40'
                   : !isOnline
-                  ? 'bg-surface text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
-                  : 'text-slate-400 hover:text-white bg-surface hover:bg-surface-hover border-slate-800'
+                  ? 'bg-surface text-fg-faint border-line cursor-not-allowed opacity-50'
+                  : 'text-fg-muted hover:text-fg bg-surface hover:bg-surface-hover border-line'
               }`}
               title={
                 !isOnline
@@ -135,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="header-admin-nav-button"
             onClick={() => onNavigateTab('admin')}
-            className="p-2 rounded-xl text-slate-400 hover:text-brand hover:bg-surface-hover transition-all border border-slate-800"
+            className="p-2 rounded-xl text-fg-muted hover:text-brand-ink hover:bg-surface-hover transition-all border border-line"
             title="Painel de Administração (Acesso Restrito)"
           >
             <Shield className="w-4 h-4" />

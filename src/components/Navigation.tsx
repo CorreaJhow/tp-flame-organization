@@ -21,7 +21,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-header/95 backdrop-blur-md border-t border-slate-800/80 py-1 px-2 shadow-2xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-header/95 backdrop-blur-md border-t border-line/80 py-1 px-2 shadow-2xl">
       <div className="max-w-md mx-auto flex items-center justify-between">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -37,12 +37,12 @@ export const Navigation: React.FC<NavigationProps> = ({
               onClick={() => onSelectTab(tab.id)}
               className={`relative min-h-[50px] px-2 flex flex-col items-center justify-center rounded-xl transition-all flex-1 ${
                 isActive
-                  ? 'text-brand font-bold'
-                  : 'text-slate-400 hover:text-slate-200 active:scale-95'
+                  ? 'text-brand-ink font-bold'
+                  : 'text-fg-muted hover:text-fg-2 active:scale-95'
               }`}
             >
               <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-brand' : ''}`} />
+                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-brand-ink' : ''}`} />
                 {tab.badge && tab.badge > 0 ? (
                   <span className="absolute -top-1.5 -right-2 bg-brand text-slate-950 text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-header">
                     {tab.badge}
