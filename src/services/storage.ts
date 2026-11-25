@@ -668,6 +668,36 @@ class StorageService {
 
   public getHistorico(): HistoricoItem[] { return this.historico; }
 
+  public addHistorico(data: Omit<HistoricoItem, 'ID'>): HistoricoItem {
+    const id = generateUUID();
+    const item: HistoricoItem = { ...data, ID: id };
+    this.historico = [...this.historico, item];
+    this.notify();
+    fsHistorico.addHistoricoItemFirestore(
+      { ID_Versao: item.ID_Versao, ID_Culto: item.ID_Culto, Data_Execucao: item.Data_Execucao, Tom_Tocado: item.Tom_Tocado, Evento: item.Evento, Obs: item.Obs },
+      id
+    ).catch((err) => console.warn('[storage] Falha ao registrar execução no Firestore:', err));
+    this.addLog('INSERT_HISTORICO', `Execução registrada em ${item.Data_Execucao}`);
+    return item;
+  }
+
+  public updateHistorico(id: string, data: Partial<HistoricoItem>) {
+    if (!this.historico.some((h) => h.ID === id)) return;
+    this.historico = this.historico.map((h) => (h.ID === id ? { ...h, ...data } : h));
+    this.notify();
+    fsHistorico.updateHistoricoItemFirestore(id, data).catch((err) =>
+      console.warn('[storage] Falha ao atualizar execução no Firestore:', err)
+    );
+    this.addLog('UPDATE_HISTORICO', 'Execução atualizada');
+  }
+
+  public deleteHistorico(id: string) {
+    this.historico = this.historico.filter((h) => h.ID !== id);
+    this.notify();
+    fsHistorico.deleteHistoricoItemFirestore(id).catch((err) => console.warn('[storage] Falha ao excluir execução:', err));
+    this.addLog('DELETE_HISTORICO', 'Execução removida');
+  }
+
   // ==========================================
   // CONFIG (vestigial — ver firestoreConfig.ts. Sem getters/setters aqui
   // porque nenhuma tela usa ConfigItem hoje; ficaria código morto.)

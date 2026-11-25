@@ -1,8 +1,7 @@
 /**
  * Camada de dados da tabela Historico via Firestore (Fase 4 — ver
- * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts` (só
- * leitura — nenhuma tela do app cria/edita histórico ainda hoje). Sem
- * campos opcionais nesta tabela, então sem necessidade de `stripUndefined`.
+ * docs/PLANO-FASE4-MIGRACAO-FIREBASE.md). Usada por `storage.ts`
+ * (registro manual de execução na ficha da música).
  */
 import {
   collection,
@@ -13,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { HistoricoItem } from '../types';
-import { generateUUID, quemEstaEditando } from './firestoreUtils';
+import { generateUUID, quemEstaEditando, stripUndefined } from './firestoreUtils';
 
 const COLLECTION = 'historico';
 
@@ -24,20 +23,35 @@ export async function getHistoricoFirestore(): Promise<HistoricoItem[]> {
     .filter((h) => !h.Excluido_Em);
 }
 
-type CamposEditaveisHistorico = Pick<HistoricoItem, 'ID_Versao' | 'ID_Culto' | 'Data_Execucao'>;
+type CamposEditaveisHistorico = Pick<
+  HistoricoItem,
+  'ID_Versao' | 'ID_Culto' | 'Data_Execucao' | 'Tom_Tocado' | 'Evento' | 'Obs'
+>;
 
 export async function addHistoricoItemFirestore(
-  input: CamposEditaveisHistorico
+  input: CamposEditaveisHistorico,
+  idPreGerado?: string
 ): Promise<HistoricoItem> {
-  const id = generateUUID();
+  const id = idPreGerado || generateUUID();
   const item: HistoricoItem = {
     ID: id,
     ...input,
     Atualizado_Em: new Date().toISOString(),
     Atualizado_Por: quemEstaEditando()
   };
-  await setDoc(doc(db, COLLECTION, id), item);
+  await setDoc(doc(db, COLLECTION, id), stripUndefined(item));
   return item;
+}
+
+export async function updateHistoricoItemFirestore(
+  id: string,
+  changes: Partial<CamposEditaveisHistorico>
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, id), stripUndefined({
+    ...changes,
+    Atualizado_Em: new Date().toISOString(),
+    Atualizado_Por: quemEstaEditando()
+  }));
 }
 
 /** Soft-delete — mesmo motivo de `deleteMusicaFirestore` (ver esse arquivo). */

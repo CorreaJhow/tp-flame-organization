@@ -28,6 +28,7 @@ import { ChordViewer } from './ChordViewer';
 import { SongFormModal } from './SongFormModal';
 import { getLastPlayedInfo } from '../utils/songHistory';
 import { ConfirmModal } from './ConfirmModal';
+import { HistoricoExecucoes } from './HistoricoExecucoes';
 import { useToast } from '../context/ToastContext';
 import { getVocalConfig } from '../utils/vocalColors';
 
@@ -82,6 +83,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const [newArqUrl, setNewArqUrl] = useState('');
   const [newArqNome, setNewArqNome] = useState('');
 
+  const [histTick, setHistTick] = useState(0); // refaz o selo quando o histórico muda
+
   const currentVersao = versoes.find(v => v.ID === selectedVersaoId) || versoes[0];
 
   // Available vocals from integrantes
@@ -114,7 +117,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
     const repList = storage.getRepertorio();
     const histList = storage.getHistorico();
     return getLastPlayedInfo(currentVersao.ID, cultosList, repList, histList, versoes);
-  }, [currentVersao, versoes]);
+  }, [currentVersao, versoes, histTick]);
 
   const handleStartCifrarBase = () => {
     if (!currentVersao) return;
@@ -356,6 +359,12 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   )}
                 </div>
               )}
+
+              <HistoricoExecucoes
+                versao={currentVersao}
+                versoes={versoes}
+                onChanged={() => { setHistTick((t) => t + 1); onDataChanged(); }}
+              />
 
               {/* Structure Display */}
               {currentVersao.Estrutura && (

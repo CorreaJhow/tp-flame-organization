@@ -88,8 +88,14 @@ export interface Integrante extends Auditavel {
 export interface HistoricoItem extends Auditavel {
   ID: string;
   ID_Versao: string;
-  ID_Culto: string;
+  // Registro manual pode não ter culto (repertório antigo, data aproximada).
+  ID_Culto?: string;
   Data_Execucao: string;
+  // Tom em que foi tocada. Vazio = tom original da versão.
+  Tom_Tocado?: string;
+  // Texto livre quando não há culto cadastrado.
+  Evento?: string;
+  Obs?: string;
 }
 
 export interface LogItem {

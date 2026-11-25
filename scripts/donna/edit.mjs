@@ -1,0 +1,20 @@
+// uso: SAVE=1 node edit.mjs "<nome da música>" <letra.txt>  -> edita a letra da música existente (sem SAVE é teste a seco)
+import fs from 'fs';
+const [,, nome, file] = process.argv;
+const letra = fs.readFileSync(file,'utf8').trim();
+const t = await (await fetch('http://127.0.0.1:9222/json/new?'+encodeURI('https://tp-flame-organization.vercel.app'),{method:'PUT'})).json();
+const ws = new WebSocket(t.webSocketDebuggerUrl); await new Promise(r=>ws.onopen=r);
+await new Promise(r=>setTimeout(r,7000));
+const expr = `(async()=>{const sl=ms=>new Promise(r=>setTimeout(r,ms));
+[...document.querySelectorAll('button,a')].find(e=>/^\s*Biblioteca\s*\d*\s*$/.test(e.innerText||'')).click();await sl(1500);
+const card=[...document.querySelectorAll('h3,h4,p,span,div')].filter(e=>e.children.length===0&&e.innerText.trim()===${JSON.stringify(nome)})[0];
+if(!card) return 'CARD NAO ACHADO';card.click();await sl(1500);
+[...document.querySelectorAll('button')].find(e=>/Editar/.test(e.innerText)).click();await sl(1500);
+const ta=document.querySelector('textarea');const old=ta.value.length;
+Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(ta,${JSON.stringify(letra)});ta.dispatchEvent(new Event('input',{bubbles:true}));await sl(500);
+if(!${process.env.SAVE==='1'}) return 'DRY antes '+old+' depois '+ta.value.length;
+[...document.querySelectorAll('button')].find(e=>/Salvar Alterações/.test(e.innerText)).click();await sl(3000);
+return 'SALVO';})()`;
+ws.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:expr,returnByValue:true,awaitPromise:true}}));
+await new Promise(r=>ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===1){console.log(m.result?.result?.value??JSON.stringify(m).slice(0,400));r()}});
+console.error('TAB',t.id); process.exit(0);
